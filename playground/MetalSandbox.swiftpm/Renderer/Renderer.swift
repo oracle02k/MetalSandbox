@@ -1,11 +1,13 @@
 import MetalKit
 
+typealias float2 = SIMD2<Float>
 typealias float3 = SIMD3<Float>
 typealias float4 = SIMD4<Float>
 
 struct Vertex {
     var position: float3
     var color: float4
+    var texCoord: float2
 }
 
 class Renderer {
@@ -36,7 +38,11 @@ class Renderer {
         return try device.makeRenderPipelineState(descriptor: descriptor)
     }
     
-    func drawBegin(
+    func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
+        return device.makeTexture(descriptor: descriptor)!
+    }
+    
+    func makeRenderCommand(
         _ renderPassDescriptor: MTLRenderPassDescriptor, 
         _ renderPilelineState: MTLRenderPipelineState
     ) -> RenderCommand {
@@ -47,23 +53,6 @@ class Renderer {
         
         return RenderCommand(device, commandBuffer, commandEncoder, debugger)
     }
-    
-    func drawEnd(_ drawable: CAMetalDrawable, _ renderCommand: RenderCommand) {
-        let commandEncoder = renderCommand.commandEncoder
-        let commandBuffer = renderCommand.commandBuffer
-        
-        commandEncoder.endEncoding()
-        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(30))
-        commandBuffer.addCompletedHandler { [self] commandBuffer in
-            let start = commandBuffer.gpuStartTime
-            let end = commandBuffer.gpuEndTime
-            debugger.gpuTime = end - start
-        }
-        commandBuffer.commit()
-        
-        debugger.viewWidth = drawable.texture.width
-        debugger.viewHeight = drawable.texture.height
-    }
 }
 
 class RenderCommand
@@ -71,7 +60,7 @@ class RenderCommand
     let device: MTLDevice
     let commandBuffer: MTLCommandBuffer
     let commandEncoder: MTLRenderCommandEncoder
-    let debugger: RendererDebugger
+    var debugger: RendererDebugger
     
     init(
         _ device: MTLDevice,
@@ -85,6 +74,10 @@ class RenderCommand
         self.debugger = debugger
     }
     
+    func setTexture(_ texture: MTLTexture, index: Int){
+        commandEncoder.setFragmentTexture(texture, index:index)
+    }
+    
     func drawTriangles(_ vertices: [Vertex]) {
         let vertexBuffer = device.makeBuffer(
             bytes: vertices,
@@ -93,5 +86,29 @@ class RenderCommand
         )!
         commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
+    }
+    
+    func commit() {
+        commandEncoder.endEncoding()
+        commandBuffer.addCompletedHandler { [self] commandBuffer in
+            let start = commandBuffer.gpuStartTime
+            let end = commandBuffer.gpuEndTime
+            debugger.gpuTime = end - start
+        }
+        commandBuffer.commit()
+    }
+    
+    func commit(with drawable: CAMetalDrawable) {
+        commandEncoder.endEncoding()
+        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(30))
+        commandBuffer.addCompletedHandler { [self] commandBuffer in
+            let start = commandBuffer.gpuStartTime
+            let end = commandBuffer.gpuEndTime
+            debugger.gpuTime = end - start
+        }
+        commandBuffer.commit()
+        
+        debugger.viewWidth = drawable.texture.width
+        debugger.viewHeight = drawable.texture.height
     }
 }

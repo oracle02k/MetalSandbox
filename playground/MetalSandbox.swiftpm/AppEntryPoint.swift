@@ -32,9 +32,9 @@ class System{
     let debugVM: DebugVM
     
     private init(){
-        app = Application()
         debugVM = DebugVM()
         rendererDebugger = RendererDebuggerBindVM(debugVM)
         renderer = try! Renderer(rendererDebugger)
+        app = Application(renderer)
     }
 }

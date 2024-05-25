@@ -49,7 +49,6 @@ class MetalView: MTKView {
 extension MetalView: MTKViewDelegate {
     
     func draw(in view: MTKView) {
-        
         view.drawableSize = view.frame.size
         
         // Get the current drawable and descriptor
@@ -60,9 +59,7 @@ extension MetalView: MTKViewDelegate {
             return
         }
         
-        let renderCommand = renderer.drawBegin(renderPassDescriptor, pipelineState)
-        app.draw(renderCommand)
-        renderer.drawEnd(drawable, renderCommand)
+        app.draw(viewDrawable: drawable, viewRenderPassDescriptor: renderPassDescriptor)
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
