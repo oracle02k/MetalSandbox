@@ -27,14 +27,40 @@ class System{
     }();
     
     let app: Application
-    let rendererDebugger: RendererDebugger
-    let renderer: Renderer
+    let gpuDebugger: GpuDebugger
+    let gpuContext: GpuContext
+    let gpuFunctionContainer: GpuFunctionContainer
+    let renderPipelineStateContainer: RenderPipelineStateContainer
     let debugVM: DebugVM
+    let device: MTLDevice
     
     private init(){
+        Logger.log("begin entrypoint init")
+        
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            appFatalError("GPU not available ")
+        }
+        self.device = device
+        
         debugVM = DebugVM()
-        rendererDebugger = RendererDebuggerBindVM(debugVM)
-        renderer = try! Renderer(rendererDebugger)
-        app = Application(renderer)
+        gpuDebugger = GpuDebuggerBindVM(debugVM)
+        
+        gpuFunctionContainer = GpuFunctionContainer(device: device)
+        gpuFunctionContainer.build()
+        
+        renderPipelineStateContainer = RenderPipelineStateContainer(device: device)
+        
+        gpuContext = GpuContext(
+            device: device,
+            gpuFunctionContainer: gpuFunctionContainer,
+            renderPipelineStateContainer: renderPipelineStateContainer,
+            gpuDebugger: gpuDebugger
+        )
+        gpuContext.build()
+        
+        app = Application(gpuContext)
+        app.build()
+        
+        Logger.log("done entrypoint init")
     }
 }

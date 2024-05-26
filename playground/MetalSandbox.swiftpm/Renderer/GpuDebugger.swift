@@ -1,6 +1,6 @@
 import CoreFoundation
 
-protocol RendererDebugger
+protocol GpuDebugger
 {
     var gpuTime: CFTimeInterval { get set }
     var viewWidth: Int { get set }

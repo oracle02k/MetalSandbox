@@ -2,13 +2,6 @@ import MetalKit
 
 class Application
 {
-    let renderer: Renderer
-    let vertices: [Vertex] = [
-        Vertex(position: float3(0,1,0), color: float4(1,0,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(-1,-1,0), color: float4(0,1,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(1,-1,0), color: float4(0,0,1,1), texCoord: float2(0,0)),
-    ]
-    
     let screenVertices: [Vertex] = [
         Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
         Vertex(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
@@ -18,58 +11,61 @@ class Application
         Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
     ]
     
-    init(_ renderer: Renderer) {
-        self.renderer = renderer
+    private let gpuContext: GpuContext
+    private let renderObject: RenderObject
+    
+    private lazy var offscreenTexture: MTLTexture = uninitialized()
+    private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    private lazy var viewRenderPipelineStateId: Int = uninitialized()
+    
+    init(_ gpuContext: GpuContext) {
+        self.gpuContext = gpuContext
+        self.renderObject = RenderObject()
     }
     
-    func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor)
+    func build()
     {
-        let texture = {
+        offscreenTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
             descriptor.width = 320;
             descriptor.height = 320;
             descriptor.pixelFormat = .bgra8Unorm
             descriptor.usage = [.renderTarget, .shaderRead]
-            return renderer.makeTexture(descriptor)
+            return gpuContext.makeTexture(descriptor)
         }()
         
-        let offscreenRenderPipelineState = {
-            let descriptor = MTLRenderPipelineDescriptor()
-            descriptor.label = "Offscreen Render Pipeline"
-            descriptor.sampleCount = 1
-            descriptor.vertexFunction = try! renderer.makeFunction(name: "basic_vertex_function")
-            descriptor.fragmentFunction = try! renderer.makeFunction(name: "basic_fragment_function") 
-            descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            return try! renderer.makePipelineState(descriptor)
-        }()
-        
-        let offscreenRenderPassDescriptor = {
+        offscreenRenderPassDescriptor = {
             let descriptor = MTLRenderPassDescriptor()
-            descriptor.colorAttachments[0].texture = texture
+            descriptor.colorAttachments[0].texture = offscreenTexture
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
             return descriptor
         }()
         
-        let command = renderer.makeRenderCommand(offscreenRenderPassDescriptor, offscreenRenderPipelineState)
-        command.drawTriangles(vertices)
-        command.commit()
-        
-        let viewRenderPipelineState = {
+        viewRenderPipelineStateId = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "View Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = try! renderer.makeFunction(name: "texcoord_vertex_function")
-            descriptor.fragmentFunction = try! renderer.makeFunction(name: "texcoord_fragment_function") 
+            descriptor.vertexFunction = gpuContext.findFunction(by:.TexcoordVertexFuction)
+            descriptor.fragmentFunction = gpuContext.findFunction(by: .TexcoordFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        
-            return try! renderer.makePipelineState(descriptor)
+            return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
         }()
         
-        let viewCommand = renderer.makeRenderCommand(viewRenderPassDescriptor, viewRenderPipelineState)
-        viewCommand.setTexture(texture, index: 0)
+        renderObject.build(gpuContext)
+    }
+    
+    func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor)
+    {
+        let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
+        renderObject.draw(command)
+        command.commit()
+    
+        let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
+        viewCommand.useRenderPipelineState(id: viewRenderPipelineStateId)
+        viewCommand.setTexture(offscreenTexture, index: 0)
         viewCommand.drawTriangles(screenVertices)
         viewCommand.commit(with: viewDrawable)
     }

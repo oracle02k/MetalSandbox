@@ -1,4 +1,4 @@
-let shader = """
+let gpuFunctionSource = """
 #include <metal_stdlib>
 using namespace metal;
 struct VertexIn {

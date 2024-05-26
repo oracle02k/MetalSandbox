@@ -6,33 +6,13 @@ enum AppError: Error {
 }
     
 class MetalView: MTKView {
-    
     let app: Application
-    let renderer: Renderer
-    let pipelineState: MTLRenderPipelineState
     
     init() {
-        print("metal init")
-        do {
-            print("renderer init")
-            renderer = System.shared.renderer
-            
-            let pipelineDescriptor = MTLRenderPipelineDescriptor()
-            pipelineDescriptor.vertexFunction = try renderer.makeFunction(name: "basic_vertex_function")
-            pipelineDescriptor.fragmentFunction = try renderer.makeFunction(name: "basic_fragment_function")
-            pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            
-            print("piplineState init")
-            pipelineState = try renderer.makePipelineState(pipelineDescriptor)
-        }catch{
-            appFatalError(error.localizedDescription)
-        }
-        
-        print("application init")
         app = System.shared.app
         
         print("MTKView setup")
-        super.init(frame: .zero, device: renderer.device)
+        super.init(frame: .zero, device: System.shared.device)
         preferredFramesPerSecond = 30
         colorPixelFormat = .bgra8Unorm
         clearColor = MTLClearColor(red: 0.1, green: 0.57, blue: 0.25, alpha: 1)

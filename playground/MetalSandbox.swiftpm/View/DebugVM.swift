@@ -6,7 +6,7 @@ final class DebugVM: ObservableObject {
     @Published var viewHeight: Int = 0
 }
 
-final class RendererDebuggerBindVM: RendererDebugger
+final class GpuDebuggerBindVM: GpuDebugger
 {
     var debugVm: DebugVM
     
