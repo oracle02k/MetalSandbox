@@ -122,7 +122,7 @@ class RenderCommand
     
     func commit(with drawable: CAMetalDrawable) {
         commandEncoder.endEncoding()
-        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(30))
+        commandBuffer.present(drawable, atTime: 1.0/Double(30))
         commandBuffer.commit()
         
         gpuDebugger.viewWidth = drawable.texture.width

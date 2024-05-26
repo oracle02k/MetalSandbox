@@ -21,7 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 }
 
 class System{
-    static let shared = {
+    static let shared = { () -> System in 
         let instance = System()
         return instance
     }();

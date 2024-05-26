@@ -19,8 +19,9 @@ class GpuFunctionContainer {
     
     func build() {
         do {
-            library = try self.device.makeLibrary(source: gpuFunctionSource, options: nil)
-            Logger.log("library description: \(library.description)") 
+//            library = try self.device.makeLibrary(source: gpuFunctionSource, options: nil)
+            library = self.device.makeDefaultLibrary()!
+            Logger.log("library description: \(library.description)")
         } catch {
             appFatalError(error.localizedDescription)
         }
