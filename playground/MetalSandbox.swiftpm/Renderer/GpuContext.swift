@@ -90,11 +90,10 @@ class RenderCommand
     }
     
     func useRenderPipelineState(id: Int) {
-        if(id != currentRenderPipelineStateId) {
-            let pso = renderPipelineStateContainer.find(by: id)
-            commandEncoder.setRenderPipelineState(pso)
-            currentRenderPipelineStateId = id
-        }
+        guard id != currentRenderPipelineStateId else { return }
+        let pso = renderPipelineStateContainer.find(by: id)
+        commandEncoder.setRenderPipelineState(pso)
+        currentRenderPipelineStateId = id
     }
     
     func setTexture(_ texture: MTLTexture, index: Int){

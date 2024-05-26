@@ -1,6 +1,6 @@
 import MetalKit
 
-class Application
+final class Application
 {
     let screenVertices: [Vertex] = [
         Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),

@@ -7,8 +7,7 @@ public struct SwiftUIView: UIViewRepresentable {
     private var handleMakeUIView: ((Context) -> UIView)?
     
     public init(closure: () -> UIView) {
-        print("SwiftUIView init")
-        wrappedView = closure()//日本ごコメント
+        wrappedView = closure()
     }
     
     public func makeUIView(context: Context) -> UIView {

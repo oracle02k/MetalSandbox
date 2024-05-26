@@ -18,8 +18,6 @@ class GpuFunctionContainer {
     }
     
     func build() {
-        Logger.log("begin function build.")
-        
         do {
             library = try self.device.makeLibrary(source: gpuFunctionSource, options: nil)
             Logger.log("library description: \(library.description)") 
@@ -33,8 +31,6 @@ class GpuFunctionContainer {
             }            
             container[$0] = function
         }
-        
-        Logger.log("done function build.")
     }
     
     func find(by name: Name) -> MTLFunction {

@@ -10,4 +10,6 @@ func appFatalError(_ message: String) -> Never {
     fatalError()
 }
 
-func uninitialized<T>() -> T { appFatalError("accessed an uninitialized lazy property.") }
+func uninitialized<T>() -> T {
+    appFatalError("accessed an uninitialized lazy property.")
+}
