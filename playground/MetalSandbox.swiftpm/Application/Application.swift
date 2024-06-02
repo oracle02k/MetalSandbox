@@ -26,7 +26,7 @@ final class Application
     
     init(_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
-        self.renderObject = RenderObject()
+        self.renderObject = RenderObject(gpuContext)
     }
     
     func build()
@@ -60,7 +60,7 @@ final class Application
             return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
         }()
         
-        renderObject.build(gpuContext)
+        renderObject.build()
     }
     
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor)
