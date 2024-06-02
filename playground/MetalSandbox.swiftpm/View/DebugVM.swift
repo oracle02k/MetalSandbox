@@ -4,6 +4,7 @@ final class DebugVM: ObservableObject {
     @Published var gpuTime: CFTimeInterval = 0
     @Published var viewWidth: Int = 0
     @Published var viewHeight: Int = 0
+    @Published var log: String = "test consle"
 }
 
 final class GpuDebuggerBindVM: GpuDebugger
@@ -19,13 +20,25 @@ final class GpuDebuggerBindVM: GpuDebugger
         get { return self.debugVm.viewWidth }
         set { self.debugVm.viewWidth = newValue }
     }
-    var viewHeight: Int{
+    var viewHeight: Int {
         get { return self.debugVm.viewHeight }
         set { self.debugVm.viewHeight = newValue }
+    }
+    
+    var log: String {
+        get { return self.debugVm.log }
     }
     
     init(_ debugVm: DebugVM)
     {
         self.debugVm = debugVm
+    }
+    
+    func framInit() {
+        debugVm.log = ""
+    }
+    
+    func addLog(_ message: String) {
+        debugVm.log += message + "\n"
     }
 }

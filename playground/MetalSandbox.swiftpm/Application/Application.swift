@@ -59,6 +59,8 @@ final class Application
     
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor)
     {
+        gpuContext.gpuDebugger.framInit()
+        
         let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
         renderObject.draw(command)
         command.commit()
