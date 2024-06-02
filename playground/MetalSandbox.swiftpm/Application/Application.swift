@@ -10,6 +10,12 @@ final class Application
         Vertex(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
         Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
     ]
+    let screenVertices2: [Vertex] = [
+        Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
+        Vertex(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
+        Vertex(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
+        Vertex(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
+    ]
     
     private let gpuContext: GpuContext
     private let renderObject: RenderObject
@@ -68,7 +74,8 @@ final class Application
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
         viewCommand.useRenderPipelineState(id: viewRenderPipelineStateId)
         viewCommand.setTexture(offscreenTexture, index: 0)
-        viewCommand.drawTriangles(screenVertices)
+      //  viewCommand.drawTriangles(screenVertices)
+        viewCommand.drawTriangleIndices(screenVertices2, indices: [0,1,2,2,3,0])
         viewCommand.commit(with: viewDrawable)
     }
 }

@@ -110,6 +110,19 @@ class RenderCommand
         commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
     }
     
+    func drawTriangleIndices(_ vertices: [Vertex], indices: [UInt32]) {
+        let vertexBuffer = device.makeBuffer(
+            bytes: vertices,
+            length: MemoryLayout<Vertex>.stride * vertices.count,
+            options: []
+        )!
+        let indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt32>.stride * indices.count)!
+        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        commandEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indices.count, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
+        
+        gpuDebugger.addLog("draw Vertex count: \(vertices.count.description)")
+    }
+    
     func commit() {
         commandEncoder.endEncoding()
         commandBuffer.addCompletedHandler { [self] commandBuffer in

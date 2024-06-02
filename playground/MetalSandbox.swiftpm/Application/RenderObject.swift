@@ -23,6 +23,7 @@ class RenderObject {
     
     func draw(_ command: RenderCommand) {
         command.useRenderPipelineState(id: renderPipelineStateId)
-        command.drawTriangles(vertices)
+        command.drawTriangleIndices(vertices, indices: [0,1,2])
+    //    command.drawTriangles(vertices)
     }
 }
