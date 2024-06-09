@@ -39,6 +39,15 @@ class GpuContext {
         }()
     }
     
+    func makeBuffer<T>(_ data: [T]) -> MTLBuffer {
+        return data.withUnsafeBytes() { 
+            return device.makeBuffer(
+                bytes: $0.baseAddress!, 
+                length: MemoryLayout<Vertex>.stride * data.count
+            )!
+        }
+    }
+    
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
         guard let texture = device.makeTexture(descriptor: descriptor) else {
             appFatalError("failed to make texture.")
@@ -101,16 +110,17 @@ class RenderCommand
     }
     
     func drawTriangles(_ vertices: [Vertex]) {
-        let vertexBuffer = device.makeBuffer(
-            bytes: vertices,
-            length: MemoryLayout<Vertex>.stride * vertices.count,
-            options: []
-        )!
+        let vertexBuffer = vertices.withUnsafeBytes() { p in
+            return device.makeBuffer(bytes: p.baseAddress!, length: MemoryLayout<Vertex>.stride * vertices.count)!
+        }
+
         commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
     }
     
+    
     func drawTriangleIndices(_ vertices: [Vertex], indices: [UInt32]) {
+        
         let vertexBuffer = device.makeBuffer(
             bytes: vertices,
             length: MemoryLayout<Vertex>.stride * vertices.count,
@@ -121,6 +131,12 @@ class RenderCommand
         commandEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indices.count, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
         
         gpuDebugger.addLog("draw Vertex count: \(vertices.count.description)")
+    }
+
+    
+    func drawIndexedTriangles(vertexBuffer: MTLBuffer, indexBuffer: MTLBuffer, indexCount: Int) {
+        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)    
+        commandEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indexCount, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
     }
     
     func commit() {

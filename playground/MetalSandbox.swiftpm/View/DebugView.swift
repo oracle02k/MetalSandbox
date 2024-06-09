@@ -9,7 +9,14 @@ struct DebugView: View {
             Text("View Width: \(content.viewWidth)")
             Text("View Height: \(content.viewHeight)")
             Text("Logs:")
-            Text(content.log)
+            GeometryReader { geometry in
+                ScrollView(.vertical, showsIndicators: true) {
+                    Text(content.log)
+                        .multilineTextAlignment(.leading)
+                        .frame(width: geometry.size.width)
+                }
+                //.frame(maxWidth: .infinity, maxHeight: 360.0)
+            }
             Spacer()
         }
     }

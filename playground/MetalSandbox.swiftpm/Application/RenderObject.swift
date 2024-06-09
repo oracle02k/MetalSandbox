@@ -34,18 +34,25 @@ class RenderObject {
         Vertex(position: float3(1,-1,0), color: float4(0,0,1,1), texCoord: float2(0,0)),
     ]
     
+    private let gpuContext: GpuContext
     private let basicRenderPipelineState: BasicRenderPipelineState
+    private lazy var vertexBuffer: MTLBuffer = uninitialized()
+    private lazy var indexBuffer: MTLBuffer = uninitialized()
     
     init (_ gpuContext: GpuContext) {
+        self.gpuContext = gpuContext
         basicRenderPipelineState = BasicRenderPipelineState(gpuContext)
     }
     
     func build() {
         basicRenderPipelineState.build()
+        vertexBuffer = gpuContext.makeBuffer(vertices)
+        let index: [UInt32] = [0,1,2]
+        indexBuffer = gpuContext.makeBuffer(index)
     }
     
     func draw(_ command: RenderCommand) {
         command.useRenderPipelineState(id: basicRenderPipelineState.renderPipelineStateId)
-        command.drawTriangleIndices(vertices, indices: [0,1,2])
+        command.drawIndexedTriangles(vertexBuffer: vertexBuffer, indexBuffer: indexBuffer, indexCount: 3)
     }
 }

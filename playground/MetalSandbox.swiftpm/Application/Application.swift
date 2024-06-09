@@ -2,20 +2,13 @@ import MetalKit
 
 final class Application
 {
-    let screenVertices: [Vertex] = [
-        Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
-        Vertex(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
-        Vertex(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
-        Vertex(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
-        Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
-    ]
-    let screenVertices2: [Vertex] = [
+    let vertices: [Vertex] = [
         Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
         Vertex(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
         Vertex(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
         Vertex(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
     ]
+    let indices: [UInt32] = [0,1,2,2,3,0]
     
     private let gpuContext: GpuContext
     private let renderObject: RenderObject
@@ -23,6 +16,8 @@ final class Application
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
     private lazy var viewRenderPipelineStateId: Int = uninitialized()
+    private lazy var vertexBuffer: MTLBuffer = uninitialized()
+    private lazy var indexBuffer: MTLBuffer = uninitialized()
     
     init(_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
@@ -60,6 +55,9 @@ final class Application
             return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
         }()
         
+        vertexBuffer = gpuContext.makeBuffer(vertices)
+        indexBuffer = gpuContext.makeBuffer(indices)
+        
         renderObject.build()
     }
     
@@ -71,11 +69,12 @@ final class Application
         renderObject.draw(command)
         command.commit()
     
+        viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
         viewCommand.useRenderPipelineState(id: viewRenderPipelineStateId)
         viewCommand.setTexture(offscreenTexture, index: 0)
-      //  viewCommand.drawTriangles(screenVertices)
-        viewCommand.drawTriangleIndices(screenVertices2, indices: [0,1,2,2,3,0])
+        viewCommand.drawIndexedTriangles(vertexBuffer: vertexBuffer, indexBuffer: indexBuffer, indexCount: indices.count)
         viewCommand.commit(with: viewDrawable)
+     
     }
 }
