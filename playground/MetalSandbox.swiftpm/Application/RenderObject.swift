@@ -1,6 +1,6 @@
 import SwiftUI
 
-class BasicRenderPipelineState {
+class RenderObject {
     struct Vertex {
         var position: float3
         var color: float4
@@ -8,39 +8,24 @@ class BasicRenderPipelineState {
     }
     
     private let gpuContext: GpuContext
-    private(set) lazy var renderPipelineStateId: Int = uninitialized()
+    private lazy var primitives: Primitives = uninitialized()
+    private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     
-    init(_ gpuContext: GpuContext) {
+    init (_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
     }
-
+    
     func build() {
-        renderPipelineStateId = {
+        renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Basic Render Pipeline"
             descriptor.sampleCount = 1
             descriptor.vertexFunction = gpuContext.findFunction(by: .BasicVertexFunction)
             descriptor.fragmentFunction = gpuContext.findFunction(by: .BasicFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
+            return gpuContext.makeRenderPipelineState(descriptor)
         }()
-    }
-}
-
-class RenderObject {
-    
-    typealias Vertex = BasicRenderPipelineState.Vertex
-    private let gpuContext: GpuContext
-    private let basicRenderPipelineState: BasicRenderPipelineState
-    private lazy var primitives: Primitives = uninitialized()
-    
-    init (_ gpuContext: GpuContext) {
-        self.gpuContext = gpuContext
-        basicRenderPipelineState = BasicRenderPipelineState(gpuContext)
-    }
-    
-    func build() {
-        basicRenderPipelineState.build()
+        
         primitives = {
             let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
@@ -59,7 +44,7 @@ class RenderObject {
     }
     
     func draw(_ command: RenderCommand) {
-        command.useRenderPipelineState(id: basicRenderPipelineState.renderPipelineStateId)
+        command.useRenderPipelineState(renderPipelineState)
         command.drawPrimitives(primitives)
     }
 }

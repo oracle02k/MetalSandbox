@@ -1,5 +1,11 @@
 import MetalKit
 
+struct Vertex {
+    var position: float3
+    var color: float4
+    var texCoord: float2
+}
+
 final class Application
 {
     private let gpuContext: GpuContext
@@ -7,9 +13,7 @@ final class Application
     
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    private lazy var viewRenderPipelineStateId: Int = uninitialized()
-    private lazy var vertexBuffer: MTLBuffer = uninitialized()
-    private lazy var indexBuffer: MTLBuffer = uninitialized()
+    private lazy var viewRenderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var indexedPrimitives: IndexedPrimitives = uninitialized()
     
     init(_ gpuContext: GpuContext) {
@@ -38,14 +42,14 @@ final class Application
             return descriptor
         }()
         
-        viewRenderPipelineStateId = {
+        viewRenderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "View Render Pipeline"
             descriptor.sampleCount = 1
             descriptor.vertexFunction = gpuContext.findFunction(by:.TexcoordVertexFuction)
             descriptor.fragmentFunction = gpuContext.findFunction(by: .TexcoordFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
+            return gpuContext.makeRenderPipelineState(descriptor)
         }()
         
         indexedPrimitives = {
@@ -81,7 +85,7 @@ final class Application
     
         viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
-        viewCommand.useRenderPipelineState(id: viewRenderPipelineStateId)
+        viewCommand.useRenderPipelineState(viewRenderPipelineState)
         viewCommand.setTexture(offscreenTexture, index: 0)
         viewCommand.drawIndexedPrimitives(indexedPrimitives)
         viewCommand.commit(with: viewDrawable)

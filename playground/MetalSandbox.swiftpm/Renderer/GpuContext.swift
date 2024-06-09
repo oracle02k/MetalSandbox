@@ -1,11 +1,5 @@
 import MetalKit
 
-struct Vertex {
-    var position: float3
-    var color: float4
-    var texCoord: float2
-}
-
 class GpuContext {
     var gpuDebugger: GpuDebugger
     
@@ -33,6 +27,14 @@ class GpuContext {
             }
             return commandQueue
         }()
+    }
+    
+    func makeRenderPipelineState(_ descriptor: MTLRenderPipelineDescriptor) -> MTLRenderPipelineState {
+        do {
+            return try device.makeRenderPipelineState(descriptor: descriptor)
+        } catch {
+            appFatalError("failed to make render pipeline state.")
+        }
     }
     
     func makePrimitives(_ descriptor: PrimitivesDescriptor) -> Primitives {
@@ -84,7 +86,7 @@ class GpuContext {
         guard let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
             appFatalError("failed to make command encoder.")
         }
-        return RenderCommand(device, commandBuffer, commandEncoder, renderPipelineStateContainer, gpuDebugger)
+        return RenderCommand(device, commandBuffer, commandEncoder, gpuDebugger)
     }
     
     func findFunction(by name: GpuFunctionContainer.Name) -> MTLFunction {
@@ -102,29 +104,25 @@ class RenderCommand
     var gpuDebugger: GpuDebugger
     let commandBuffer: MTLCommandBuffer
     let commandEncoder: MTLRenderCommandEncoder
-    let renderPipelineStateContainer: RenderPipelineStateContainer
-    var currentRenderPipelineStateId: Int
+    var currentRenderPipelineState: MTLRenderPipelineState?
     
     init(
         _ device: MTLDevice,
         _ commandBuffer: MTLCommandBuffer, 
         _ commandEncoder: MTLRenderCommandEncoder,
-        _ renderPipelineStateContainer: RenderPipelineStateContainer,
         _ gpuDebugger: GpuDebugger
     ) {
         self.device = device
         self.commandBuffer = commandBuffer
         self.commandEncoder = commandEncoder
-        self.renderPipelineStateContainer = renderPipelineStateContainer
         self.gpuDebugger = gpuDebugger
-        self.currentRenderPipelineStateId = -1
+        self.currentRenderPipelineState = nil
     }
     
-    func useRenderPipelineState(id: Int) {
-        guard id != currentRenderPipelineStateId else { return }
-        let pso = renderPipelineStateContainer.find(by: id)
-        commandEncoder.setRenderPipelineState(pso)
-        currentRenderPipelineStateId = id
+    func useRenderPipelineState(_ renderPipelineState: MTLRenderPipelineState) {
+        guard renderPipelineState !== currentRenderPipelineState else { return }
+        commandEncoder.setRenderPipelineState(renderPipelineState)
+        currentRenderPipelineState = renderPipelineState
     }
     
     func setTexture(_ texture: MTLTexture, index: Int){

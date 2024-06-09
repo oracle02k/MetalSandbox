@@ -12,6 +12,7 @@ class RenderPipelineStateContainer {
     func buildAndRegister(from descriptor: MTLRenderPipelineDescriptor) -> Int {
         do {
             let pso = try device.makeRenderPipelineState(descriptor: descriptor)
+            
             container.append(pso)
         } catch {
             appFatalError("failed to make render pipeline state.")
