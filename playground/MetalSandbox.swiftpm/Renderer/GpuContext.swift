@@ -1,9 +1,5 @@
 import MetalKit
 
-typealias float2 = SIMD2<Float>
-typealias float3 = SIMD3<Float>
-typealias float4 = SIMD4<Float>
-
 struct Vertex {
     var position: float3
     var color: float4
@@ -37,6 +33,20 @@ class GpuContext {
             }
             return commandQueue
         }()
+    }
+    
+    func makePrimitives(_ descriptor: PrimitiveDescriptor) -> Primitives {
+        let buffers = descriptor.vertexBufferDescriptors.map { descriptor in
+            descriptor.withUnsafeRawPointer(){
+                device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
+            }
+        }
+        
+        return Primitives(
+            toporogy: descriptor.toporogy, 
+            vertexBuffers: buffers, 
+            vertexCount: descriptor.vertexCount
+        )
     }
     
     func makeBuffer<T>(_ data: [T]) -> MTLBuffer {
@@ -107,6 +117,13 @@ class RenderCommand
     
     func setTexture(_ texture: MTLTexture, index: Int){
         commandEncoder.setFragmentTexture(texture, index:index)
+    }
+    
+    func drawPrimitives(_ primitives: Primitives) {
+        primitives.vertexBuffers.enumerated().forEach() { index, buffer in
+            commandEncoder.setVertexBuffer(buffer, offset: 0, index: index)
+        }
+        commandEncoder.drawPrimitives(type: primitives.toporogy, vertexStart: 0, vertexCount: primitives.vertexCount)
     }
     
     func drawTriangles(_ vertices: [Vertex]) {

@@ -6,6 +6,8 @@ class BasicRenderPipelineState {
         var color: float4
         var texCoord: float2
     }
+    
+    typealias VBDescriptor = VertexBufferDescriptor<Vertex>
 
     private let gpuContext: GpuContext
     private(set) lazy var renderPipelineStateId: Int = uninitialized()
@@ -28,16 +30,10 @@ class BasicRenderPipelineState {
 }
 
 class RenderObject {
-    private let vertices: [Vertex] = [
-        Vertex(position: float3(0,1,0), color: float4(1,0,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(-1,-1,0), color: float4(0,1,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(1,-1,0), color: float4(0,0,1,1), texCoord: float2(0,0)),
-    ]
     
     private let gpuContext: GpuContext
     private let basicRenderPipelineState: BasicRenderPipelineState
-    private lazy var vertexBuffer: MTLBuffer = uninitialized()
-    private lazy var indexBuffer: MTLBuffer = uninitialized()
+    private lazy var primitives: Primitives = uninitialized()
     
     init (_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
@@ -46,13 +42,25 @@ class RenderObject {
     
     func build() {
         basicRenderPipelineState.build()
-        vertexBuffer = gpuContext.makeBuffer(vertices)
-        let index: [UInt32] = [0,1,2]
-        indexBuffer = gpuContext.makeBuffer(index)
+        primitives = {
+            let vertexBufferDescriptor = BasicRenderPipelineState.VBDescriptor()
+            vertexBufferDescriptor.content = [
+                .init(position: float3(0,1,0), color: float4(1,0,0,1), texCoord: float2(0,0)),
+                .init(position: float3(-1,-1,0), color: float4(0,1,0,1), texCoord: float2(0,0)),
+                .init(position: float3(1,-1,0), color: float4(0,0,1,1), texCoord: float2(0,0)),
+            ]
+            
+            let descriptor = PrimitiveDescriptor()
+            descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
+            descriptor.vertexCount = vertexBufferDescriptor.count
+            descriptor.toporogy = .triangle
+            
+            return gpuContext.makePrimitives(descriptor)
+        }()    
     }
     
     func draw(_ command: RenderCommand) {
         command.useRenderPipelineState(id: basicRenderPipelineState.renderPipelineStateId)
-        command.drawIndexedTriangles(vertexBuffer: vertexBuffer, indexBuffer: indexBuffer, indexCount: 3)
+        command.drawPrimitives(primitives)
     }
 }
