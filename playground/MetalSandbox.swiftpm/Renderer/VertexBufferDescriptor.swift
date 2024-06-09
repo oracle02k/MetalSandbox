@@ -6,7 +6,7 @@ protocol VertexBufferDescriptorProtocol {
     var stride: Int { get }
     var count: Int { get }
     var byteSize: Int { get }
-    
+
     func withUnsafeRawPointer<Result>(_ body: (UnsafeRawPointer) throws -> Result) rethrows -> Result
 }    
 
