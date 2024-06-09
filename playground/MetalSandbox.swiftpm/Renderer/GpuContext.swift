@@ -35,7 +35,7 @@ class GpuContext {
         }()
     }
     
-    func makePrimitives(_ descriptor: PrimitiveDescriptor) -> Primitives {
+    func makePrimitives(_ descriptor: PrimitivesDescriptor) -> Primitives {
         let buffers = descriptor.vertexBufferDescriptors.map { descriptor in
             descriptor.withUnsafeRawPointer(){
                 device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!

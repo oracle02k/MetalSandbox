@@ -7,8 +7,6 @@ class BasicRenderPipelineState {
         var texCoord: float2
     }
     
-    typealias VBDescriptor = VertexBufferDescriptor<Vertex>
-
     private let gpuContext: GpuContext
     private(set) lazy var renderPipelineStateId: Int = uninitialized()
     
@@ -31,6 +29,7 @@ class BasicRenderPipelineState {
 
 class RenderObject {
     
+    typealias Vertex = BasicRenderPipelineState.Vertex
     private let gpuContext: GpuContext
     private let basicRenderPipelineState: BasicRenderPipelineState
     private lazy var primitives: Primitives = uninitialized()
@@ -43,14 +42,14 @@ class RenderObject {
     func build() {
         basicRenderPipelineState.build()
         primitives = {
-            let vertexBufferDescriptor = BasicRenderPipelineState.VBDescriptor()
+            let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
                 .init(position: float3(0,1,0), color: float4(1,0,0,1), texCoord: float2(0,0)),
                 .init(position: float3(-1,-1,0), color: float4(0,1,0,1), texCoord: float2(0,0)),
                 .init(position: float3(1,-1,0), color: float4(0,0,1,1), texCoord: float2(0,0)),
             ]
             
-            let descriptor = PrimitiveDescriptor()
+            let descriptor = PrimitivesDescriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
             descriptor.toporogy = .triangle

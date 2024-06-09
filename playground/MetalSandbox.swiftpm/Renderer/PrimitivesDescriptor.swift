@@ -1,6 +1,6 @@
 import MetalKit
 
-class PrimitiveDescriptor {
+class PrimitivesDescriptor {
     lazy var vertexBufferDescriptors: [VertexBufferDescriptorProtocol] = uninitialized()
     lazy var toporogy: MTLPrimitiveType = uninitialized()
     lazy var vertexCount: Int  = uninitialized()
