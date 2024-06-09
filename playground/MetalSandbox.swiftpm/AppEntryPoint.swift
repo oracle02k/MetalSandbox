@@ -34,7 +34,7 @@ class System {
     let debugVM: DebugVM
     let device: MTLDevice
 
-    private init( ){
+    private init( ) {
         Logger.log("begin entrypoint init")
 
         guard let device = MTLCreateSystemDefaultDevice() else {
