@@ -2,14 +2,6 @@ import MetalKit
 
 final class Application
 {
-    let vertices: [Vertex] = [
-        Vertex(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
-        Vertex(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
-        Vertex(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
-        Vertex(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
-    ]
-    let indices: [UInt32] = [0,1,2,2,3,0]
-    
     private let gpuContext: GpuContext
     private let renderObject: RenderObject
     
@@ -18,6 +10,7 @@ final class Application
     private lazy var viewRenderPipelineStateId: Int = uninitialized()
     private lazy var vertexBuffer: MTLBuffer = uninitialized()
     private lazy var indexBuffer: MTLBuffer = uninitialized()
+    private lazy var indexedPrimitives: IndexedPrimitives = uninitialized()
     
     init(_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
@@ -55,8 +48,25 @@ final class Application
             return gpuContext.buildAndRegisterRenderPipelineState(from: descriptor)
         }()
         
-        vertexBuffer = gpuContext.makeBuffer(vertices)
-        indexBuffer = gpuContext.makeBuffer(indices)
+        indexedPrimitives = {
+            let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
+            vertextBufferDescriptor.content = [
+                .init(position: float3(-1,1,0), color: float4(0,0,0,1), texCoord: float2(0,0)),
+                .init(position: float3(-1,-1,0), color: float4(0,0,0,1), texCoord: float2(0,1)),
+                .init(position: float3(1,-1,0), color: float4(0,0,0,1), texCoord: float2(1,1)),
+                .init(position: float3(1,1,0), color: float4(0,0,0,1), texCoord: float2(1,0)),
+            ]
+            
+            let indexBufferDescriptor = IndexBufferU16Descriptor()
+            indexBufferDescriptor.content = [0,1,2,2,3,0]
+            
+            let descriptor = IndexedPrimitiveDescriptor()
+            descriptor.vertexBufferDescriptors = [vertextBufferDescriptor]
+            descriptor.indexBufferDescriptor = indexBufferDescriptor
+            descriptor.toporogy = .triangle
+            
+            return gpuContext.makeIndexedPrimitives(descriptor)
+        }()
         
         renderObject.build()
     }
@@ -73,8 +83,7 @@ final class Application
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
         viewCommand.useRenderPipelineState(id: viewRenderPipelineStateId)
         viewCommand.setTexture(offscreenTexture, index: 0)
-        viewCommand.drawIndexedTriangles(vertexBuffer: vertexBuffer, indexBuffer: indexBuffer, indexCount: indices.count)
+        viewCommand.drawIndexedPrimitives(indexedPrimitives)
         viewCommand.commit(with: viewDrawable)
-     
     }
 }

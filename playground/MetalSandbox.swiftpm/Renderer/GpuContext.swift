@@ -49,13 +49,25 @@ class GpuContext {
         )
     }
     
-    func makeBuffer<T>(_ data: [T]) -> MTLBuffer {
-        return data.withUnsafeBytes() { 
-            return device.makeBuffer(
-                bytes: $0.baseAddress!, 
-                length: MemoryLayout<Vertex>.stride * data.count
-            )!
+    func makeIndexedPrimitives(_ descriptor: IndexedPrimitiveDescriptor) -> IndexedPrimitives {
+        let vertexBuffers = descriptor.vertexBufferDescriptors.map { descriptor in
+            descriptor.withUnsafeRawPointer(){
+                device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
+            }
         }
+        
+        let indexBufferDescriptor = descriptor.indexBufferDescriptor
+        let indexBuffer = indexBufferDescriptor.withUnsafeRawPointer() {
+            device.makeBuffer(bytes: $0, length: indexBufferDescriptor.byteSize, options: [])!
+        }
+        
+        return IndexedPrimitives(
+            toporogy: descriptor.toporogy, 
+            vertexBuffers: vertexBuffers, 
+            indexBuffer: indexBuffer,
+            indexType: indexBufferDescriptor.indexType,
+            indexCount: indexBufferDescriptor.count
+        )
     }
     
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
@@ -126,34 +138,17 @@ class RenderCommand
         commandEncoder.drawPrimitives(type: primitives.toporogy, vertexStart: 0, vertexCount: primitives.vertexCount)
     }
     
-    func drawTriangles(_ vertices: [Vertex]) {
-        let vertexBuffer = vertices.withUnsafeBytes() { p in
-            return device.makeBuffer(bytes: p.baseAddress!, length: MemoryLayout<Vertex>.stride * vertices.count)!
+    func drawIndexedPrimitives(_ primitives: IndexedPrimitives) {
+        primitives.vertexBuffers.enumerated().forEach() { index, buffer in
+            commandEncoder.setVertexBuffer(buffer, offset: 0, index: index)
         }
-
-        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
-    }
-    
-    
-    func drawTriangleIndices(_ vertices: [Vertex], indices: [UInt32]) {
-        
-        let vertexBuffer = device.makeBuffer(
-            bytes: vertices,
-            length: MemoryLayout<Vertex>.stride * vertices.count,
-            options: []
-        )!
-        let indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt32>.stride * indices.count)!
-        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        commandEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indices.count, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
-        
-        gpuDebugger.addLog("draw Vertex count: \(vertices.count.description)")
-    }
-
-    
-    func drawIndexedTriangles(vertexBuffer: MTLBuffer, indexBuffer: MTLBuffer, indexCount: Int) {
-        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)    
-        commandEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indexCount, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
+        commandEncoder.drawIndexedPrimitives(
+            type: primitives.toporogy,
+            indexCount: primitives.indexCount, 
+            indexType: primitives.indexType,
+            indexBuffer: primitives.indexBuffer,
+            indexBufferOffset: 0
+        )
     }
     
     func commit() {
