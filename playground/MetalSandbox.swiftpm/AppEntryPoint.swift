@@ -15,17 +15,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _: UIApplication,
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        _ = System.shared;
+        _ = System.shared
         return true
     }
 }
 
-class System{
+class System {
     static let shared = {
         let instance = System()
         return instance
-    }();
-    
+    }()
+
     let app: Application
     let gpuDebugger: GpuDebugger
     let gpuContext: GpuContext
@@ -33,23 +33,23 @@ class System{
     let renderPipelineStateContainer: RenderPipelineStateContainer
     let debugVM: DebugVM
     let device: MTLDevice
-    
-    private init(){
+
+    private init( ){
         Logger.log("begin entrypoint init")
-        
+
         guard let device = MTLCreateSystemDefaultDevice() else {
             appFatalError("GPU not available ")
         }
         self.device = device
-        
+
         debugVM = DebugVM()
         gpuDebugger = GpuDebuggerBindVM(debugVM)
-        
+
         gpuFunctionContainer = GpuFunctionContainer(device: device)
         gpuFunctionContainer.build()
-        
+
         renderPipelineStateContainer = RenderPipelineStateContainer(device: device)
-        
+
         gpuContext = GpuContext(
             device: device,
             gpuFunctionContainer: gpuFunctionContainer,
@@ -57,10 +57,10 @@ class System{
             gpuDebugger: gpuDebugger
         )
         gpuContext.build()
-        
+
         app = Application(gpuContext)
         app.build()
-        
+
         Logger.log("done entrypoint init")
     }
 }
