@@ -6,20 +6,20 @@ protocol VertexBufferDescriptorProtocol {
     var stride: Int { get }
     var count: Int { get }
     var byteSize: Int { get }
-    
-    func withUnsafeRawPointer<Result>(_ body: (UnsafeRawPointer) throws -> Result) rethrows -> Result
-}    
 
-class VertexBufferDescriptor<T> : VertexBufferDescriptorProtocol {
+    func withUnsafeRawPointer<Result>(_ body: (UnsafeRawPointer) throws -> Result) rethrows -> Result
+}
+
+class VertexBufferDescriptor<T>: VertexBufferDescriptorProtocol {
     typealias VertexLayout = T
     var stride: Int { MemoryLayout<VertexLayout>.stride }
     var byteSize: Int { stride * count }
     var count: Int { content.count }
     lazy var content: [T] = uninitialized()
-    
+
     func withUnsafeRawPointer<Result>(
         _ body: (UnsafeRawPointer) throws -> Result
     ) rethrows -> Result {
-        try content.withUnsafeBytes() { try body($0.baseAddress!) }
+        try content.withUnsafeBytes { try body($0.baseAddress!) }
     }
 }

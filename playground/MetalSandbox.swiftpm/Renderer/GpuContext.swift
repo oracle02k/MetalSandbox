@@ -6,7 +6,7 @@ class GpuContext {
     private let gpuFunctionContainer: GpuFunctionContainer
     private let renderPipelineStateContainer: RenderPipelineStateContainer
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
-    
+
     init(
         device: MTLDevice,
         gpuFunctionContainer: GpuFunctionContainer,
@@ -18,8 +18,8 @@ class GpuContext {
         self.renderPipelineStateContainer = renderPipelineStateContainer
         self.gpuDebugger = gpuDebugger
     }
-    
-    func build(){
+
+    func build() {
         commandQueue = {
             guard let commandQueue = device.makeCommandQueue() else {
                 appFatalError("failed to make command queue.")
@@ -27,7 +27,7 @@ class GpuContext {
             return commandQueue
         }()
     }
-    
+
     func makeRenderPipelineState(_ descriptor: MTLRenderPipelineDescriptor) -> MTLRenderPipelineState {
         do {
             return try device.makeRenderPipelineState(descriptor: descriptor)
@@ -35,49 +35,49 @@ class GpuContext {
             appFatalError("failed to make render pipeline state.")
         }
     }
-    
+
     func makePrimitives(_ descriptor: PrimitivesDescriptor) -> Primitives {
         let buffers = descriptor.vertexBufferDescriptors.map { descriptor in
-            descriptor.withUnsafeRawPointer(){
+            descriptor.withUnsafeRawPointer {
                 device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
             }
         }
-        
+
         return Primitives(
-            toporogy: descriptor.toporogy, 
-            vertexBuffers: buffers, 
+            toporogy: descriptor.toporogy,
+            vertexBuffers: buffers,
             vertexCount: descriptor.vertexCount
         )
     }
-    
+
     func makeIndexedPrimitives(_ descriptor: IndexedPrimitiveDescriptor) -> IndexedPrimitives {
         let vertexBuffers = descriptor.vertexBufferDescriptors.map { descriptor in
-            descriptor.withUnsafeRawPointer(){
+            descriptor.withUnsafeRawPointer {
                 device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
             }
         }
-        
+
         let indexBufferDescriptor = descriptor.indexBufferDescriptor
-        let indexBuffer = indexBufferDescriptor.withUnsafeRawPointer() {
+        let indexBuffer = indexBufferDescriptor.withUnsafeRawPointer {
             device.makeBuffer(bytes: $0, length: indexBufferDescriptor.byteSize, options: [])!
         }
-        
+
         return IndexedPrimitives(
-            toporogy: descriptor.toporogy, 
-            vertexBuffers: vertexBuffers, 
+            toporogy: descriptor.toporogy,
+            vertexBuffers: vertexBuffers,
             indexBuffer: indexBuffer,
             indexType: indexBufferDescriptor.indexType,
             indexCount: indexBufferDescriptor.count
         )
     }
-    
+
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
         guard let texture = device.makeTexture(descriptor: descriptor) else {
             appFatalError("failed to make texture.")
         }
         return texture
     }
-    
+
     func makeRenderCommand(_ renderPassDescriptor: MTLRenderPassDescriptor) -> RenderCommand {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             appFatalError("failed to make command buffer.")
@@ -87,11 +87,11 @@ class GpuContext {
         }
         return RenderCommand(device, commandBuffer, commandEncoder, gpuDebugger)
     }
-    
+
     func findFunction(by name: GpuFunctionContainer.Name) -> MTLFunction {
         return gpuFunctionContainer.find(by: name)
     }
-    
+
     func buildAndRegisterRenderPipelineState(from descriptor: MTLRenderPipelineDescriptor) -> Int {
         return renderPipelineStateContainer.buildAndRegister(from: descriptor)
     }

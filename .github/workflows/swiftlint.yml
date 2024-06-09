@@ -12,8 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - name: GitHub Action for SwiftLint
         uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --fix --format
+      - name: Commit & Push
+        run: |
+          set -x
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit --author=. -m 'swiftlint'
+          git push
 #      - name: GitHub Action for SwiftLint with --strict
 #        uses: norio-nomura/action-swiftlint@3.2.1
 #        with:
