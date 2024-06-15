@@ -28,6 +28,10 @@ fragment float4 basic_fragment_function(VertexOut vIn [[ stage_in ]]) {
     return vIn.color;
 }
 
+fragment float4 red_fragment_function(VertexOut vIn [[ stage_in ]]) {
+    return float4(1,0,0,1);
+}
+
 vertex VertexOut texcoord_vertex_function(
     const device VertexIn *vertices [[ buffer(0) ]],
     uint vertexID [[ vertex_id  ]]

@@ -4,6 +4,7 @@ class GpuFunctionContainer {
     enum Name: String, CaseIterable {
         case BasicVertexFunction = "basic_vertex_function"
         case BasicFragmentFunction = "basic_fragment_function"
+        case RedFragmentFunction = "red_fragment_function"
         case TexcoordVertexFuction = "texcoord_vertex_function"
         case TexcoordFragmentFunction = "texcoord_fragment_function"
     }
