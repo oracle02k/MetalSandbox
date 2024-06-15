@@ -10,7 +10,7 @@ class RenderObject {
     private let gpuContext: GpuContext
     private lazy var primitives: Primitives = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
-        private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
+    private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
 
     init (_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
@@ -27,7 +27,7 @@ class RenderObject {
             descriptor.depthAttachmentPixelFormat = .depth32Float
             return gpuContext.makeRenderPipelineState(descriptor)
         }()
-        
+
         depthStencilState = {
             let descriptor = MTLDepthStencilDescriptor()
             descriptor.label = "View Depth"

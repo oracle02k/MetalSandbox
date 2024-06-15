@@ -27,7 +27,7 @@ class RenderCommand {
         commandEncoder.setRenderPipelineState(renderPipelineState)
         currentRenderPipelineState = renderPipelineState
     }
-    
+
     func useDepthState(_ depthStencilState: MTLDepthStencilState) {
         guard depthStencilState !== currentDepthStancilState else { return }
         commandEncoder.setDepthStencilState(depthStencilState)

@@ -31,7 +31,7 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpuContext.makeTexture(descriptor)
         }()
-        
+
         offscreenTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -48,12 +48,12 @@ final class Application {
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
-            
+
             descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .dontCare
-            
+
             return descriptor
         }()
 
@@ -100,7 +100,7 @@ final class Application {
         viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
         viewCommand.useRenderPipelineState(viewRenderPipelineState)
-        //viewCommand.setTexture(depthTexture, index: 0)
+        // viewCommand.setTexture(depthTexture, index: 0)
         viewCommand.setTexture(offscreenTexture, index: 0)
         viewCommand.drawIndexedPrimitives(indexedPrimitives)
         viewCommand.commit(with: viewDrawable)
