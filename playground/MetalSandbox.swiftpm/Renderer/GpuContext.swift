@@ -35,6 +35,10 @@ class GpuContext {
             appFatalError("failed to make render pipeline state.")
         }
     }
+    
+    func makeDepthStancilState(_ descriptor: MTLDepthStencilDescriptor) -> MTLDepthStencilState {
+        return device.makeDepthStencilState(descriptor: descriptor)!
+    }
 
     func makePrimitives(_ descriptor: PrimitivesDescriptor) -> Primitives {
         let buffers = descriptor.vertexBufferDescriptors.map { descriptor in

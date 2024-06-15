@@ -6,6 +6,7 @@ class RenderCommand {
     let commandBuffer: MTLCommandBuffer
     let commandEncoder: MTLRenderCommandEncoder
     var currentRenderPipelineState: MTLRenderPipelineState?
+    var currentDepthStancilState: MTLDepthStencilState?
 
     init(
         _ device: MTLDevice,
@@ -18,12 +19,19 @@ class RenderCommand {
         self.commandEncoder = commandEncoder
         self.gpuDebugger = gpuDebugger
         self.currentRenderPipelineState = nil
+        self.currentDepthStancilState = nil
     }
 
     func useRenderPipelineState(_ renderPipelineState: MTLRenderPipelineState) {
         guard renderPipelineState !== currentRenderPipelineState else { return }
         commandEncoder.setRenderPipelineState(renderPipelineState)
         currentRenderPipelineState = renderPipelineState
+    }
+    
+    func useDepthState(_ depthStencilState: MTLDepthStencilState) {
+        guard depthStencilState !== currentDepthStancilState else { return }
+        commandEncoder.setDepthStencilState(depthStencilState)
+        currentDepthStancilState = depthStencilState
     }
 
     func setTexture(_ texture: MTLTexture, index: Int) {
