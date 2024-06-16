@@ -29,6 +29,7 @@ final class Application {
             descriptor.height = 320
             descriptor.pixelFormat = .depth32Float
             descriptor.usage = [.renderTarget, .shaderRead]
+            //descriptor.storageMode = .memoryless
             return gpuContext.makeTexture(descriptor)
         }()
 
@@ -92,6 +93,8 @@ final class Application {
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
         gpuContext.gpuDebugger.framInit()
+        gpuContext.updateFrameDebug()
+        
 
         let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
         renderObject.draw(command)
@@ -100,7 +103,7 @@ final class Application {
         viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
         let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
         viewCommand.useRenderPipelineState(viewRenderPipelineState)
-        // viewCommand.setTexture(depthTexture, index: 0)
+        //viewCommand.setTexture(depthTexture, index: 0)
         viewCommand.setTexture(offscreenTexture, index: 0)
         viewCommand.drawIndexedPrimitives(indexedPrimitives)
         viewCommand.commit(with: viewDrawable)

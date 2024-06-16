@@ -99,4 +99,8 @@ class GpuContext {
     func buildAndRegisterRenderPipelineState(from descriptor: MTLRenderPipelineDescriptor) -> Int {
         return renderPipelineStateContainer.buildAndRegister(from: descriptor)
     }
+    
+    func updateFrameDebug() {
+        gpuDebugger.gpuAllocatedByteSize = device.currentAllocatedSize
+    }
 }

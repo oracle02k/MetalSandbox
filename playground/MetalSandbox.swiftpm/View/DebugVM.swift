@@ -1,6 +1,7 @@
 import SwiftUI
 
 final class DebugVM: ObservableObject {
+    @Published var gpuAllocatedByteSize = 0
     @Published var gpuTime: CFTimeInterval = 0
     @Published var viewWidth: Int = 0
     @Published var viewHeight: Int = 0
@@ -10,6 +11,10 @@ final class DebugVM: ObservableObject {
 final class GpuDebuggerBindVM: GpuDebugger {
     var debugVm: DebugVM
 
+    var gpuAllocatedByteSize: Int {
+        get { return self.debugVm.gpuAllocatedByteSize }
+        set { self.debugVm.gpuAllocatedByteSize = newValue }
+    }
     var gpuTime: CFTimeInterval {
         get { return self.debugVm.gpuTime }
         set { self.debugVm.gpuTime = newValue }

@@ -5,6 +5,7 @@ struct DebugView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
+            Text("GPU Allocated Byte Size: \(content.gpuAllocatedByteSize)")
             Text("GPU Time(ms): \(content.gpuTime*1000)")
             Text("View Width: \(content.viewWidth)")
             Text("View Height: \(content.viewHeight)")
