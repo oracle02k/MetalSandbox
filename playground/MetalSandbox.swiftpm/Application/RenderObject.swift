@@ -28,7 +28,7 @@ class RenderObject {
             descriptor.depthAttachmentPixelFormat = .depth32Float
             return gpuContext.makeRenderPipelineState(descriptor)
         }()
-
+        
         depthStencilState = {
             let descriptor = MTLDepthStencilDescriptor()
             descriptor.label = "Depth"

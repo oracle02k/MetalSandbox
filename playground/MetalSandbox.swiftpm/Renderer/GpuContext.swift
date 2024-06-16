@@ -6,6 +6,7 @@ class GpuContext {
     private let gpuFunctionContainer: GpuFunctionContainer
     private let renderPipelineStateContainer: RenderPipelineStateContainer
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
+    private lazy var commandBuffer: MTLCommandBuffer = uninitialized()
 
     init(
         device: MTLDevice,
@@ -81,15 +82,50 @@ class GpuContext {
         }
         return texture
     }
-
+    
     func makeRenderCommand(_ renderPassDescriptor: MTLRenderPassDescriptor) -> RenderCommand {
-        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
-            appFatalError("failed to make command buffer.")
-        }
         guard let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
-            appFatalError("failed to make command encoder.")
+            appFatalError("failed to make render command encoder.")
         }
         return RenderCommand(device, commandBuffer, commandEncoder, gpuDebugger)
+    }
+    
+    func makeComputeCommand(_ computePassDescriptor: MTLComputePassDescriptor) {
+     //   let commandEncoder =  commandBuffer.makeComputeCommandEncoder(descriptor: computePassDescriptor) 
+    }
+     
+    func doCommand<Result>(with drawable: CAMetalDrawable, _ body: () throws -> Result) rethrows -> Result {
+        beginCommand()
+        let result = try body()
+        commitCommand(with: drawable)
+        
+        return result
+    }
+    
+    func beginCommand() {
+        commandBuffer = {
+            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+                appFatalError("failed to make command buffer.")
+            }
+            return commandBuffer
+        }()
+    }
+    
+    func commitCommand() {
+        commandBuffer.addCompletedHandler { [self] commandBuffer in
+            let start = commandBuffer.gpuStartTime
+            let end = commandBuffer.gpuEndTime
+            gpuDebugger.gpuTime = end - start
+        }
+        commandBuffer.commit()
+    }
+    
+    func commitCommand(with drawable: CAMetalDrawable) {
+        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(30))
+        commandBuffer.commit()
+        
+        gpuDebugger.viewWidth = drawable.texture.width
+        gpuDebugger.viewHeight = drawable.texture.height
     }
 
     func findFunction(by name: GpuFunctionContainer.Name) -> MTLFunction {

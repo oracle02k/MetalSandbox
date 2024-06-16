@@ -95,17 +95,19 @@ final class Application {
         gpuContext.gpuDebugger.framInit()
         gpuContext.updateFrameDebug()
         
-
-        let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
-        renderObject.draw(command)
-        command.commit()
-
         viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
-        let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
-        viewCommand.useRenderPipelineState(viewRenderPipelineState)
-        //viewCommand.setTexture(depthTexture, index: 0)
-        viewCommand.setTexture(offscreenTexture, index: 0)
-        viewCommand.drawIndexedPrimitives(indexedPrimitives)
-        viewCommand.commit(with: viewDrawable)
+        
+        gpuContext.doCommand(with: viewDrawable ) {
+            let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
+            renderObject.draw(command)
+            command.end()
+            
+            let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
+            viewCommand.useRenderPipelineState(viewRenderPipelineState)
+            //viewCommand.setTexture(depthTexture, index: 0)
+            viewCommand.setTexture(offscreenTexture, index: 0)
+            viewCommand.drawIndexedPrimitives(indexedPrimitives)
+            viewCommand.end()
+        }
     }
 }
