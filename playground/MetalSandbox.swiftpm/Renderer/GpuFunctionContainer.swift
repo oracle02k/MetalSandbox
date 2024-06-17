@@ -7,6 +7,7 @@ class GpuFunctionContainer {
         case RedFragmentFunction = "red_fragment_function"
         case TexcoordVertexFuction = "texcoord_vertex_function"
         case TexcoordFragmentFunction = "texcoord_fragment_function"
+        case AddArrayComputeFunction = "add_arrays_compute_function"
     }
 
     private let device: MTLDevice

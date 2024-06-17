@@ -9,6 +9,7 @@ struct Vertex {
 final class Application {
     private let gpuContext: GpuContext
     private let renderObject: RenderObject
+    private let computeObject: ComputeObject
 
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
@@ -19,6 +20,7 @@ final class Application {
     init(_ gpuContext: GpuContext) {
         self.gpuContext = gpuContext
         self.renderObject = RenderObject(gpuContext)
+        self.computeObject = ComputeObject()
     }
 
     func build() {
@@ -89,6 +91,7 @@ final class Application {
         }()
 
         renderObject.build()
+        computeObject.build(gpuContext: gpuContext)
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
@@ -97,6 +100,13 @@ final class Application {
         
         viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
         
+        gpuContext.doCommandWaitUntilCompleted {
+            let computeCommand = gpuContext.makeComputeCommand()
+            computeObject.dispatch(encoder: computeCommand)
+            computeCommand.endEncoding()
+        }
+        gpuContext.gpuDebugger.addLog("result: \(Array(computeObject.out()))")
+     
         gpuContext.doCommand(with: viewDrawable ) {
             let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
             renderObject.draw(command)
@@ -109,5 +119,6 @@ final class Application {
             viewCommand.drawIndexedPrimitives(indexedPrimitives)
             viewCommand.end()
         }
+        
     }
 }

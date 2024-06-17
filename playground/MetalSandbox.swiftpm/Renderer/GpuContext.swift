@@ -2,7 +2,7 @@ import MetalKit
 
 class GpuContext {
     var gpuDebugger: GpuDebugger
-    private let device: MTLDevice
+    let device: MTLDevice
     private let gpuFunctionContainer: GpuFunctionContainer
     private let renderPipelineStateContainer: RenderPipelineStateContainer
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
@@ -39,6 +39,14 @@ class GpuContext {
 
     func makeDepthStancilState(_ descriptor: MTLDepthStencilDescriptor) -> MTLDepthStencilState {
         return device.makeDepthStencilState(descriptor: descriptor)!
+    }
+    
+    func makeComputePipelineState(_ descriptor: MTLComputePipelineDescriptor) -> MTLComputePipelineState {
+        do {
+            return try device.makeComputePipelineState(descriptor: descriptor, options: .init(), reflection: nil)
+        } catch {
+            appFatalError("failed to make render pipeline state.")
+        }
     }
 
     func makePrimitives(_ descriptor: PrimitivesDescriptor) -> Primitives {
@@ -90,14 +98,34 @@ class GpuContext {
         return RenderCommand(device, commandBuffer, commandEncoder, gpuDebugger)
     }
     
-    func makeComputeCommand(_ computePassDescriptor: MTLComputePassDescriptor) {
-     //   let commandEncoder =  commandBuffer.makeComputeCommandEncoder(descriptor: computePassDescriptor) 
+    func makeComputeCommand(_ computePassDescriptor: MTLComputePassDescriptor) -> MTLComputeCommandEncoder {
+        guard let commandEncoder = commandBuffer.makeComputeCommandEncoder(descriptor: computePassDescriptor) else {
+                appFatalError("failed to make compute command encoder.")
+        }
+        return commandEncoder
+    }
+    
+    func makeComputeCommand() -> MTLComputeCommandEncoder {
+        guard let commandEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            appFatalError("failed to make compute command encoder.")
+        }
+        return commandEncoder
     }
      
     func doCommand<Result>(with drawable: CAMetalDrawable, _ body: () throws -> Result) rethrows -> Result {
         beginCommand()
         let result = try body()
         commitCommand(with: drawable)
+        
+        return result
+    }
+    
+    func doCommandWaitUntilCompleted<Result>(_ body: () throws -> Result) rethrows -> Result {
+        beginCommand()
+        let result = try body()
+        //commitCommand()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
         
         return result
     }
