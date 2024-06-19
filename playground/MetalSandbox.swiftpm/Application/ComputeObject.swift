@@ -1,30 +1,34 @@
 import MetalKit
 
-private extension Array {
-    var byteLength: Int {
-        return self.count * MemoryLayout.stride(ofValue: self[0])
-    }
-}
-
 class ComputeObject {
+    let pipelineStateFactory: MetalPipelineStateFactory
+    let resourceFactory: MetalResourceFactory
     lazy var computePipelineState: MTLComputePipelineState = uninitialized()
     lazy var bufferA: MTLBuffer = uninitialized()
     lazy var bufferB: MTLBuffer = uninitialized()
     lazy var bufferResult: MTLBuffer = uninitialized()
     
-    func build(gpuContext: GpuContext) {
+    init (
+        pipelineStateFactory: MetalPipelineStateFactory, 
+        resourceFactory: MetalResourceFactory
+    ){
+        self.pipelineStateFactory = pipelineStateFactory
+        self.resourceFactory = resourceFactory
+    }
+    
+    func build() {
         computePipelineState = {
             let descriptor = MTLComputePipelineDescriptor()
-            descriptor.computeFunction = gpuContext.findFunction(by: .AddArrayComputeFunction)
-            return gpuContext.makeComputePipelineState(descriptor)
+            descriptor.computeFunction = pipelineStateFactory.findFunction(by: .AddArrayComputeFunction)
+            return pipelineStateFactory.makeComputePipelineState(descriptor)
         }()
         
         let data1: [Float] = [0.1, 0.2, 0.3]
         let data2: [Float] = [0.4, 0.5, 0.6]
         
-        bufferA = gpuContext.device.makeBuffer(bytes: data1, length: data1.byteLength, options: .storageModeShared)!
-        bufferB = gpuContext.device.makeBuffer(bytes: data2, length: data2.byteLength, options: .storageModeShared)!
-        bufferResult = gpuContext.device.makeBuffer(length: data1.byteLength, options: .storageModeShared)!
+        bufferA = resourceFactory.makeBuffer(data: data1, options: .storageModeShared)
+        bufferB = resourceFactory.makeBuffer(data: data2, options: .storageModeShared)
+        bufferResult = resourceFactory.makeBuffer(length: data1.byteLength, options: .storageModeShared)
     }
         
     func dispatch(encoder: MTLComputeCommandEncoder) {

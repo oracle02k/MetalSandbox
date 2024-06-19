@@ -7,9 +7,12 @@ struct Vertex {
 }
 
 final class Application {
-    private let gpuContext: GpuContext
     private let renderObject: RenderObject
     private let computeObject: ComputeObject
+    private let commandQueue: MetalCommandQueue
+    private let pipelineStateFactory: MetalPipelineStateFactory
+    private let resourceFactory: MetalResourceFactory
+    private let indexedPrimitivesFactory: IndexedPrimitives.Factory
 
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
@@ -17,13 +20,32 @@ final class Application {
     private lazy var indexedPrimitives: IndexedPrimitives = uninitialized()
     private lazy var depthTexture: MTLTexture = uninitialized()
 
-    init(_ gpuContext: GpuContext) {
-        self.gpuContext = gpuContext
-        self.renderObject = RenderObject(gpuContext)
-        self.computeObject = ComputeObject()
+    init(
+        commandQueue:MetalCommandQueue, 
+        pipelineStateFactory: MetalPipelineStateFactory, 
+        resourceFactory: MetalResourceFactory,
+        indexedPrimitivesFactory: IndexedPrimitives.Factory
+    ) {
+        self.commandQueue = commandQueue
+        self.pipelineStateFactory = pipelineStateFactory
+        self.resourceFactory = resourceFactory
+        self.indexedPrimitivesFactory = indexedPrimitivesFactory
+        
+        self.renderObject = RenderObject(
+            pipelineStateFactory: pipelineStateFactory,
+            primitivesFactory: Primitives.Factory(System.shared.device)
+        )
+        
+        self.computeObject = ComputeObject(
+            pipelineStateFactory: pipelineStateFactory,
+            resourceFactory: resourceFactory
+        )
     }
 
     func build() {
+        commandQueue.build()
+        pipelineStateFactory.build()
+        
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -32,7 +54,7 @@ final class Application {
             descriptor.pixelFormat = .depth32Float
             descriptor.usage = [.renderTarget, .shaderRead]
             //descriptor.storageMode = .memoryless
-            return gpuContext.makeTexture(descriptor)
+            return resourceFactory.makeTexture(descriptor)
         }()
 
         offscreenTexture = {
@@ -42,7 +64,7 @@ final class Application {
             descriptor.height = 320
             descriptor.pixelFormat = .bgra8Unorm
             descriptor.usage = [.renderTarget, .shaderRead]
-            return gpuContext.makeTexture(descriptor)
+            return resourceFactory.makeTexture(descriptor)
         }()
 
         offscreenRenderPassDescriptor = {
@@ -64,10 +86,10 @@ final class Application {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "View Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = gpuContext.findFunction(by: .TexcoordVertexFuction)
-            descriptor.fragmentFunction = gpuContext.findFunction(by: .TexcoordFragmentFunction)
+            descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .TexcoordVertexFuction)
+            descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .TexcoordFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            return gpuContext.makeRenderPipelineState(descriptor)
+            return pipelineStateFactory.makeRenderPipelineState(descriptor)
         }()
 
         indexedPrimitives = {
@@ -82,43 +104,51 @@ final class Application {
             let indexBufferDescriptor = IndexBufferU16Descriptor()
             indexBufferDescriptor.content = [0, 1, 2, 2, 3, 0]
 
-            let descriptor = IndexedPrimitiveDescriptor()
+            let descriptor = IndexedPrimitives.Descriptor()
             descriptor.vertexBufferDescriptors = [vertextBufferDescriptor]
             descriptor.indexBufferDescriptor = indexBufferDescriptor
             descriptor.toporogy = .triangle
 
-            return gpuContext.makeIndexedPrimitives(descriptor)
+            return indexedPrimitivesFactory.make(descriptor)
         }()
 
         renderObject.build()
-        computeObject.build(gpuContext: gpuContext)
+        computeObject.build()
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
-        gpuContext.gpuDebugger.framInit()
-        gpuContext.updateFrameDebug()
-        
-        viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
-        
-        gpuContext.doCommandWaitUntilCompleted {
-            let computeCommand = gpuContext.makeComputeCommand()
-            computeObject.dispatch(encoder: computeCommand)
-            computeCommand.endEncoding()
-        }
-        gpuContext.gpuDebugger.addLog("result: \(Array(computeObject.out()))")
-     
-        gpuContext.doCommand(with: viewDrawable ) {
-            let command = gpuContext.makeRenderCommand(offscreenRenderPassDescriptor)
-            renderObject.draw(command)
-            command.end()
+        commandQueue.doCommand { commandBuffer in
+            guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+                appFatalError("failed to make compute command encoder.")
+            }
             
-            let viewCommand = gpuContext.makeRenderCommand(viewRenderPassDescriptor)
-            viewCommand.useRenderPipelineState(viewRenderPipelineState)
-            //viewCommand.setTexture(depthTexture, index: 0)
-            viewCommand.setTexture(offscreenTexture, index: 0)
-            viewCommand.drawIndexedPrimitives(indexedPrimitives)
-            viewCommand.end()
+            computeObject.dispatch(encoder: encoder)
+            encoder.endEncoding()
+            
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
         }
         
+        commandQueue.doCommand { commandBuffer in
+            guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
+                appFatalError("failed to make render command encoder.")
+            }
+            renderObject.draw(encoder)
+            encoder.endEncoding()
+            
+            viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
+            guard let viewEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor) else {
+                appFatalError("failed to make render command encoder.")
+            }
+            viewEncoder.setRenderPipelineState(viewRenderPipelineState)
+            //viewEncoder.setTexture(depthTexture, index: 0)
+            viewEncoder.setFragmentTexture(offscreenTexture, index: 0)
+            viewEncoder.drawIndexedMesh(indexedPrimitives)
+            viewEncoder.endEncoding()
+                
+            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
+            commandBuffer.commit()
+        }
     }
 }
+

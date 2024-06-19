@@ -32,9 +32,15 @@ let package = Package(
             ]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/Swinject/Swinject", .exact("2.8.1"))
+    ],
     targets: [
         .executableTarget(
             name: "AppModule",
+            dependencies: [
+                .product(name: "Swinject", package: "Swinject")
+            ],
             path: ".",
             resources: [
                 .process("Resources")
