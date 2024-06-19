@@ -1,8 +1,8 @@
 import SwiftUI
 
 func appFatalError(_ message: String, error: Error? = nil, file: String = #file, function: String = #function, line: Int = #line) -> Never {
-    if let error {
-        Logger.errorLog("fatalerror: \(message)", error: error, file: file, function: function, line: line)
+    if let unwrappedError = error {
+        Logger.errorLog("fatalerror: \(message)", error: unwrappedError, file: file, function: function, line: line)
     } else {
         Logger.log("fatalerror: \(message)", file: file, function: function, line: line)
     }

@@ -2,11 +2,7 @@ import SwiftUI
 import MetalKit
 
 class MetalView: MTKView {
-    let app: Application
-
     init() {
-        app = System.shared.app
-
         super.init(frame: .zero, device: System.shared.device)
         preferredFramesPerSecond = 30
         colorPixelFormat = .bgra8Unorm
@@ -32,7 +28,7 @@ extension MetalView: MTKViewDelegate {
             return
         }
 
-        app.draw(viewDrawable: drawable, viewRenderPassDescriptor: renderPassDescriptor)
+        System.shared.app.draw(viewDrawable: drawable, viewRenderPassDescriptor: renderPassDescriptor)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}

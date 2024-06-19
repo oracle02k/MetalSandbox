@@ -5,6 +5,7 @@ class MetalResourceFactory {
     
     init(_ device: MTLDevice) {
         self.device = device
+        Logger.log(device.name)
     }
     
     func makeBuffer<T>(data: [T], options: MTLResourceOptions) -> MTLBuffer{
@@ -24,6 +25,7 @@ class MetalResourceFactory {
     }
     
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
+        Logger.log(device.name)
         guard let texture = device.makeTexture(descriptor: descriptor) else {
             appFatalError("failed to make texture.")
         }

@@ -16,6 +16,8 @@ let package = Package(
         .iOSApplication(
             name: "MetalSandbox",
             targets: ["AppModule"],
+            bundleIdentifier: "akira.nakano.test.com",
+            teamIdentifier: "P6Y37NCDAQ",
             displayVersion: "1.0",
             bundleVersion: "1",
             appIcon: .placeholder(icon: .boat),
@@ -32,15 +34,9 @@ let package = Package(
             ]
         )
     ],
-    dependencies: [
-        .package(url: "https://github.com/Swinject/Swinject", .exact("2.8.1"))
-    ],
     targets: [
         .executableTarget(
             name: "AppModule",
-            dependencies: [
-                .product(name: "Swinject", package: "Swinject")
-            ],
             path: ".",
             resources: [
                 .process("Resources")

@@ -24,7 +24,8 @@ final class Application {
         commandQueue:MetalCommandQueue, 
         pipelineStateFactory: MetalPipelineStateFactory, 
         resourceFactory: MetalResourceFactory,
-        indexedPrimitivesFactory: IndexedPrimitives.Factory
+        indexedPrimitivesFactory: IndexedPrimitives.Factory,
+        primitivesFactory: Primitives.Factory
     ) {
         self.commandQueue = commandQueue
         self.pipelineStateFactory = pipelineStateFactory
@@ -33,7 +34,7 @@ final class Application {
         
         self.renderObject = RenderObject(
             pipelineStateFactory: pipelineStateFactory,
-            primitivesFactory: Primitives.Factory(System.shared.device)
+            primitivesFactory: primitivesFactory
         )
         
         self.computeObject = ComputeObject(
@@ -51,9 +52,10 @@ final class Application {
             descriptor.textureType = .type2D
             descriptor.width = 320
             descriptor.height = 320
-            descriptor.pixelFormat = .depth32Float
+            descriptor.pixelFormat = .depth16Unorm
+            descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
-            //descriptor.storageMode = .memoryless
+            descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
 
@@ -74,7 +76,7 @@ final class Application {
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
 
-            descriptor.depthAttachment.texture = depthTexture
+            //descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .dontCare
@@ -146,7 +148,7 @@ final class Application {
             viewEncoder.drawIndexedMesh(indexedPrimitives)
             viewEncoder.endEncoding()
                 
-            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
+            commandBuffer.present(viewDrawable, atTime: 1.0/Double(30))
             commandBuffer.commit()
         }
     }

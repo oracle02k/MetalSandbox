@@ -32,6 +32,7 @@ class MetalPipelineStateFactory {
             }
             container[$0] = function
         }
+        Logger.log(library.description)
     }
     
     func findFunction(by name : Function) -> MTLFunction {
