@@ -1,7 +1,11 @@
 import SwiftUI
 
-func appFatalError(_ message: String, file: String = #file, function: String = #function, line: Int = #line) -> Never {
-    Logger.log("fatalerror: \(message)", file: file, function: function, line: line)
+func appFatalError(_ message: String, error: Error? = nil, file: String = #file, function: String = #function, line: Int = #line) -> Never {
+    if let unwrappedError = error {
+        Logger.errorLog("fatalerror: \(message)", error: unwrappedError, file: file, function: function, line: line)
+    } else {
+        Logger.log("fatalerror: \(message)", file: file, function: function, line: line)
+    }
     Logger.log("stack trace:")
     for symbol in Thread.callStackSymbols {
         print(symbol)

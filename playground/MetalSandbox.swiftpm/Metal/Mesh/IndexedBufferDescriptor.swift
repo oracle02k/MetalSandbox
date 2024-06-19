@@ -5,7 +5,7 @@ protocol IndexBufferDescriptorProtocol {
     var stride: Int { get }
     var count: Int { get }
     var byteSize: Int { get }
-
+    
     func withUnsafeRawPointer<Result>(_ body: (UnsafeRawPointer) throws -> Result) rethrows -> Result
 }
 
@@ -15,7 +15,7 @@ class IndexBufferU16Descriptor: IndexBufferDescriptorProtocol {
     var byteSize: Int { stride * count }
     var count: Int { content.count }
     lazy var content: [UInt16] = uninitialized()
-
+    
     func withUnsafeRawPointer<Result>(
         _ body: (UnsafeRawPointer) throws -> Result
     ) rethrows -> Result {
@@ -29,7 +29,7 @@ class IndexBufferU32Descriptor: IndexBufferDescriptorProtocol {
     var byteSize: Int { stride * count }
     var count: Int { content.count }
     lazy var content: [UInt32] = uninitialized()
-
+    
     func withUnsafeRawPointer<Result>(
         _ body: (UnsafeRawPointer) throws -> Result
     ) rethrows -> Result {

@@ -1,6 +1,6 @@
 import MetalKit
 
-class Primitives {
+class Mesh {
     let toporogy: MTLPrimitiveType
     let vertexBuffers: [MTLBuffer]
     let vertexCount: Int

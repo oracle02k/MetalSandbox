@@ -1,6 +1,6 @@
 import MetalKit
 
-class IndexedPrimitives {
+class IndexedMesh {
     let toporogy: MTLPrimitiveType
     let vertexBuffers: [MTLBuffer]
     let indexBuffer: MTLBuffer
