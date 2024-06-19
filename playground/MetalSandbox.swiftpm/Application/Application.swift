@@ -21,8 +21,8 @@ final class Application {
     private lazy var depthTexture: MTLTexture = uninitialized()
 
     init(
-        commandQueue:MetalCommandQueue, 
-        pipelineStateFactory: MetalPipelineStateFactory, 
+        commandQueue: MetalCommandQueue,
+        pipelineStateFactory: MetalPipelineStateFactory,
         resourceFactory: MetalResourceFactory,
         indexedPrimitivesFactory: IndexedPrimitives.Factory,
         primitivesFactory: Primitives.Factory
@@ -31,12 +31,12 @@ final class Application {
         self.pipelineStateFactory = pipelineStateFactory
         self.resourceFactory = resourceFactory
         self.indexedPrimitivesFactory = indexedPrimitivesFactory
-        
+
         self.renderObject = RenderObject(
             pipelineStateFactory: pipelineStateFactory,
             primitivesFactory: primitivesFactory
         )
-        
+
         self.computeObject = ComputeObject(
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
@@ -46,7 +46,7 @@ final class Application {
     func build() {
         commandQueue.build()
         pipelineStateFactory.build()
-        
+
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -76,7 +76,7 @@ final class Application {
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
 
-            //descriptor.depthAttachment.texture = depthTexture
+            // descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .dontCare
@@ -123,34 +123,33 @@ final class Application {
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
             }
-            
+
             computeObject.dispatch(encoder: encoder)
             encoder.endEncoding()
-            
+
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
         }
-        
+
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
             renderObject.draw(encoder)
             encoder.endEncoding()
-            
+
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
             guard let viewEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
             viewEncoder.setRenderPipelineState(viewRenderPipelineState)
-            //viewEncoder.setTexture(depthTexture, index: 0)
+            // viewEncoder.setTexture(depthTexture, index: 0)
             viewEncoder.setFragmentTexture(offscreenTexture, index: 0)
             viewEncoder.drawIndexedMesh(indexedPrimitives)
             viewEncoder.endEncoding()
-                
+
             commandBuffer.present(viewDrawable, atTime: 1.0/Double(30))
             commandBuffer.commit()
         }
     }
 }
-

@@ -33,7 +33,7 @@ class RenderObject {
             descriptor.depthAttachmentPixelFormat = .depth32Float
             return pipelineStateFactory.makeRenderPipelineState(descriptor)
         }()
-        
+
         depthStencilState = {
             let descriptor = MTLDepthStencilDescriptor()
             descriptor.label = "Depth"
@@ -45,10 +45,10 @@ class RenderObject {
 
     func draw(_ encoder: MTLRenderCommandEncoder) {
         depth += 0.01
-        if(depth > 1){
+        if depth > 1 {
             depth = 0
         }
-        
+
         primitives = {
             let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
@@ -56,15 +56,15 @@ class RenderObject {
                 .init(position: float3(-1, -1, 0.5), color: float4(0, 1, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(1, -1, Float(depth)), color: float4(0, 0, 1, 1), texCoord: float2(0, 0))
             ]
-            
+
             let descriptor = Primitives.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
             descriptor.toporogy = .triangle
-            
+
             return primitivesFactory.make(descriptor)
         }()
-        
+
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
         encoder.drawMesh(primitives)

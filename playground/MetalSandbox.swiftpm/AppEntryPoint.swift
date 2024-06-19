@@ -15,11 +15,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _: UIApplication,
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        
+
         guard let device = MTLCreateSystemDefaultDevice() else {
             appFatalError("GPU not available ")
         }
-        
+
         System.shared.build(device)
         return true
     }
@@ -32,14 +32,13 @@ class System {
     let debugVM: DebugVM
     lazy var device: MTLDevice = uninitialized()
     lazy var app: Application = uninitialized()
-    
+
     private init( ) {
         self.debugVM = DebugVM()
         self.gpuDebugger = GpuDebuggerBindVM(debugVM)
     }
-    
-    func build(_ device: MTLDevice)
-    {
+
+    func build(_ device: MTLDevice) {
         Logger.log("begin entrypoint init")
         self.device = device
         self.app = Application(
@@ -49,7 +48,7 @@ class System {
             indexedPrimitivesFactory: IndexedPrimitives.Factory(device),
             primitivesFactory: Primitives.Factory(device)
         )
-        
+
         app.build()
         Logger.log("done entrypoint init")
     }
