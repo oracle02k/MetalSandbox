@@ -12,7 +12,7 @@ class TriangleRenderer {
     private lazy var mesh: Mesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
-    
+
     init (
         pipelineStateFactory: MetalPipelineStateFactory,
         meshFactory: Mesh.Factory
@@ -40,20 +40,20 @@ class TriangleRenderer {
             descriptor.isDepthWriteEnabled = true
             return pipelineStateFactory.makeDepthStancilState(descriptor)
         }()
-        
+
         mesh = {
-           let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
+            let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
                 .init(position: float3(0, 1, 0.5), color: float4(1, 0, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(-1, -1, 0.5), color: float4(0, 1, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(1, -1, 0.5), color: float4(0, 0, 1, 1), texCoord: float2(0, 0))
             ]
-            
+
             let descriptor = Mesh.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
             descriptor.toporogy = .triangle
-            
+
             return meshFactory.make(descriptor)
         }()
     }

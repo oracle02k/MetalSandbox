@@ -20,7 +20,7 @@ extension IndexedMesh {
                 device.makeBuffer(bytes: $0, length: indexBufferDescriptor.byteSize, options: [])!
             }
 
-            return IndexedMesh (
+            return IndexedMesh(
                 toporogy: descriptor.toporogy,
                 vertexBuffers: vertexBuffers,
                 indexBuffer: indexBuffer,

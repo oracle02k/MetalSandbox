@@ -13,11 +13,11 @@ final class Application {
     private let commandQueue: MetalCommandQueue
     private let resourceFactory: MetalResourceFactory
     private let pipelineStateFactory: MetalPipelineStateFactory
-    
+
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    
+
     init(
         commandQueue: MetalCommandQueue,
         pipelineStateFactory: MetalPipelineStateFactory,
@@ -28,7 +28,7 @@ final class Application {
         self.commandQueue = commandQueue
         self.resourceFactory = resourceFactory
         self.pipelineStateFactory = pipelineStateFactory
-    
+
         self.screenRenderer = ScreenRenderer(
             pipelineStateFactory: pipelineStateFactory,
             indexedMeshFactory: indexedMeshFactory
@@ -57,7 +57,7 @@ final class Application {
             descriptor.pixelFormat = .depth32Float
             descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
-            //descriptor.storageMode = .memoryless
+            // descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
 
@@ -93,7 +93,7 @@ final class Application {
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
         System.shared.gpuDebugger.framInit()
-        
+
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
@@ -101,7 +101,7 @@ final class Application {
 
             computeObject.dispatch(encoder: encoder)
             encoder.endEncoding()
-            
+
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
         }
@@ -119,10 +119,10 @@ final class Application {
             }
             screenRenderer.draw(viewEncoder, offscreenTexture: offscreenTexture)
             viewEncoder.endEncoding()
-            
+
             commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
             commandBuffer.commit()
- 
+
         }
-     }
+    }
 }
