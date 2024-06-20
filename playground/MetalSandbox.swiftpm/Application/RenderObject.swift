@@ -9,10 +9,10 @@ class RenderObject {
 
     private let pipelineStateFactory: MetalPipelineStateFactory
     private let primitivesFactory: Primitives.Factory
-    private lazy var primitives: Primitives = uninitialized()
+    private var primitives: [Primitives] = []
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
-    private var depth = 0.0
+    private var index = 0;
 
     init (
         pipelineStateFactory: MetalPipelineStateFactory,
@@ -41,32 +41,34 @@ class RenderObject {
             descriptor.isDepthWriteEnabled = true
             return pipelineStateFactory.makeDepthStancilState(descriptor)
         }()
-    }
-
-    func draw(_ encoder: MTLRenderCommandEncoder) {
-        depth += 0.01
-        if depth > 1 {
-            depth = 0
-        }
-
-        primitives = {
-            let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
+        
+        for depth in stride(from: 0.0, to: 1.0, by: 0.01) {
+           let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
-                .init(position: float3(0, 1, 0), color: float4(1, 0, 0, 1), texCoord: float2(0, 0)),
+                .init(position: float3(0, Float(depth), 0), color: float4(1, 0, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(-1, -1, 0.5), color: float4(0, 1, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(1, -1, Float(depth)), color: float4(0, 0, 1, 1), texCoord: float2(0, 0))
             ]
-
+            
             let descriptor = Primitives.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
             descriptor.toporogy = .triangle
+            
+            primitives.append(primitivesFactory.make(descriptor))
+        }
+    }
 
-            return primitivesFactory.make(descriptor)
-        }()
-
+    func draw(_ encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
-        encoder.drawMesh(primitives)
+        encoder.drawMesh(primitives[index])
+        
+        index += 1
+        if(index >= primitives.count) {
+            index = 0
+        }
+        
+        System.shared.gpuDebugger.addLog("index: \(index)")
     }
 }

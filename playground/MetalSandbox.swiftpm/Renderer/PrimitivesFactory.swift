@@ -8,7 +8,7 @@ extension Primitives {
             self.device = device
         }
 
-        func make(_ descriptor: Descriptor) -> Primitives {
+        func make(_ descriptor: Primitives.Descriptor) -> Primitives {
             let buffers = descriptor.vertexBufferDescriptors.map { descriptor in
                 descriptor.withUnsafeRawPointer {
                     device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!

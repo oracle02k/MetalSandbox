@@ -52,10 +52,10 @@ final class Application {
             descriptor.textureType = .type2D
             descriptor.width = 320
             descriptor.height = 320
-            descriptor.pixelFormat = .depth16Unorm
+            descriptor.pixelFormat = .depth32Float
             descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
-            descriptor.storageMode = .memoryless
+            //descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
 
@@ -76,10 +76,10 @@ final class Application {
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
 
-            // descriptor.depthAttachment.texture = depthTexture
+            descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
-            descriptor.depthAttachment.storeAction = .dontCare
+            descriptor.depthAttachment.storeAction = .store
 
             return descriptor
         }()
@@ -91,6 +91,7 @@ final class Application {
             descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .TexcoordVertexFuction)
             descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .TexcoordFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            descriptor.depthAttachmentPixelFormat = .depth32Float
             return pipelineStateFactory.makeRenderPipelineState(descriptor)
         }()
 
@@ -119,6 +120,8 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
+        System.shared.gpuDebugger.framInit()
+        
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
@@ -148,7 +151,7 @@ final class Application {
             viewEncoder.drawIndexedMesh(indexedPrimitives)
             viewEncoder.endEncoding()
 
-            commandBuffer.present(viewDrawable, atTime: 1.0/Double(30))
+            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
             commandBuffer.commit()
         }
     }
