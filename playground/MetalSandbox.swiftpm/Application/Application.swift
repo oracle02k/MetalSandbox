@@ -55,7 +55,7 @@ final class Application {
             descriptor.pixelFormat = .depth32Float
             descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
-            //descriptor.storageMode = .memoryless
+            // descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
 
@@ -121,7 +121,7 @@ final class Application {
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
         System.shared.gpuDebugger.framInit()
-        
+
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")

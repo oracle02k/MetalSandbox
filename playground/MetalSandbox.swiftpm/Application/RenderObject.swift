@@ -12,7 +12,7 @@ class RenderObject {
     private var primitives: [Primitives] = []
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
-    private var index = 0;
+    private var index = 0
 
     init (
         pipelineStateFactory: MetalPipelineStateFactory,
@@ -41,20 +41,20 @@ class RenderObject {
             descriptor.isDepthWriteEnabled = true
             return pipelineStateFactory.makeDepthStancilState(descriptor)
         }()
-        
+
         for depth in stride(from: 0.0, to: 1.0, by: 0.01) {
-           let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
+            let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
                 .init(position: float3(0, Float(depth), 0), color: float4(1, 0, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(-1, -1, 0.5), color: float4(0, 1, 0, 1), texCoord: float2(0, 0)),
                 .init(position: float3(1, -1, Float(depth)), color: float4(0, 0, 1, 1), texCoord: float2(0, 0))
             ]
-            
+
             let descriptor = Primitives.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
             descriptor.toporogy = .triangle
-            
+
             primitives.append(primitivesFactory.make(descriptor))
         }
     }
@@ -63,12 +63,12 @@ class RenderObject {
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
         encoder.drawMesh(primitives[index])
-        
+
         index += 1
-        if(index >= primitives.count) {
+        if index >= primitives.count {
             index = 0
         }
-        
+
         System.shared.gpuDebugger.addLog("index: \(index)")
     }
 }
