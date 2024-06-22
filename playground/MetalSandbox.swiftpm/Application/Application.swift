@@ -9,7 +9,7 @@ struct Vertex {
 final class Application {
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
-    private let computeObject: ComputeObject
+    private let addArrayCompute: AddArrayCompute
     private let commandQueue: MetalCommandQueue
     private let resourceFactory: MetalResourceFactory
     private let pipelineStateFactory: MetalPipelineStateFactory
@@ -39,7 +39,7 @@ final class Application {
             meshFactory: meshFactory
         )
 
-        self.computeObject = ComputeObject(
+        self.addArrayCompute = AddArrayCompute(
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
@@ -88,7 +88,7 @@ final class Application {
 
         screenRenderer.build()
         triangleRenderer.build()
-        computeObject.build()
+        addArrayCompute.build()
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
@@ -98,12 +98,12 @@ final class Application {
                 appFatalError("failed to make compute command encoder.")
             }
 
-            computeObject.dispatch(encoder: encoder)
+            addArrayCompute.dispatch(encoder: encoder)
             encoder.endEncoding()
 
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
-            computeObject.verifyResult()
+            addArrayCompute.verifyResult()
         }
 
         commandQueue.doCommand { commandBuffer in

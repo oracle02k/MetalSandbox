@@ -1,6 +1,6 @@
 import MetalKit
 
-class ComputeObject {
+class AddArrayCompute {
     let pipelineStateFactory: MetalPipelineStateFactory
     let resourceFactory: MetalResourceFactory
     lazy var computePipelineState: MTLComputePipelineState = uninitialized()
