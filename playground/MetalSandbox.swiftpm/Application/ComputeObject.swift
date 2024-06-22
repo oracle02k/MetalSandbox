@@ -50,6 +50,10 @@ class ComputeObject {
         }
         let threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1)
         encoder.dispatchThreads(gridSize, threadsPerThreadgroup: threadgroupSize)
+        
+        Debug.frameLog("ElementNum: \(elementNum)")
+        Debug.frameLog("GrideSize: \(gridSize)")
+        Debug.frameLog("ThreadGroupSize: \(threadgroupSize)")
     }
 
     func generateRandomFloatData(count: Int) -> MTLBuffer {

@@ -8,7 +8,7 @@ class Debug {
     }
 
     static func initLog(_ message: String) {
-        System.shared.appDebuger.frameLog(message)
+        System.shared.appDebuger.initLog(message)
     }
 
     static func frameLog(_ message: String) {
