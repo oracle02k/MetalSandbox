@@ -37,44 +37,41 @@ class ComputeObject {
 
         // スレッドグループの数、スレッドグループ内のスレッドの数を設定。これにより並列で実行される演算数が決定される
         /*
-        let width = 64
-        let threadsPerGroup = MTLSize(width: width, height: 1, depth: 1)
-        let numThreadgroups = MTLSize(width: (3 + width - 1) / width, height: 1, depth: 1)
-        encoder.dispatchThreadgroups(numThreadgroups, threadsPerThreadgroup: threadsPerGroup)
+         let width = 64
+         let threadsPerGroup = MTLSize(width: width, height: 1, depth: 1)
+         let numThreadgroups = MTLSize(width: (3 + width - 1) / width, height: 1, depth: 1)
+         encoder.dispatchThreadgroups(numThreadgroups, threadsPerThreadgroup: threadsPerGroup)
          */
-        
-        let gridSize = MTLSizeMake(elementNum, 1, 1); //1Dgrid
-        var threadGroupSize = computePipelineState.maxTotalThreadsPerThreadgroup;
-        if (threadGroupSize > elementNum)
-        {
-            threadGroupSize = elementNum;
+
+        let gridSize = MTLSizeMake(elementNum, 1, 1) // 1Dgrid
+        var threadGroupSize = computePipelineState.maxTotalThreadsPerThreadgroup
+        if threadGroupSize > elementNum {
+            threadGroupSize = elementNum
         }
-        let threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1);
+        let threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1)
         encoder.dispatchThreads(gridSize, threadsPerThreadgroup: threadgroupSize)
     }
-    
-    func generateRandomFloatData(count: Int) -> MTLBuffer
-    {
+
+    func generateRandomFloatData(count: Int) -> MTLBuffer {
         var data: [Float] = []
         for _ in 0..<count {
             data.append(Float.random(in: 0.0...1.0))
         }
-        
+
         return resourceFactory.makeBuffer(data: data, options: .storageModeShared)
     }
-    
-    func verifyResult()
-    {    
-        let aBuffer:[Float] = bufferA.bindArray(length: elementNum)
-        let bBuffer:[Float] = bufferB.bindArray(length: elementNum)
-        let result:[Float] = bufferResult.bindArray(length: elementNum)
-        
+
+    func verifyResult() {
+        let aBuffer: [Float] = bufferA.bindArray(length: elementNum)
+        let bBuffer: [Float] = bufferB.bindArray(length: elementNum)
+        let result: [Float] = bufferResult.bindArray(length: elementNum)
+
         for i in 0..<elementNum {
             let cpuResult = aBuffer[i] + bBuffer[i]
-            if(result[i] != cpuResult) {
+            if result[i] != cpuResult {
                 Debug.frameLog("Compute ERROR: index=\(i) gpu=\(result[i]) vs cpu=\(cpuResult)")
             }
         }
-        Debug.frameLog("Compute results as expected\n");
+        Debug.frameLog("Compute results as expected\n")
     }
 }

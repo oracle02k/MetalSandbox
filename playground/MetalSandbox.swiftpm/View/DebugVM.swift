@@ -13,7 +13,7 @@ final class AppDebuggerBindVM: AppDebugger {
     init(_ debugVm: DebugVM) {
         self.debugVm = debugVm
     }
-    
+
     func allClear() {
         debugVm.initLog = ""
         debugVm.frameLog = ""
@@ -22,7 +22,7 @@ final class AppDebuggerBindVM: AppDebugger {
     func frameClear() {
         debugVm.frameLog = ""
     }
-    
+
     func initLog(_ message: String) {
         debugVm.initLog += message + "\n"
     }
