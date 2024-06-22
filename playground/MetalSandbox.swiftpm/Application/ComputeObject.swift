@@ -72,9 +72,9 @@ class ComputeObject {
         for i in 0..<elementNum {
             let cpuResult = aBuffer[i] + bBuffer[i]
             if(result[i] != cpuResult) {
-                System.shared.gpuDebugger.addLog("Compute ERROR: index=\(i) gpu=\(result[i]) vs cpu=\(cpuResult)")
+                Debug.frameLog("Compute ERROR: index=\(i) gpu=\(result[i]) vs cpu=\(cpuResult)")
             }
         }
-        System.shared.gpuDebugger.addLog("Compute results as expected\n");
+        Debug.frameLog("Compute results as expected\n");
     }
 }

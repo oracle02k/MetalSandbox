@@ -92,8 +92,7 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
-        System.shared.gpuDebugger.framInit()
-
+        Debug.frameClear()
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
@@ -123,7 +122,6 @@ final class Application {
 
             commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
             commandBuffer.commit()
-
         }
     }
 }

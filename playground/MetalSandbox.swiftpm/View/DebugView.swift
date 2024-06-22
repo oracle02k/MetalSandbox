@@ -5,18 +5,21 @@ struct DebugView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("GPU Allocated Byte Size: \(content.gpuAllocatedByteSize)")
-            Text("GPU Time(ms): \(content.gpuTime*1000)")
-            Text("View Width: \(content.viewWidth)")
-            Text("View Height: \(content.viewHeight)")
-            Text("Logs:")
+            Text("Init Logs:")
             GeometryReader { geometry in
                 ScrollView(.vertical, showsIndicators: true) {
-                    Text(content.log)
+                    Text(content.initLog)
                         .multilineTextAlignment(.leading)
-                        .frame(width: geometry.size.width)
+                        .frame(width: geometry.size.width, alignment: .leading)
                 }
-                // .frame(maxWidth: .infinity, maxHeight: 360.0)
+            }
+            Text("Frame Logs:")
+            GeometryReader { geometry in
+                ScrollView(.vertical, showsIndicators: true) {
+                    Text(content.frameLog)
+                        .multilineTextAlignment(.leading)
+                        .frame(width: geometry.size.width, alignment: .leading)
+                }
             }
             Spacer()
         }
