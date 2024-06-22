@@ -104,6 +104,7 @@ final class Application {
 
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
+            computeObject.verifyResult()
         }
 
         commandQueue.doCommand { commandBuffer in
