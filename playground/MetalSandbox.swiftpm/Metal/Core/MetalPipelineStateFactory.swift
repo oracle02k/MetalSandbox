@@ -2,8 +2,8 @@ import MetalKit
 
 class MetalPipelineStateFactory {
     enum Function: String, CaseIterable {
-        case BasicVertexFunction = "basic_vertex_function"
-        case BasicFragmentFunction = "basic_fragment_function"
+        case Simple2dVertexFunction = "simple2d_vertex_function"
+        case Simple2dFragmentFunction = "simple2d_fragment_function"
         case RedFragmentFunction = "red_fragment_function"
         case TexcoordVertexFuction = "texcoord_vertex_function"
         case TexcoordFragmentFunction = "texcoord_fragment_function"
@@ -20,8 +20,14 @@ class MetalPipelineStateFactory {
     }
 
     func build() {
+        
+        guard let path = Bundle.main.url(forResource: "shader", withExtension: "cpp") else {
+            appFatalError("faild to open shader.cpp")
+        }
+            
         do {
-            library = try self.device.makeLibrary(source: metalFunctionSource, options: nil)
+            let shaderFile = try String(contentsOf: path, encoding: .utf8)
+            library = try self.device.makeLibrary(source: shaderFile, options: nil)
         } catch {
             appFatalError("faild to make library.", error: error)
         }
