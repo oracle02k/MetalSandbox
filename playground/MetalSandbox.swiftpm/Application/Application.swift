@@ -8,7 +8,7 @@ struct Vertex {
 
 final class Application {
     var viewportSize: CGSize
-    
+
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -45,7 +45,7 @@ final class Application {
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
-        
+
         viewportSize = .init(width: 320, height: 320)
     }
 
@@ -104,10 +104,10 @@ final class Application {
             znear: 0.0,
             zfar: 1.0
         )
-        
+
         Debug.frameClear()
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
-        
+
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")

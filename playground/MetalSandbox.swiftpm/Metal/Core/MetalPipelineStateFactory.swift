@@ -20,11 +20,11 @@ class MetalPipelineStateFactory {
     }
 
     func build() {
-        
+
         guard let path = Bundle.main.url(forResource: "shader", withExtension: "cpp") else {
             appFatalError("faild to open shader.cpp")
         }
-            
+
         do {
             let shaderFile = try String(contentsOf: path, encoding: .utf8)
             library = try self.device.makeLibrary(source: shaderFile, options: nil)

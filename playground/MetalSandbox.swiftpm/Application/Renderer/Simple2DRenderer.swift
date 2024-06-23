@@ -20,7 +20,7 @@ class TriangleRenderer {
     ) {
         self.pipelineStateFactory = pipelineStateFactory
         self.meshFactory = meshFactory
-        screenViewport = .init(leftTop: float2(0,0), rightBottom: float2(320,320))
+        screenViewport = .init(leftTop: float2(0, 0), rightBottom: float2(320, 320))
     }
 
     func build() {
@@ -66,7 +66,7 @@ class TriangleRenderer {
         withUnsafeMutablePointer(to: &screenViewport) {
             encoder.setVertexBytes($0, length: MemoryLayout<Viewport>.stride, index: VertexInputIndex.Viewport.rawValue)
         }
-        
+
         encoder.drawMesh(mesh)
     }
 }
