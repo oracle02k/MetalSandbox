@@ -7,6 +7,8 @@ struct Vertex {
 }
 
 final class Application {
+    var viewportSize: CGSize
+    
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -43,6 +45,8 @@ final class Application {
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
+        
+        viewportSize = .init(width: 320, height: 320)
     }
 
     func build() {
@@ -92,7 +96,18 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
+        let viewport = MTLViewport(
+            originX: 0,
+            originY: 0,
+            width: Double(viewportSize.width),
+            height: Double(viewportSize.height),
+            znear: 0.0,
+            zfar: 1.0
+        )
+        
         Debug.frameClear()
+        Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
+        
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
@@ -117,6 +132,7 @@ final class Application {
             guard let viewEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
+            viewEncoder.setViewport(viewport)
             screenRenderer.draw(viewEncoder, offscreenTexture: offscreenTexture)
             viewEncoder.endEncoding()
 

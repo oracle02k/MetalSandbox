@@ -7,6 +7,7 @@ class TriangleRenderer {
         var texCoord: float2
     }
 
+    private var screenViewport: Viewport
     private let pipelineStateFactory: MetalPipelineStateFactory
     private let meshFactory: Mesh.Factory
     private lazy var mesh: Mesh = uninitialized()
@@ -19,12 +20,13 @@ class TriangleRenderer {
     ) {
         self.pipelineStateFactory = pipelineStateFactory
         self.meshFactory = meshFactory
+        screenViewport = .init(leftTop: float2(0,0), rightBottom: float2(320,320))
     }
 
     func build() {
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
-            descriptor.label = "Basic Render Pipeline"
+            descriptor.label = "Simple 2D Render Pipeline"
             descriptor.sampleCount = 1
             descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .BasicVertexFunction)
             descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .BasicFragmentFunction)
@@ -61,6 +63,10 @@ class TriangleRenderer {
     func draw(_ encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
+        withUnsafeMutablePointer(to: &screenViewport) {
+            encoder.setVertexBytes($0, length: MemoryLayout<Viewport>.stride, index: VertexInputIndex.Viewport.rawValue)
+        }
+        
         encoder.drawMesh(mesh)
     }
 }

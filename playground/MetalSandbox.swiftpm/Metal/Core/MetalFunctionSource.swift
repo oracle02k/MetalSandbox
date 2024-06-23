@@ -1,5 +1,8 @@
 let metalFunctionSource = """
+
+#include "ShaderTypes.h"
 #include <metal_stdlib>
+
 using namespace metal;
 struct VertexIn {
     float3 position;
