@@ -2,9 +2,9 @@ import MetalKit
 
 class TriangleRenderer {
     struct Vertex {
-        var position: float3
-        var color: float4
-        var texCoord: float2
+        var position: simd_float3
+        var color: simd_float4
+        var texCoord: simd_float2
     }
 
     private var screenViewport: Viewport
@@ -20,7 +20,7 @@ class TriangleRenderer {
     ) {
         self.pipelineStateFactory = pipelineStateFactory
         self.meshFactory = meshFactory
-        screenViewport = .init(leftTop: float2(0, 0), rightBottom: float2(320, 320))
+        screenViewport = .init(leftTop: .init(0,0), rightBottom: .init(320,320))
     }
 
     func build() {
@@ -46,9 +46,9 @@ class TriangleRenderer {
         mesh = {
             let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertexBufferDescriptor.content = [
-                .init(position: float3(160, 0, 0.5), color: float4(1, 0, 0, 1), texCoord: float2(0, 0)),
-                .init(position: float3(0, 320, 0.5), color: float4(0, 1, 0, 1), texCoord: float2(0, 0)),
-                .init(position: float3(320, 320, 0.5), color: float4(0, 0, 1, 1), texCoord: float2(0, 0))
+                .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0)),
+                .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0)),
+                .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
             ]
 
             let descriptor = Mesh.Descriptor()

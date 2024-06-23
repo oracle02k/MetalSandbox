@@ -4,7 +4,8 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading) {
             SwiftUIView { MetalView() }
-                .frame(width: 320, height: 320, alignment: .top)
+                .frame(minWidth: 380, minHeight: 380)
+                .aspectRatio(CGSize(width: 1, height: 1), contentMode: .fit)
             DebugView()
         }
     }

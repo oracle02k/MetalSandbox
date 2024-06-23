@@ -1,14 +1,13 @@
 import MetalKit
 
 struct Vertex {
-    var position: float3
-    var color: float4
-    var texCoord: float2
+    var position: simd_float3
+    var color: simd_float4
+    var texCoord: simd_float2
 }
 
 final class Application {
-    var viewportSize: CGSize
-
+    private var viewportSize: CGSize
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -52,47 +51,55 @@ final class Application {
     func build() {
         commandQueue.build()
         pipelineStateFactory.build()
-
+        screenRenderer.build()
+        triangleRenderer.build()
+        addArrayCompute.build()
+        
+        refreshRenderPass()
+    }
+    
+    func changeViewportSize(_ size: CGSize) {
+        viewportSize = size
+        refreshRenderPass()
+    }
+    
+    func refreshRenderPass() {
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
-            descriptor.width = 320
-            descriptor.height = 320
+            descriptor.width = Int(viewportSize.width)
+            descriptor.height = Int(viewportSize.height)
             descriptor.pixelFormat = .depth32Float
             descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
             // descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
-
+        
         offscreenTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
-            descriptor.width = 320
-            descriptor.height = 320
+            descriptor.width = Int(viewportSize.width)
+            descriptor.height = Int(viewportSize.height)
             descriptor.pixelFormat = .bgra8Unorm
             descriptor.usage = [.renderTarget, .shaderRead]
             return resourceFactory.makeTexture(descriptor)
         }()
-
+        
         offscreenRenderPassDescriptor = {
             let descriptor = MTLRenderPassDescriptor()
             descriptor.colorAttachments[0].texture = offscreenTexture
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
-
+            
             descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .store
-
+            
             return descriptor
         }()
-
-        screenRenderer.build()
-        triangleRenderer.build()
-        addArrayCompute.build()
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
@@ -125,6 +132,7 @@ final class Application {
             guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
+            encoder.setViewport(viewport)
             triangleRenderer.draw(encoder)
             encoder.endEncoding()
 

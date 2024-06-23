@@ -32,6 +32,6 @@ extension MetalView: MTKViewDelegate {
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        System.shared.app.viewportSize = size
+        System.shared.app.changeViewportSize(size)
     }
 }

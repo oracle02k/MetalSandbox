@@ -25,10 +25,10 @@ class ScreenRenderer {
         indexedMesh = {
             let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertextBufferDescriptor.content = [
-                .init(position: float3(-1, 1, 0), color: float4(0, 0, 0, 1), texCoord: float2(0, 0)),
-                .init(position: float3(-1, -1, 0), color: float4(0, 0, 0, 1), texCoord: float2(0, 1)),
-                .init(position: float3(1, -1, 0), color: float4(0, 0, 0, 1), texCoord: float2(1, 1)),
-                .init(position: float3(1, 1, 0), color: float4(0, 0, 0, 1), texCoord: float2(1, 0))
+                .init(position: .init(-1, 1, 0), color: .init(0, 0, 0, 1), texCoord: .init(0, 0)),
+                .init(position: .init(-1, -1, 0), color: .init(0, 0, 0, 1), texCoord: .init(0, 1)),
+                .init(position: .init(1, -1, 0), color: .init(0, 0, 0, 1), texCoord: .init(1, 1)),
+                .init(position: .init(1, 1, 0), color: .init(0, 0, 0, 1), texCoord: .init(1, 0))
             ]
 
             let indexBufferDescriptor = IndexBufferU16Descriptor()
