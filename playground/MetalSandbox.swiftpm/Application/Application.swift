@@ -54,15 +54,15 @@ final class Application {
         screenRenderer.build()
         triangleRenderer.build()
         addArrayCompute.build()
-        
+
         refreshRenderPass()
     }
-    
+
     func changeViewportSize(_ size: CGSize) {
         viewportSize = size
         refreshRenderPass()
     }
-    
+
     func refreshRenderPass() {
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
@@ -75,7 +75,7 @@ final class Application {
             // descriptor.storageMode = .memoryless
             return resourceFactory.makeTexture(descriptor)
         }()
-        
+
         offscreenTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -85,19 +85,19 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return resourceFactory.makeTexture(descriptor)
         }()
-        
+
         offscreenRenderPassDescriptor = {
             let descriptor = MTLRenderPassDescriptor()
             descriptor.colorAttachments[0].texture = offscreenTexture
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             descriptor.colorAttachments[0].storeAction = .store
-            
+
             descriptor.depthAttachment.texture = depthTexture
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .store
-            
+
             return descriptor
         }()
     }

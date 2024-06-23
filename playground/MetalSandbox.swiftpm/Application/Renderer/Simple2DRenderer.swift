@@ -20,7 +20,7 @@ class TriangleRenderer {
     ) {
         self.pipelineStateFactory = pipelineStateFactory
         self.meshFactory = meshFactory
-        screenViewport = .init(leftTop: .init(0,0), rightBottom: .init(320,320))
+        screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
     func build() {

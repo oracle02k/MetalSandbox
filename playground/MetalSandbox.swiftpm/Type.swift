@@ -8,7 +8,7 @@ enum VertexInputIndex: Int {
     case Viewport
 }
 
-struct Viewport{
+struct Viewport {
     let leftTop: simd_float2
     let rightBottom: simd_float2
 }
