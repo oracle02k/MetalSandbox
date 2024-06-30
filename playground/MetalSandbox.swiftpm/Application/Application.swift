@@ -112,7 +112,6 @@ final class Application {
             zfar: 1.0
         )
 
-        Debug.frameClear()
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
 
         commandQueue.doCommand { commandBuffer in
@@ -144,7 +143,7 @@ final class Application {
             screenRenderer.draw(viewEncoder, offscreenTexture: offscreenTexture)
             viewEncoder.endEncoding()
 
-            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(30))
+            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
             commandBuffer.commit()
         }
     }

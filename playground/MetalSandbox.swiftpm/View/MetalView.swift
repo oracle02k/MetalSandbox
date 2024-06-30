@@ -8,7 +8,8 @@ protocol AAPLViewDelegate {
 class MetalView : UIView {
     private var paused: Bool = false
     private var displayLink: CADisplayLink?
-    private let delegate: AAPLViewDelegate = RenderViewDelegate()
+    private var previousTimeStamp: CFTimeInterval = .zero
+    private let delegate = MetalViewDelegate()
     
     override class var layerClass: AnyClass {
         return CAMetalLayer.self
@@ -16,16 +17,35 @@ class MetalView : UIView {
     
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        setupCADisplayLinkForScreen(screen: window!.screen)
-        displayLink?.add(to: RunLoop.current, forMode: .common)
+        stopRenderLoop()
+        if Config.mainThreadRender {
+            setupCADisplayLinkForScreen(screen: window!.screen)
+        }else{
+            Thread.detachNewThread { [self] in
+                setupCADisplayLinkForScreen(screen: window!.screen)
+                RunLoop.current.run()
+            }
+        }
     }
     
-    @objc func render() {
+    @objc func render(_ displayLink: CADisplayLink) {
         guard let metalLayer = layer as? CAMetalLayer else {
             appFatalError("metal layer error.")
         }
         
-        delegate.renderToMetalLayer(metalLayer: metalLayer)
+        let delta = displayLink.targetTimestamp - previousTimeStamp
+        let actualFramesPerSecond = 1 / (displayLink.targetTimestamp - displayLink.timestamp)
+        
+        Debug.frameClear()
+        Debug.frameLog(String(format: "DeltaTime: %.2fms", delta*1000))
+        Debug.frameLog(String(format: "Duration: %.2fms", displayLink.duration*1000))
+        Debug.frameLog(String(format: "actualFPS: %.2ffps", actualFramesPerSecond))
+        
+        synchronized(metalLayer) {
+            delegate.renderToMetalLayer(metalLayer: metalLayer)
+        }
+        
+        previousTimeStamp = displayLink.targetTimestamp
     }
     
     func setPaused(pause: Bool) {
@@ -34,10 +54,14 @@ class MetalView : UIView {
     }
     
     func setupCADisplayLinkForScreen(screen: UIScreen) {
-        stopRenderLoop()
-        displayLink = screen.displayLink(withTarget: self, selector: #selector(Self.render))!
+        displayLink = screen.displayLink(withTarget: self, selector: #selector(Self.render(_:)))!
+        displayLink?.preferredFrameRateRange = .init(
+            minimum: Config.minFps, 
+            maximum: Config.maxFps, 
+            preferred: Config.preferredFps
+        )
         displayLink?.isPaused = self.paused;
-        displayLink?.preferredFramesPerSecond = 30;
+        displayLink?.add(to: .current, forMode: .default)
     }
     
     func didEnterBackground(notification: NSNotification) {
@@ -102,13 +126,15 @@ class MetalView : UIView {
             return
         }
         
-        metalLayer.drawableSize = newSize
-        delegate.drawableResize(size: newSize)
+        synchronized(metalLayer) {
+            metalLayer.drawableSize = newSize
+            delegate.drawableResize(size: newSize)
+        }
     }
 }
     
 
-class RenderViewDelegate : AAPLViewDelegate {
+class MetalViewDelegate : AAPLViewDelegate {
     func drawableResize(size: CGSize){
         System.shared.app.changeViewportSize(size)
     }
