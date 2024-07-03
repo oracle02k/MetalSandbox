@@ -8,4 +8,5 @@ protocol AppDebugger {
     func frameClear()
     func initLog(_ message: String)
     func frameLog(_ message: String)
+    func flush()
 }

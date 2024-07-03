@@ -32,7 +32,7 @@ class MetalView: UIView {
         guard let metalLayer = layer as? CAMetalLayer else {
             appFatalError("metal layer error.")
         }
-
+    
         let delta = displayLink.targetTimestamp - previousTimeStamp
         let actualFramesPerSecond = 1 / (displayLink.targetTimestamp - displayLink.timestamp)
 
@@ -40,12 +40,13 @@ class MetalView: UIView {
         Debug.frameLog(String(format: "DeltaTime: %.2fms", delta*1000))
         Debug.frameLog(String(format: "Duration: %.2fms", displayLink.duration*1000))
         Debug.frameLog(String(format: "actualFPS: %.2ffps", actualFramesPerSecond))
-
+        
         synchronized(metalLayer) {
             delegate.renderToMetalLayer(metalLayer: metalLayer)
         }
-
+        
         previousTimeStamp = displayLink.targetTimestamp
+        Debug.flush()
     }
 
     func setPaused(pause: Bool) {

@@ -9,25 +9,34 @@ final class AppDebuggerBindVM: AppDebugger {
     var debugVm: DebugVM
     var initLogText: String {debugVm.initLog }
     var frameLogText: String {debugVm.frameLog }
+    private var initLogBuffer = ""
+    private var frameLogBuffer = ""
 
     init(_ debugVm: DebugVM) {
         self.debugVm = debugVm
     }
 
     func allClear() {
-        debugVm.initLog = ""
-        debugVm.frameLog = ""
+        initLogBuffer = ""
+        frameLogBuffer = ""
     }
 
     func frameClear() {
-        debugVm.frameLog = ""
+        frameLogBuffer = ""
     }
 
     func initLog(_ message: String) {
-        debugVm.initLog += message + "\n"
+        initLogBuffer += message + "\n"
     }
 
     func frameLog(_ message: String) {
-        debugVm.frameLog += message + "\n"
+        frameLogBuffer += message + "\n"
+    }
+    
+    func flush() {
+        debugVm.initLog = initLogBuffer
+        debugVm.frameLog = frameLogBuffer
+        initLogBuffer = ""
+        frameLogBuffer = ""
     }
 }
