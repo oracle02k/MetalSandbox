@@ -8,6 +8,9 @@ class MetalPipelineStateFactory {
         case TexcoordVertexFuction = "texcoord_vertex_function"
         case TexcoordFragmentFunction = "texcoord_fragment_function"
         case AddArrayComputeFunction = "add_arrays_compute_function"
+        case IndirectRendererVertexFunction = "IndirectRenderer::vertexShader"
+        case IndirectRendererVertexFunction2 = "IndirectRenderer::vertexShader2"
+        case IndirectRendererFragmentFunction = "IndirectRenderer::fragmentShader"
     }
 
     private let device: MTLDevice

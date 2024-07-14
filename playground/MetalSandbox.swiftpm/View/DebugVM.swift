@@ -36,7 +36,5 @@ final class AppDebuggerBindVM: AppDebugger {
     func flush() {
         debugVm.initLog = initLogBuffer
         debugVm.frameLog = frameLogBuffer
-        initLogBuffer = ""
-        frameLogBuffer = ""
     }
 }

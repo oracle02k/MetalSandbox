@@ -10,16 +10,20 @@ class TriangleRenderer {
     private var screenViewport: Viewport
     private let pipelineStateFactory: MetalPipelineStateFactory
     private let meshFactory: Mesh.Factory
+    private let resourceFactory: MetalResourceFactory
     private lazy var mesh: Mesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
+    private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
     init (
         pipelineStateFactory: MetalPipelineStateFactory,
-        meshFactory: Mesh.Factory
+        meshFactory: Mesh.Factory,
+        resourceFactory: MetalResourceFactory
     ) {
         self.pipelineStateFactory = pipelineStateFactory
         self.meshFactory = meshFactory
+        self.resourceFactory = resourceFactory
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
@@ -50,7 +54,8 @@ class TriangleRenderer {
                 .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0)),
                 .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
             ]
-
+ 
+            
             let descriptor = Mesh.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
@@ -58,6 +63,11 @@ class TriangleRenderer {
 
             return meshFactory.make(descriptor)
         }()
+        
+        vertices = resourceFactory.makeTypedBuffer(elementCount:3, options: []) as TypedBuffer<Vertex>
+        vertices[0] = .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
+        vertices[1] = .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
+        vertices[2] = .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
     }
 
     func draw(_ encoder: MTLRenderCommandEncoder) {
@@ -66,7 +76,8 @@ class TriangleRenderer {
         withUnsafeMutablePointer(to: &screenViewport) {
             encoder.setVertexBytes($0, length: MemoryLayout<Viewport>.stride, index: VertexInputIndex.Viewport.rawValue)
         }
-
-        encoder.drawMesh(mesh)
+        encoder.setVertexBuffer(vertices.rawBuffer, offset: 0, index: VertexInputIndex.Vertices1.rawValue)
+        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        //encoder.drawMesh(mesh)
     }
 }

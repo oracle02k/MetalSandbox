@@ -2,7 +2,7 @@ import SwiftUI
 
 protocol AAPLViewDelegate {
     func drawableResize(size: CGSize)
-    func renderToMetalLayer(metalLayer: CAMetalLayer)
+    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView)
 }
 
 class MetalView: UIView {
@@ -10,7 +10,10 @@ class MetalView: UIView {
     private var displayLink: CADisplayLink?
     private var previousTimeStamp: CFTimeInterval = .zero
     private let delegate = MetalViewDelegate()
-
+    var colorPixelFormat: MTLPixelFormat = .bgra8Unorm
+    var depthStencilPixelFormat: MTLPixelFormat = .depth32Float
+    var sampleCount = 1
+    
     override class var layerClass: AnyClass {
         return CAMetalLayer.self
     }
@@ -42,11 +45,10 @@ class MetalView: UIView {
         Debug.frameLog(String(format: "actualFPS: %.2ffps", actualFramesPerSecond))
         
         synchronized(metalLayer) {
-            delegate.renderToMetalLayer(metalLayer: metalLayer)
+            delegate.renderToMetalLayer(metalLayer: metalLayer, view:self)
         }
         
         previousTimeStamp = displayLink.targetTimestamp
-        Debug.flush()
     }
 
     func setPaused(pause: Bool) {
@@ -139,8 +141,8 @@ class MetalViewDelegate: AAPLViewDelegate {
         System.shared.app.changeViewportSize(size)
     }
 
-    func renderToMetalLayer(metalLayer: CAMetalLayer) {
-        metalLayer.pixelFormat = .bgra8Unorm
+    func renderToMetalLayer(metalLayer: CAMetalLayer, view:MetalView) {
+        metalLayer.pixelFormat = view.colorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
         }
@@ -148,7 +150,7 @@ class MetalViewDelegate: AAPLViewDelegate {
         let descriptor = MTLRenderPassDescriptor()
         descriptor.colorAttachments[0].texture = drawable.texture
         descriptor.colorAttachments[0].loadAction = .clear
-        descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.1, green: 0.57, blue: 0.25, alpha: 1)
+        descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1)
         descriptor.colorAttachments[0].storeAction = .store
 
         System.shared.app.draw(viewDrawable: drawable, viewRenderPassDescriptor: descriptor)

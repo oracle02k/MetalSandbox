@@ -5,3 +5,7 @@ public func synchronized(_ obj: AnyObject, closure: () -> Void) {
     closure()
     objc_sync_exit(obj)
 }
+
+public func sizeof<T>(_ obj: T? = nil) -> Int {
+    return MemoryLayout<T>.stride
+}

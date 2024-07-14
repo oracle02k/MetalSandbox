@@ -8,12 +8,14 @@ struct Vertex {
 
 final class Application {
     private var viewportSize: CGSize
-    private let triangleRenderer: TriangleRenderer
-    private let screenRenderer: ScreenRenderer
-    private let addArrayCompute: AddArrayCompute
     private let commandQueue: MetalCommandQueue
     private let resourceFactory: MetalResourceFactory
     private let pipelineStateFactory: MetalPipelineStateFactory
+    
+    private let triangleRenderer: TriangleRenderer
+    private let screenRenderer: ScreenRenderer
+    private let addArrayCompute: AddArrayCompute
+    private let indirectRenderer: IndirectRenderer
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
@@ -37,14 +39,20 @@ final class Application {
 
         self.triangleRenderer = TriangleRenderer(
             pipelineStateFactory: pipelineStateFactory,
-            meshFactory: meshFactory
+            meshFactory: meshFactory,
+            resourceFactory: resourceFactory
         )
 
         self.addArrayCompute = AddArrayCompute(
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
-
+        
+        self.indirectRenderer = IndirectRenderer(
+            pipelineStateFactory: pipelineStateFactory,
+            resourceFactory: resourceFactory
+        )
+        
         viewportSize = .init(width: 320, height: 320)
     }
 
@@ -54,7 +62,8 @@ final class Application {
         screenRenderer.build()
         triangleRenderer.build()
         addArrayCompute.build()
-
+        indirectRenderer.build()
+        
         refreshRenderPass()
     }
 
@@ -113,7 +122,20 @@ final class Application {
         )
 
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
+        /*
+        commandQueue.doCommand { commandBuffer in
+           indirectRenderer.draw(commandBuffer, renderPassDescriptor: viewRenderPassDescriptor)
+            /*
+            let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor)
+            encoder?.endEncoding()
+             */
+            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+            commandBuffer.commit()
+        }
+         */
 
+
+        /*
         commandQueue.doCommand { commandBuffer in
             guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
                 appFatalError("failed to make compute command encoder.")
@@ -126,13 +148,23 @@ final class Application {
             commandBuffer.waitUntilCompleted()
             addArrayCompute.verifyResult()
         }
+         */
+        
+        
 
         commandQueue.doCommand { commandBuffer in
+            commandBuffer.addCompletedHandler {_ in 
+                let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
+                Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
+                Debug.flush()
+            }
+            
             guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
             encoder.setViewport(viewport)
-            triangleRenderer.draw(encoder)
+            //triangleRenderer.draw(encoder)
+            indirectRenderer.draw(encoder)
             encoder.endEncoding()
 
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
