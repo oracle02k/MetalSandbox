@@ -46,7 +46,7 @@ class OriginIndirectRenderer {
     }
 
     private let gpu: GpuContext
-    
+
     // Index into per frame uniforms to use for the current frame
     private var inFlightIndex: Int = 0
 

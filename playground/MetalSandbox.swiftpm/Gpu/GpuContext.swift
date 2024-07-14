@@ -12,34 +12,34 @@ class GpuContext {
         case IndirectRendererVertexFunction2 = "IndirectRenderer::vertexShader2"
         case IndirectRendererFragmentFunction = "IndirectRenderer::fragmentShader"
     }
-    
+
     let device: MTLDevice
     private var container: [Function: MTLFunction]
     private lazy var library: MTLLibrary = uninitialized()
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
-    
+
     init(_ device: MTLDevice) {
         self.device = device
         self.container = [:]
     }
-    
+
     func build() {
         commandQueue = buildCommandQueue()
         library = buildFunction()
     }
-    
+
     private func buildCommandQueue() -> MTLCommandQueue {
         guard let commandQueue = device.makeCommandQueue() else {
             appFatalError("failed to make command queue.")
         }
         return commandQueue
     }
-    
+
     private func buildFunction() -> MTLLibrary {
         guard let path = Bundle.main.url(forResource: "shader", withExtension: "cpp") else {
             appFatalError("faild to open shader.cpp")
         }
-        
+
         var library: MTLLibrary
         do {
             let shaderFile = try String(contentsOf: path, encoding: .utf8)
@@ -47,26 +47,26 @@ class GpuContext {
         } catch {
             appFatalError("faild to make library.", error: error)
         }
-        
+
         Function.allCases.forEach {
             guard let function = library.makeFunction(name: $0.rawValue) else {
                 appFatalError("failed to make function: \($0)")
             }
             container[$0] = function
         }
-        
+
         Logger.log(library.description)
-        
+
         return library
     }
-    
+
     func findFunction(by name: Function) -> MTLFunction {
         guard let function = container[name] else {
             appFatalError("failed to find function: \(name)")
         }
         return function
     }
-    
+
     func makeRenderPipelineState(_ descriptor: MTLRenderPipelineDescriptor) -> MTLRenderPipelineState {
         do {
             return try device.makeRenderPipelineState(descriptor: descriptor)
@@ -74,14 +74,14 @@ class GpuContext {
             appFatalError("failed to make render pipeline state.", error: error)
         }
     }
-    
+
     func makeDepthStancilState(_ descriptor: MTLDepthStencilDescriptor) -> MTLDepthStencilState {
         guard let depthStencilState = device.makeDepthStencilState(descriptor: descriptor) else {
             appFatalError("failed to make depth stencil state.")
         }
         return depthStencilState
     }
-    
+
     func makeComputePipelineState(_ descriptor: MTLComputePipelineDescriptor) -> MTLComputePipelineState {
         do {
             return try device.makeComputePipelineState(descriptor: descriptor, options: .init(), reflection: nil)
@@ -89,27 +89,27 @@ class GpuContext {
             appFatalError("failed to make render pipeline state.", error: error)
         }
     }
-    
+
     func doCommand<Result>(_ body: (_ commandBuffer: MTLCommandBuffer) throws -> Result) rethrows -> Result {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             appFatalError("failed to make command buffer.")
         }
         return try body(commandBuffer)
     }
-    
+
     func makeCommandBuffer() -> MTLCommandBuffer {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             appFatalError("failed to make command buffer.")
         }
         return commandBuffer
     }
-    
+
     func makeTypedBuffer<T>(elementCount: Int = 1, options: MTLResourceOptions) -> TypedBuffer<T> {
         let rawlength = MemoryLayout<T>.stride * elementCount
         let rawBuffer = makeBuffer(length: rawlength, options: options)
         return TypedBuffer<T>(rawBuffer: rawBuffer, count: elementCount)
     }
-    
+
     func makeBuffer<T>(data: [T], options: MTLResourceOptions) -> MTLBuffer {
         return data.withUnsafeBytes {
             guard let buffer = device.makeBuffer(bytes: $0.baseAddress!, length: data.byteLength, options: options) else {
@@ -118,14 +118,14 @@ class GpuContext {
             return buffer
         }
     }
-    
+
     func makeBuffer(length: Int, options: MTLResourceOptions) -> MTLBuffer {
         guard let buffer = device.makeBuffer(length: length, options: options) else {
             appFatalError("failed to make buffer.")
         }
         return buffer
     }
-    
+
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> MTLTexture {
         guard let texture = device.makeTexture(descriptor: descriptor) else {
             appFatalError("failed to make texture.")

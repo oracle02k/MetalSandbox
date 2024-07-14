@@ -9,7 +9,7 @@ struct Vertex {
 final class Application {
     private var viewportSize: CGSize
     private var gpu: GpuContext
-    
+
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -25,7 +25,7 @@ final class Application {
         meshFactory: Mesh.Factory
     ) {
         self.gpu = gpu
-        
+
         self.screenRenderer = ScreenRenderer(
             gpu: gpu,
             indexedMeshFactory: indexedMeshFactory
@@ -44,7 +44,7 @@ final class Application {
 
     func build() {
         gpu.build()
-        
+
         screenRenderer.build()
         triangleRenderer.build()
         addArrayCompute.build()
