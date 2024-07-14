@@ -1,13 +1,13 @@
 import MetalKit
 
 class ScreenRenderer {
-    private let pipelineStateFactory: MetalPipelineStateFactory
+    private let gpu: GpuContext
     private let indexedMeshFactory: IndexedMesh.Factory
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
 
-    init(pipelineStateFactory: MetalPipelineStateFactory, indexedMeshFactory: IndexedMesh.Factory) {
-        self.pipelineStateFactory = pipelineStateFactory
+    init(gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
+        self.gpu = gpu
         self.indexedMeshFactory = indexedMeshFactory
     }
 
@@ -16,10 +16,10 @@ class ScreenRenderer {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Screen Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .TexcoordVertexFuction)
-            descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .TexcoordFragmentFunction)
+            descriptor.vertexFunction = gpu.findFunction(by: .TexcoordVertexFuction)
+            descriptor.fragmentFunction = gpu.findFunction(by: .TexcoordFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-            return pipelineStateFactory.makeRenderPipelineState(descriptor)
+            return gpu.makeRenderPipelineState(descriptor)
         }()
 
         indexedMesh = {

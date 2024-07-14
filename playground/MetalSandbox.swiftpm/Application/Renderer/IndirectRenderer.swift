@@ -27,9 +27,8 @@ class IndirectRenderer {
     let GridHeight: Float = 20
     let ObjecDistance: Float = 2.1 // Distance between each object
 
+    private let gpu: GpuContext
     private var screenViewport: Viewport
-    private let pipelineStateFactory: MetalPipelineStateFactory
-    private let resourceFactory: MetalResourceFactory
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private var vertices = [TypedBuffer<Vertex>]()
@@ -39,12 +38,8 @@ class IndirectRenderer {
     // The indirect command buffer encoded and executed
     private lazy var indirectCommandBuffer: MTLIndirectCommandBuffer = uninitialized()
 
-    init (
-        pipelineStateFactory: MetalPipelineStateFactory,
-        resourceFactory: MetalResourceFactory
-    ) {
-        self.pipelineStateFactory = pipelineStateFactory
-        self.resourceFactory = resourceFactory
+    init (_ gpu: GpuContext) {
+        self.gpu = gpu
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
@@ -53,13 +48,13 @@ class IndirectRenderer {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .IndirectRendererVertexFunction)
-            descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .IndirectRendererFragmentFunction)
+            descriptor.vertexFunction = gpu.findFunction(by: .IndirectRendererVertexFunction)
+            descriptor.fragmentFunction = gpu.findFunction(by: .IndirectRendererFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             descriptor.depthAttachmentPixelFormat = .depth32Float
             // Needed for this pipeline state to be used in indirect command buffers.
             descriptor.supportIndirectCommandBuffers = true
-            return pipelineStateFactory.makeRenderPipelineState(descriptor)
+            return gpu.makeRenderPipelineState(descriptor)
         }()
 
         depthStencilState = {
@@ -67,10 +62,10 @@ class IndirectRenderer {
             descriptor.label = "Depth"
             descriptor.depthCompareFunction = .lessEqual
             descriptor.isDepthWriteEnabled = true
-            return pipelineStateFactory.makeDepthStancilState(descriptor)
+            return gpu.makeDepthStancilState(descriptor)
         }()
 
-        frameState = resourceFactory.makeTypedBuffer(options: []) as TypedBuffer<FrameState>
+        frameState = gpu.makeTypedBuffer(options: []) as TypedBuffer<FrameState>
         frameState.contents.aspectScale.x = 1
         frameState.contents.aspectScale.y = 1
 
@@ -90,7 +85,7 @@ class IndirectRenderer {
         }
 
         /// Create and fill array containing parameters for each object
-        objectParameters = resourceFactory.makeTypedBuffer(elementCount: NumObjects, options: []) as TypedBuffer<ObjectPerameters>
+        objectParameters = gpu.makeTypedBuffer(elementCount: NumObjects, options: []) as TypedBuffer<ObjectPerameters>
         objectParameters.rawBuffer.label = "Object Parameters Array"
 
         let gridDimensions = simd_float2(GridWidth, GridHeight)
@@ -126,7 +121,7 @@ class IndirectRenderer {
             icbDescriptor.inheritPipelineState = true
         }
 
-        indirectCommandBuffer = resourceFactory.device.makeIndirectCommandBuffer(
+        indirectCommandBuffer = gpu.device.makeIndirectCommandBuffer(
             descriptor: icbDescriptor,
             maxCommandCount: NumObjects
         )!
@@ -190,7 +185,7 @@ class IndirectRenderer {
         // and 1 triangle to fill the inner portion of the gear below the groove beside the tooth.
         // Hence, the buffer needs 4 triangles or 12 vertices for each tooth.
         let numVertices = numTeeth * 12
-        let meshVertices: TypedBuffer<Vertex> = resourceFactory.makeTypedBuffer(elementCount: numVertices, options: [])
+        let meshVertices: TypedBuffer<Vertex> = gpu.makeTypedBuffer(elementCount: numVertices, options: [])
         meshVertices.rawBuffer.label = "\(numTeeth) Toothed Cog Vertices"
 
         let angle = Float(2.0 * Double.pi/Double(numTeeth))

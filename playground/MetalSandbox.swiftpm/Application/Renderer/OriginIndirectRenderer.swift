@@ -45,9 +45,8 @@ class OriginIndirectRenderer {
         case ObjectMesh
     }
 
-    private let pipelineStateFactory: MetalPipelineStateFactory
-    private let resourceFactory: MetalResourceFactory
-
+    private let gpu: GpuContext
+    
     // Index into per frame uniforms to use for the current frame
     private var inFlightIndex: Int = 0
 
@@ -77,13 +76,8 @@ class OriginIndirectRenderer {
 
     private lazy var aspectScale: simd_float2 = uninitialized()
 
-    init(
-        pipelineStateFactory: MetalPipelineStateFactory,
-        resourceFactory: MetalResourceFactory
-    ) {
-        self.pipelineStateFactory = pipelineStateFactory
-        self.resourceFactory = resourceFactory
-
+    init(_ gpu: GpuContext) {
+        self.gpu = gpu
         self.vertexBuffer = .init(repeating: nil, count: NumObjects)
         self.frameStateBuffer = .init(repeating: nil, count: MaxFramesInFlight)
     }
@@ -96,13 +90,13 @@ class OriginIndirectRenderer {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "IndirectPipeline"
             descriptor.sampleCount = 1// view.sampleCount
-            descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .IndirectRendererVertexFunction)
-            descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .IndirectRendererFragmentFunction)
+            descriptor.vertexFunction = gpu.findFunction(by: .IndirectRendererVertexFunction)
+            descriptor.fragmentFunction = gpu.findFunction(by: .IndirectRendererFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm// view.colorPixelFormat
             descriptor.depthAttachmentPixelFormat = .depth32Float// view.depthStencilPixelFormat
             // Needed for this pipeline state to be used in indirect command buffers.
             descriptor.supportIndirectCommandBuffers = true
-            return pipelineStateFactory.makeRenderPipelineState(descriptor)
+            return gpu.makeRenderPipelineState(descriptor)
         }()
 
         for objectIdx in 0..<NumObjects {
@@ -116,7 +110,7 @@ class OriginIndirectRenderer {
         }
 
         /// Create and fill array containing parameters for each object
-        objectParameters = resourceFactory.makeTypedBuffer(elementCount: NumObjects, options: []) as TypedBuffer<ObjectPerameters>
+        objectParameters = gpu.makeTypedBuffer(elementCount: NumObjects, options: []) as TypedBuffer<ObjectPerameters>
         objectParameters.rawBuffer.label = "Object Parameters Array"
 
         let gridDimensions = simd_float2(GridWidth, GridHeight)
@@ -132,7 +126,7 @@ class OriginIndirectRenderer {
         }
 
         for i in 0..<MaxFramesInFlight {
-            frameStateBuffer[i] = resourceFactory.makeTypedBuffer(options: .storageModeShared) as TypedBuffer<FrameState>
+            frameStateBuffer[i] = gpu.makeTypedBuffer(options: .storageModeShared) as TypedBuffer<FrameState>
             frameStateBuffer[i]?.rawBuffer.label = "Frame state buffer \(i)"
         }
 
@@ -140,7 +134,7 @@ class OriginIndirectRenderer {
         // dynamically in the indirect command buffer.   Each frame data will be blit from the
         // _frameStateBuffer that has just been updated by the CPU to this buffer.  This allow
         // a synchronous update of values set by the CPU.
-        indirectFrameStateBuffer = resourceFactory.makeBuffer(
+        indirectFrameStateBuffer = gpu.makeBuffer(
             length: MemoryLayout<FrameState>.stride,
             options: .storageModePrivate
         )
@@ -166,7 +160,7 @@ class OriginIndirectRenderer {
             icbDescriptor.inheritPipelineState = true
         }
 
-        indirectCommandBuffer = resourceFactory.device.makeIndirectCommandBuffer(
+        indirectCommandBuffer = gpu.device.makeIndirectCommandBuffer(
             descriptor: icbDescriptor,
             maxCommandCount: NumObjects
         )!
@@ -204,7 +198,7 @@ class OriginIndirectRenderer {
         // and 1 triangle to fill the inner portion of the gear below the groove beside the tooth.
         // Hence, the buffer needs 4 triangles or 12 vertices for each tooth.
         let numVertices = numTeeth * 12
-        let meshVertices: TypedBuffer<Vertex> = resourceFactory.makeTypedBuffer(elementCount: numVertices, options: [])
+        let meshVertices: TypedBuffer<Vertex> = gpu.makeTypedBuffer(elementCount: numVertices, options: [])
         meshVertices.rawBuffer.label = "\(numTeeth) Toothed Cog Vertices"
 
         let angle = Float(2.0 * Double.pi/Double(numTeeth))

@@ -7,23 +7,20 @@ class TriangleRenderer {
         var texCoord: simd_float2
     }
 
+    private let gpu: GpuContext
     private var screenViewport: Viewport
-    private let pipelineStateFactory: MetalPipelineStateFactory
     private let meshFactory: Mesh.Factory
-    private let resourceFactory: MetalResourceFactory
     private lazy var mesh: Mesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
     init (
-        pipelineStateFactory: MetalPipelineStateFactory,
-        meshFactory: Mesh.Factory,
-        resourceFactory: MetalResourceFactory
+        gpu: GpuContext,
+        meshFactory: Mesh.Factory
     ) {
-        self.pipelineStateFactory = pipelineStateFactory
+        self.gpu = gpu
         self.meshFactory = meshFactory
-        self.resourceFactory = resourceFactory
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
@@ -32,11 +29,11 @@ class TriangleRenderer {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = pipelineStateFactory.findFunction(by: .Simple2dVertexFunction)
-            descriptor.fragmentFunction = pipelineStateFactory.findFunction(by: .Simple2dFragmentFunction)
+            descriptor.vertexFunction = gpu.findFunction(by: .Simple2dVertexFunction)
+            descriptor.fragmentFunction = gpu.findFunction(by: .Simple2dFragmentFunction)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             descriptor.depthAttachmentPixelFormat = .depth32Float
-            return pipelineStateFactory.makeRenderPipelineState(descriptor)
+            return gpu.makeRenderPipelineState(descriptor)
         }()
 
         depthStencilState = {
@@ -44,7 +41,7 @@ class TriangleRenderer {
             descriptor.label = "Depth"
             descriptor.depthCompareFunction = .lessEqual
             descriptor.isDepthWriteEnabled = true
-            return pipelineStateFactory.makeDepthStancilState(descriptor)
+            return gpu.makeDepthStancilState(descriptor)
         }()
 
         mesh = {
@@ -63,7 +60,7 @@ class TriangleRenderer {
             return meshFactory.make(descriptor)
         }()
 
-        vertices = resourceFactory.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
+        vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
         vertices[1] = .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
         vertices[2] = .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))

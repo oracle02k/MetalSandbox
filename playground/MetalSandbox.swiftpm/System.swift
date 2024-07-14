@@ -17,9 +17,7 @@ class System {
         Logger.log("begin entrypoint init")
         self.device = device
         self.app = Application(
-            commandQueue: MetalCommandQueue(device),
-            pipelineStateFactory: MetalPipelineStateFactory(device),
-            resourceFactory: MetalResourceFactory(device),
+            gpu: GpuContext(device),
             indexedMeshFactory: IndexedMesh.Factory(device),
             meshFactory: Mesh.Factory(device)
         )

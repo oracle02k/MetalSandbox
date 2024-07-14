@@ -8,10 +8,8 @@ struct Vertex {
 
 final class Application {
     private var viewportSize: CGSize
-    private let commandQueue: MetalCommandQueue
-    private let resourceFactory: MetalResourceFactory
-    private let pipelineStateFactory: MetalPipelineStateFactory
-
+    private var gpu: GpuContext
+    
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -22,43 +20,31 @@ final class Application {
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
 
     init(
-        commandQueue: MetalCommandQueue,
-        pipelineStateFactory: MetalPipelineStateFactory,
-        resourceFactory: MetalResourceFactory,
+        gpu: GpuContext,
         indexedMeshFactory: IndexedMesh.Factory,
         meshFactory: Mesh.Factory
     ) {
-        self.commandQueue = commandQueue
-        self.resourceFactory = resourceFactory
-        self.pipelineStateFactory = pipelineStateFactory
-
+        self.gpu = gpu
+        
         self.screenRenderer = ScreenRenderer(
-            pipelineStateFactory: pipelineStateFactory,
+            gpu: gpu,
             indexedMeshFactory: indexedMeshFactory
         )
 
         self.triangleRenderer = TriangleRenderer(
-            pipelineStateFactory: pipelineStateFactory,
-            meshFactory: meshFactory,
-            resourceFactory: resourceFactory
+            gpu: gpu,
+            meshFactory: meshFactory
         )
 
-        self.addArrayCompute = AddArrayCompute(
-            pipelineStateFactory: pipelineStateFactory,
-            resourceFactory: resourceFactory
-        )
-
-        self.indirectRenderer = IndirectRenderer(
-            pipelineStateFactory: pipelineStateFactory,
-            resourceFactory: resourceFactory
-        )
+        self.addArrayCompute = AddArrayCompute(gpu)
+        self.indirectRenderer = IndirectRenderer(gpu)
 
         viewportSize = .init(width: 320, height: 320)
     }
 
     func build() {
-        commandQueue.build()
-        pipelineStateFactory.build()
+        gpu.build()
+        
         screenRenderer.build()
         triangleRenderer.build()
         addArrayCompute.build()
@@ -82,7 +68,7 @@ final class Application {
             descriptor.sampleCount = 1
             descriptor.usage = [.renderTarget, .shaderRead]
             // descriptor.storageMode = .memoryless
-            return resourceFactory.makeTexture(descriptor)
+            return gpu.makeTexture(descriptor)
         }()
 
         offscreenTexture = {
@@ -92,7 +78,7 @@ final class Application {
             descriptor.height = Int(viewportSize.height)
             descriptor.pixelFormat = .bgra8Unorm
             descriptor.usage = [.renderTarget, .shaderRead]
-            return resourceFactory.makeTexture(descriptor)
+            return gpu.makeTexture(descriptor)
         }()
 
         offscreenRenderPassDescriptor = {
@@ -149,7 +135,7 @@ final class Application {
          }
          */
 
-        commandQueue.doCommand { commandBuffer in
+        gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler {_ in
                 let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
                 Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))

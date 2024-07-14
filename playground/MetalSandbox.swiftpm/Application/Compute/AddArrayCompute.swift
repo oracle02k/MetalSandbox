@@ -1,32 +1,27 @@
 import MetalKit
 
 class AddArrayCompute {
-    let pipelineStateFactory: MetalPipelineStateFactory
-    let resourceFactory: MetalResourceFactory
+    let gpu: GpuContext
     lazy var computePipelineState: MTLComputePipelineState = uninitialized()
     lazy var bufferA: MTLBuffer = uninitialized()
     lazy var bufferB: MTLBuffer = uninitialized()
     lazy var bufferResult: MTLBuffer = uninitialized()
     let elementNum = 100
 
-    init (
-        pipelineStateFactory: MetalPipelineStateFactory,
-        resourceFactory: MetalResourceFactory
-    ) {
-        self.pipelineStateFactory = pipelineStateFactory
-        self.resourceFactory = resourceFactory
+    init (_ gpu: GpuContext) {
+        self.gpu = gpu
     }
 
     func build() {
         computePipelineState = {
             let descriptor = MTLComputePipelineDescriptor()
-            descriptor.computeFunction = pipelineStateFactory.findFunction(by: .AddArrayComputeFunction)
-            return pipelineStateFactory.makeComputePipelineState(descriptor)
+            descriptor.computeFunction = gpu.findFunction(by: .AddArrayComputeFunction)
+            return gpu.makeComputePipelineState(descriptor)
         }()
 
         bufferA = generateRandomFloatData(count: elementNum)
         bufferB = generateRandomFloatData(count: elementNum)
-        bufferResult = resourceFactory.makeBuffer(length: MemoryLayout<Float>.stride * elementNum, options: .storageModeShared)
+        bufferResult = gpu.makeBuffer(length: MemoryLayout<Float>.stride * elementNum, options: .storageModeShared)
     }
 
     func dispatch(encoder: MTLComputeCommandEncoder) {
@@ -62,7 +57,7 @@ class AddArrayCompute {
             data.append(Float.random(in: 0.0...1.0))
         }
 
-        return resourceFactory.makeBuffer(data: data, options: .storageModeShared)
+        return gpu.makeBuffer(data: data, options: .storageModeShared)
     }
 
     func verifyResult() {
