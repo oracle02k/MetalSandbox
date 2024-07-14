@@ -168,7 +168,7 @@ class IndirectRenderer {
     func indirectDraw(_ encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(renderPipelineState)
         // Make a useResource call for each buffer needed by the indirect command buffer.
-        for i in 0..<NumObject s{
+        for i in 0..<NumObjects {
             encoder.useResource(vertices[i].rawBuffer, usage: .read)
         }
         encoder.useResource(objectParameters.rawBuffer, usage: .read)
