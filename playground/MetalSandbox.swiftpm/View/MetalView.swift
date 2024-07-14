@@ -13,7 +13,7 @@ class MetalView: UIView {
     var colorPixelFormat: MTLPixelFormat = .bgra8Unorm
     var depthStencilPixelFormat: MTLPixelFormat = .depth32Float
     var sampleCount = 1
-    
+
     override class var layerClass: AnyClass {
         return CAMetalLayer.self
     }
@@ -35,7 +35,7 @@ class MetalView: UIView {
         guard let metalLayer = layer as? CAMetalLayer else {
             appFatalError("metal layer error.")
         }
-    
+
         let delta = displayLink.targetTimestamp - previousTimeStamp
         let actualFramesPerSecond = 1 / (displayLink.targetTimestamp - displayLink.timestamp)
 
@@ -43,11 +43,11 @@ class MetalView: UIView {
         Debug.frameLog(String(format: "DeltaTime: %.2fms", delta*1000))
         Debug.frameLog(String(format: "Duration: %.2fms", displayLink.duration*1000))
         Debug.frameLog(String(format: "actualFPS: %.2ffps", actualFramesPerSecond))
-        
+
         synchronized(metalLayer) {
-            delegate.renderToMetalLayer(metalLayer: metalLayer, view:self)
+            delegate.renderToMetalLayer(metalLayer: metalLayer, view: self)
         }
-        
+
         previousTimeStamp = displayLink.targetTimestamp
     }
 
@@ -141,7 +141,7 @@ class MetalViewDelegate: AAPLViewDelegate {
         System.shared.app.changeViewportSize(size)
     }
 
-    func renderToMetalLayer(metalLayer: CAMetalLayer, view:MetalView) {
+    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView) {
         metalLayer.pixelFormat = view.colorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")

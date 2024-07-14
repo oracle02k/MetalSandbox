@@ -32,7 +32,7 @@ final class AppDebuggerBindVM: AppDebugger {
     func frameLog(_ message: String) {
         frameLogBuffer += message + "\n"
     }
-    
+
     func flush() {
         debugVm.initLog = initLogBuffer
         debugVm.frameLog = frameLogBuffer

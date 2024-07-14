@@ -8,7 +8,7 @@ extension MTLBuffer {
         let bufferedPointer = UnsafeBufferPointer(start: typedPointer, count: length)
         return Array(bufferedPointer)
     }
-    
+
     func write<T>(index: Int, data: T) {
         let length = (index + 1)
         let rawbufferSize = MemoryLayout<T>.stride * length

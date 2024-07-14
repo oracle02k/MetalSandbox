@@ -11,7 +11,7 @@ final class Application {
     private let commandQueue: MetalCommandQueue
     private let resourceFactory: MetalResourceFactory
     private let pipelineStateFactory: MetalPipelineStateFactory
-    
+
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -47,12 +47,12 @@ final class Application {
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
-        
+
         self.indirectRenderer = IndirectRenderer(
             pipelineStateFactory: pipelineStateFactory,
             resourceFactory: resourceFactory
         )
-        
+
         viewportSize = .init(width: 320, height: 320)
     }
 
@@ -63,7 +63,7 @@ final class Application {
         triangleRenderer.build()
         addArrayCompute.build()
         indirectRenderer.build()
-        
+
         refreshRenderPass()
     }
 
@@ -123,47 +123,44 @@ final class Application {
 
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
         /*
-        commandQueue.doCommand { commandBuffer in
-           indirectRenderer.draw(commandBuffer, renderPassDescriptor: viewRenderPassDescriptor)
-            /*
-            let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor)
-            encoder?.endEncoding()
-             */
-            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
-            commandBuffer.commit()
-        }
+         commandQueue.doCommand { commandBuffer in
+         indirectRenderer.draw(commandBuffer, renderPassDescriptor: viewRenderPassDescriptor)
+         /*
+         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor)
+         encoder?.endEncoding()
          */
-
+         commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+         commandBuffer.commit()
+         }
+         */
 
         /*
-        commandQueue.doCommand { commandBuffer in
-            guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-                appFatalError("failed to make compute command encoder.")
-            }
+         commandQueue.doCommand { commandBuffer in
+         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+         appFatalError("failed to make compute command encoder.")
+         }
 
-            addArrayCompute.dispatch(encoder: encoder)
-            encoder.endEncoding()
+         addArrayCompute.dispatch(encoder: encoder)
+         encoder.endEncoding()
 
-            commandBuffer.commit()
-            commandBuffer.waitUntilCompleted()
-            addArrayCompute.verifyResult()
-        }
+         commandBuffer.commit()
+         commandBuffer.waitUntilCompleted()
+         addArrayCompute.verifyResult()
+         }
          */
-        
-        
 
         commandQueue.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler {_ in 
+            commandBuffer.addCompletedHandler {_ in
                 let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
                 Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
                 Debug.flush()
             }
-            
+
             guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
             encoder.setViewport(viewport)
-            //triangleRenderer.draw(encoder)
+            // triangleRenderer.draw(encoder)
             indirectRenderer.draw(encoder)
             encoder.endEncoding()
 

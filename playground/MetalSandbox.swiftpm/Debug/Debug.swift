@@ -14,8 +14,8 @@ class Debug {
     static func frameLog(_ message: String) {
         System.shared.appDebuger.frameLog(message)
     }
-    
-    static func flush(){
+
+    static func flush() {
         System.shared.appDebuger.flush()
     }
 }

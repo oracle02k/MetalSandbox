@@ -54,8 +54,7 @@ class TriangleRenderer {
                 .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0)),
                 .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
             ]
- 
-            
+
             let descriptor = Mesh.Descriptor()
             descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
             descriptor.vertexCount = vertexBufferDescriptor.count
@@ -63,8 +62,8 @@ class TriangleRenderer {
 
             return meshFactory.make(descriptor)
         }()
-        
-        vertices = resourceFactory.makeTypedBuffer(elementCount:3, options: []) as TypedBuffer<Vertex>
+
+        vertices = resourceFactory.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
         vertices[1] = .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
         vertices[2] = .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
@@ -78,6 +77,6 @@ class TriangleRenderer {
         }
         encoder.setVertexBuffer(vertices.rawBuffer, offset: 0, index: VertexInputIndex.Vertices1.rawValue)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        //encoder.drawMesh(mesh)
+        // encoder.drawMesh(mesh)
     }
 }
