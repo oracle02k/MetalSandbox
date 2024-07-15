@@ -24,9 +24,46 @@ class GpuContext {
     }
 
     func build() {
+        _ = checkGpuCounter()
         commandQueue = buildCommandQueue()
         library = buildFunction()
     }
+    
+    private  func checkGpuCounter() -> [MTLCounterSamplingPoint] {
+            let boundaryNames = ["atStageBoundary",
+                                 "atDrawBoundary",
+                                 "atBlitBoundary",
+                                 "atDispatchBoundary",
+                                 "atTileDispatchBoundary"]
+            
+            let allBoundaries: [MTLCounterSamplingPoint] = [.atStageBoundary,
+                                                            .atDrawBoundary,
+                                                            .atBlitBoundary,
+                                                            .atDispatchBoundary,
+                                                            .atTileDispatchBoundary]
+            
+            print("The GPU device supports the following sampling boundary/ies: [", terminator: "")
+            var boundaries = [MTLCounterSamplingPoint]()
+            
+            for index in 0..<boundaryNames.count {
+                let boundary = allBoundaries[index]
+                if device.supportsCounterSampling(boundary) {
+                    if boundaries.count >= 1 {
+                        // Prefix the boundary's name with a comma and a space.
+                        print(", ", terminator: "")
+                    }
+                    // Print the boundary's name.
+                    print("\(boundaryNames[index])", terminator: "")
+                    // Add the boundary to the return-value array.
+                    boundaries.append(boundary)
+                }
+            }
+            // Finish printing the line that lists the boundaries the GPU device supports.
+            // Example: "The GPU device supports the following sampling boundaries: [atStageBoundary]"
+            print("]")
+            
+            return boundaries
+        }
 
     private func buildCommandQueue() -> MTLCommandQueue {
         guard let commandQueue = device.makeCommandQueue() else {

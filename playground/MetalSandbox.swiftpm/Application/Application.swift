@@ -7,9 +7,10 @@ struct Vertex {
 }
 
 final class Application {
+    private let gpu: GpuContext
+    private let frameBuffer: FrameBuffer
+    
     private var viewportSize: CGSize
-    private var gpu: GpuContext
-
     private let triangleRenderer: TriangleRenderer
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
@@ -18,24 +19,17 @@ final class Application {
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-
+    
     init(
         gpu: GpuContext,
+        frameBuffer: FrameBuffer,
         indexedMeshFactory: IndexedMesh.Factory,
         meshFactory: Mesh.Factory
     ) {
         self.gpu = gpu
-
-        self.screenRenderer = ScreenRenderer(
-            gpu: gpu,
-            indexedMeshFactory: indexedMeshFactory
-        )
-
-        self.triangleRenderer = TriangleRenderer(
-            gpu: gpu,
-            meshFactory: meshFactory
-        )
-
+        self.frameBuffer = frameBuffer
+        self.screenRenderer = ScreenRenderer(gpu: gpu, indexedMeshFactory: indexedMeshFactory)
+        self.triangleRenderer = TriangleRenderer(gpu: gpu,meshFactory: meshFactory)
         self.addArrayCompute = AddArrayCompute(gpu)
         self.indirectRenderer = IndirectRenderer(gpu)
 
@@ -44,12 +38,11 @@ final class Application {
 
     func build() {
         gpu.build()
-
+        frameBuffer.build()
         screenRenderer.build()
         triangleRenderer.build()
         addArrayCompute.build()
-        indirectRenderer.build()
-
+        indirectRenderer.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         refreshRenderPass()
     }
 
@@ -98,6 +91,11 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
+        let frameIndex = frameBuffer.refreshIndex()
+        Debug.frameLog("frame: \(frameBuffer.frameNumber)")
+        
+        indirectRenderer.update(frameIndex: frameIndex)
+        
         let viewport = MTLViewport(
             originX: 0,
             originY: 0,
@@ -106,50 +104,42 @@ final class Application {
             znear: 0.0,
             zfar: 1.0
         )
-
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
-        /*
-         commandQueue.doCommand { commandBuffer in
-         indirectRenderer.draw(commandBuffer, renderPassDescriptor: viewRenderPassDescriptor)
-         /*
-         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor)
-         encoder?.endEncoding()
-         */
-         commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
-         commandBuffer.commit()
+        
+        gpu.doCommand { commandBuffer in
+            guard let encoder = commandBuffer.makeBlitCommandEncoder() else {
+                appFatalError("failed to make blit command encoder.")
+            }
+            indirectRenderer.beforeDraw(encoder, frameIndex: frameIndex)
+            encoder.endEncoding()
+            
+            guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+                appFatalError("failed to make compute command encoder.")
+            }
+            addArrayCompute.dispatch(encoder: encoder)
+            encoder.endEncoding()
+            
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            addArrayCompute.verifyResult()
          }
-         */
-
-        /*
-         commandQueue.doCommand { commandBuffer in
-         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-         appFatalError("failed to make compute command encoder.")
-         }
-
-         addArrayCompute.dispatch(encoder: encoder)
-         encoder.endEncoding()
-
-         commandBuffer.commit()
-         commandBuffer.waitUntilCompleted()
-         addArrayCompute.verifyResult()
-         }
-         */
 
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler {_ in
+            commandBuffer.addCompletedHandler { [self] _ in
                 let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
                 Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
                 Debug.flush()
+                frameBuffer.release()
             }
 
             guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")
             }
-            encoder.setViewport(viewport)
+            //encoder.setViewport(viewport)
             // triangleRenderer.draw(encoder)
             indirectRenderer.draw(encoder)
             encoder.endEncoding()
-
+            
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
             guard let viewEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor) else {
                 appFatalError("failed to make render command encoder.")

@@ -18,6 +18,7 @@ class System {
         self.device = device
         self.app = Application(
             gpu: GpuContext(device),
+            frameBuffer: FrameBuffer(),
             indexedMeshFactory: IndexedMesh.Factory(device),
             meshFactory: Mesh.Factory(device)
         )
