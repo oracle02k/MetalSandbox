@@ -7,16 +7,16 @@ extension GpuContext {
                              "atBlitBoundary",
                              "atDispatchBoundary",
                              "atTileDispatchBoundary"]
-        
+
         let allBoundaries: [MTLCounterSamplingPoint] = [.atStageBoundary,
                                                         .atDrawBoundary,
                                                         .atBlitBoundary,
                                                         .atDispatchBoundary,
                                                         .atTileDispatchBoundary]
-        
+
         print("The GPU device supports the following sampling boundary/ies: [", terminator: "")
         var boundaries = [MTLCounterSamplingPoint]()
-        
+
         for index in 0..<boundaryNames.count {
             let boundary = allBoundaries[index]
             if device.supportsCounterSampling(boundary) {
@@ -33,33 +33,33 @@ extension GpuContext {
         // Finish printing the line that lists the boundaries the GPU device supports.
         // Example: "The GPU device supports the following sampling boundaries: [atStageBoundary]"
         print("]")
-        
+
         return boundaries
     }
-    
+
     func makeCounterSampleBuffer(_ sampleSet: MTLCommonCounterSet) -> MTLCounterSampleBuffer? {
-        var counterSet: MTLCounterSet? = nil
-        
+        var counterSet: MTLCounterSet?
+
         for set in device.counterSets! {
             if set.name.caseInsensitiveCompare(sampleSet.rawValue) == .orderedSame {
                 counterSet = set
                 break
             }
         }
-        
+
         guard let counterSet = counterSet else {
             return nil
         }
-        
+
         /*
-        let existCounter = counterSet.counters
-            .contains {$0.name.caseInsensitiveCompare(MTLCommonCounter.timestamp.rawValue) == .orderedSame}
-        
-        guard existCounter else {
-            return nil
-        }
-     */
-        
+         let existCounter = counterSet.counters
+         .contains {$0.name.caseInsensitiveCompare(MTLCommonCounter.timestamp.rawValue) == .orderedSame}
+
+         guard existCounter else {
+         return nil
+         }
+         */
+
         // Create and configure a descriptor for the counter sample buffer.
         let descriptor = MTLCounterSampleBufferDescriptor()
         // This counter set instance belongs to the `device` instance.
@@ -76,7 +76,7 @@ extension GpuContext {
         guard let buffer = try? device.makeCounterSampleBuffer(descriptor: descriptor) else {
             appFatalError("Device failed to create a counter sample buffer.")
         }
-        
+
         return buffer
     }
 }

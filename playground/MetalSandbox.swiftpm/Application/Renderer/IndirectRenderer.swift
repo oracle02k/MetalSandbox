@@ -26,7 +26,7 @@ class IndirectRenderer {
     let GridWidth: Float = 20
     let GridHeight: Float = 20
     let ObjecDistance: Float = 2.1 // Distance between each object
-    
+
     private let gpu: GpuContext
     private var screenViewport: Viewport
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
@@ -41,7 +41,7 @@ class IndirectRenderer {
     // The indirect command buffer encoded and executed
     private lazy var indirectCommandBuffer: MTLIndirectCommandBuffer = uninitialized()
     // aspectScale
-    private lazy var aspectScale = simd_float2(1,1)
+    private lazy var aspectScale = simd_float2(1, 1)
 
     init (_ gpu: GpuContext) {
         self.gpu = gpu
@@ -69,12 +69,12 @@ class IndirectRenderer {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
-        
+
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))
             frameStateBuffer[i].rawBuffer.label = "Frame state buffer \(i)"
         }
-        
+
         // When encoding commands with the CPU, the app sets this indirect frame state buffer
         // dynamically in the indirect command buffer.   Each frame data will be blit from the
         // _frameStateBuffer that has just been updated by the CPU to this buffer.  This allow
@@ -87,7 +87,7 @@ class IndirectRenderer {
 
         aspectScale.x = 1
         aspectScale.y = 1
-        
+
         gearSetup()
         indirectSetup()
     }
@@ -161,16 +161,16 @@ class IndirectRenderer {
             )
         }
     }
-    
+
     func updateAspectScale(_ size: CGSize) {
         aspectScale = simd_float2(Float(size.height / size.width), 1.0)
     }
-    
+
     /// Updates non-Metal state for the current frame including updates to uniforms used in shaders
     func update(frameIndex: Int) {
         frameStateBuffer[frameIndex].contents.aspectScale = aspectScale
     }
-    
+
     func beforeDraw(_ encoder: MTLBlitCommandEncoder, frameIndex: Int) {
         encoder.copy(
             from: frameStateBuffer[frameIndex].rawBuffer, sourceOffset: 0,
@@ -182,7 +182,7 @@ class IndirectRenderer {
     func draw(_ encoder: MTLRenderCommandEncoder) {
         encoder.setCullMode(.back)
         encoder.setRenderPipelineState(renderPipelineState)
-        //normalDraw(encoder)
+        // normalDraw(encoder)
         indirectDraw(encoder)
     }
 
