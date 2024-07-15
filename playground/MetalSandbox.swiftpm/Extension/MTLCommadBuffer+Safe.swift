@@ -1,4 +1,4 @@
-import SwiftUI
+import MetalKit
 
 extension MTLCommandBuffer {
     func makeBlitCommandEncoderWithSafe() -> MTLBlitCommandEncoder {

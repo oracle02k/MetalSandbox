@@ -20,6 +20,8 @@ final class Application {
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
     
+    private lazy var counterSampleBuffer: MTLCounterSampleBuffer = uninitialized()
+    
     init(
         gpu: GpuContext,
         frameBuffer: FrameBuffer,
@@ -38,6 +40,7 @@ final class Application {
 
     func build() {
         gpu.build()
+        _ = gpu.checkCounterSample()
         frameBuffer.build()
         screenRenderer.build()
         triangleRenderer.build()
@@ -73,7 +76,7 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-
+     
         offscreenRenderPassDescriptor = {
             let descriptor = MTLRenderPassDescriptor()
             descriptor.colorAttachments[0].texture = offscreenTexture
@@ -85,6 +88,21 @@ final class Application {
             descriptor.depthAttachment.loadAction = .clear
             descriptor.depthAttachment.clearDepth = 0.5
             descriptor.depthAttachment.storeAction = .store
+            
+            guard let sampleAttachment = descriptor.sampleBufferAttachments[0] else {
+                appFatalError("sample buffer error.")
+            }
+            
+            guard let counterSampleBuffer = gpu.makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
+                appFatalError("sample buffer error.")
+            }
+            
+            self.counterSampleBuffer = counterSampleBuffer
+            sampleAttachment.sampleBuffer = self.counterSampleBuffer
+            sampleAttachment.startOfVertexSampleIndex = 0
+            sampleAttachment.endOfVertexSampleIndex = 1
+            sampleAttachment.startOfFragmentSampleIndex = 2
+            sampleAttachment.endOfFragmentSampleIndex = 3
 
             return descriptor
         }()
@@ -124,6 +142,19 @@ final class Application {
             commandBuffer.addCompletedHandler { [self] _ in
                 let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
                 Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
+                
+                guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<6) else {
+                    appFatalError("Device failed to create a counter sample buffer.")
+                }
+                
+                sampleData.withUnsafeBytes { body in
+                    let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
+                    let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
+                    let fragmentInterval = Float (sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
+                    Debug.frameLog(String(format: "VertexTime: %.2fms", vertexInterval))
+                    Debug.frameLog(String(format: "FragmentTime: %.2fms", fragmentInterval))
+                }
+                
                 Debug.flush()
                 frameBuffer.release()
             }
