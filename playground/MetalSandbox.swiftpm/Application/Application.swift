@@ -107,17 +107,13 @@ final class Application {
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
         
         gpu.doCommand { commandBuffer in
-            guard let encoder = commandBuffer.makeBlitCommandEncoder() else {
-                appFatalError("failed to make blit command encoder.")
-            }
-            indirectRenderer.beforeDraw(encoder, frameIndex: frameIndex)
-            encoder.endEncoding()
+            let blitEncoder = commandBuffer.makeBlitCommandEncoderWithSafe()
+            indirectRenderer.beforeDraw(blitEncoder, frameIndex: frameIndex)
+            blitEncoder.endEncoding()
             
-            guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-                appFatalError("failed to make compute command encoder.")
-            }
-            addArrayCompute.dispatch(encoder: encoder)
-            encoder.endEncoding()
+            let computeEncoder = commandBuffer.makeComputeCommandEncoderWithSafe()
+            addArrayCompute.dispatch(encoder: computeEncoder)
+            computeEncoder.endEncoding()
             
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
@@ -132,18 +128,14 @@ final class Application {
                 frameBuffer.release()
             }
 
-            guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRenderPassDescriptor) else {
-                appFatalError("failed to make render command encoder.")
-            }
-            //encoder.setViewport(viewport)
-            // triangleRenderer.draw(encoder)
+            let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
+            encoder.setViewport(viewport)
+            triangleRenderer.draw(encoder)
             indirectRenderer.draw(encoder)
             encoder.endEncoding()
             
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
-            guard let viewEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: viewRenderPassDescriptor) else {
-                appFatalError("failed to make render command encoder.")
-            }
+            let viewEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: viewRenderPassDescriptor)
             viewEncoder.setViewport(viewport)
             screenRenderer.draw(viewEncoder, offscreenTexture: offscreenTexture)
             viewEncoder.endEncoding()
