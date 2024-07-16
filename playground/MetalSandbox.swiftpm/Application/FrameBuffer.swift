@@ -9,15 +9,16 @@ class FrameBuffer {
     func build() {
         inFlightSemaphore = DispatchSemaphore(value: maxFramesInFlight)
     }
-
-    func refreshIndex() -> Int {
+    
+    
+    func waitForNextBufferIndex() -> Int {
         inFlightSemaphore.wait()
-        frameNumber += 1
         frameIndex = frameNumber % maxFramesInFlight
+        frameNumber += 1
         return  frameIndex
     }
-
-    func release() {
+    
+    func releaseBufferIndex() {
         inFlightSemaphore.signal()
     }
 }

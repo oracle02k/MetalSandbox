@@ -109,10 +109,11 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
-        let frameIndex = frameBuffer.refreshIndex()
+        let currentFrame = frameBuffer.frameNumber
+        let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
 
-        indirectRenderer.update(frameIndex: frameIndex)
+        indirectRenderer.update()
 
         let viewport = MTLViewport(
             originX: 0,
@@ -156,7 +157,7 @@ final class Application {
                 }
 
                 Debug.flush()
-                frameBuffer.release()
+                frameBuffer.releaseBufferIndex()
             }
 
             let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
