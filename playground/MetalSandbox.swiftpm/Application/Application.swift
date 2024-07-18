@@ -107,9 +107,9 @@ final class Application {
             return descriptor
         }()
     }
-    
+
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
-    
+
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
 

@@ -167,9 +167,8 @@ class IndirectRenderer {
     }
 
     /// Updates non-Metal state for the current frame including updates to uniforms used in shaders
-    func update() {        
+    func update() {
     }
-
 
     func beforeDraw(_ encoder: MTLBlitCommandEncoder, frameIndex: Int) {
         frameStateBuffer[frameIndex].contents.aspectScale = aspectScale
