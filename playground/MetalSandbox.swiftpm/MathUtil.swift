@@ -26,11 +26,11 @@ import MetalKit
  */
 typealias  quaternion_float = vector_float4
 
-var seed_lo: UInt32
-var seed_hi: UInt32  // __uint32_t
+var seed_lo: UInt32 = 0
+var seed_hi: UInt32 = 0  // __uint32_t
 
-func F16ToF32(address: Float16) -> Float {
-    return address
+func F16ToF32(_ address: Float16) -> Float {
+    return Float(address)
 }
 
 /*
@@ -38,58 +38,65 @@ func F16ToF32(address: Float16) -> Float {
  return F16ToF32((__fp16 *)&i);
  }
  */
-func F32ToF16(F32: Float) -> Float16 {
+
+func F32ToF16(_ F32: Float) -> Float16 {
     return Float16(F32)
 }
 
-func float16_from_float32(f: Float) -> Float16 {
+func float16_from_float32(_ f: Float) -> Float16 {
     return F32ToF16(f)
 }
 
-func generate_random_vector(min: Float, max: Float) -> vector_float3 {
-    var rand: vector_float3
-
-    let range = max - min
-    rand.x = (Double.random(in: 0...1.0) / Double(0x7FFFFFFF)) * range + min
-    rand.y = (Double.random(in: 0...1.0) / Double(0x7FFFFFFF)) * range + min
-    rand.z = (Double.random(in: 0...1.0) / Double(0x7FFFFFFF)) * range + min
-
-    return rand
+func generate_random_vector(_ range:ClosedRange<Float>) -> vector_float3 {
+    return vector_float3(
+        Float.random(in: range),
+        Float.random(in: range),
+        Float.random(in: range)
+    )
 }
 
-func seedRand(seed: UInt32) {
+func generate_random_vector(_ range:Range<Float>) -> vector_float3 {
+    return vector_float3(
+        Float.random(in: range),
+        Float.random(in: range),
+        Float.random(in: range)
+    )
+}
+
+func seedRand(_ seed: UInt32) {
     seed_lo = seed
     seed_hi = ~seed
 }
 
-func randi() -> Int32 {
+func randi() -> Int {
     seed_hi = (seed_hi<<16) + (seed_hi>>16)
-    seed_hi += seed_lo
-    seed_lo += seed_hi
-    return seed_hi
+    seed_hi &+= seed_lo
+    seed_lo &+= seed_hi
+    
+    return Int(seed_hi)
 }
 
-func randf(x: Float) -> Float {
-    return (x * randi() / Float(0x7FFFFFFF))
+func randf(_ x: Float) -> Float {
+    return x * Float(randi()) / Float(0x7FFFFFFF)
 }
 
-func degrees_from_radians(radians: Float) -> Float {
+func degrees_from_radians(_ radians: Float) -> Float {
     return (radians / Float.pi) * 180
 }
 
-func radians_from_degrees(degrees: Float) -> Float {
+func radians_from_degrees(_ degrees: Float) -> Float {
     return (degrees / 180) * Float.pi
 }
 
-func vector_make(x: Float, y: Float, z: Float) -> vector_float3 {
+func vector_make(_ x: Float, _ y: Float, _ z: Float) -> vector_float3 {
     return vector_float3( x, y, z )
 }
 
-func vector_lerp( v0: vector_float3, v1: vector_float3, t: Float) -> vector_float3 {
+func vector_lerp(_ v0: vector_float3, _ v1: vector_float3, _ t: Float) -> vector_float3 {
     return ((1 - t) * v0) + (t * v1)
 }
 
-func vector_lerp( v0: vector_float4, v1: vector_float4, t: Float) -> vector_float4 {
+func vector_lerp(_ v0: vector_float4,_ v1: vector_float4,_ t: Float) -> vector_float4 {
     return ((1 - t) * v0) + (t * v1)
 }
 
@@ -100,47 +107,50 @@ func vector_lerp( v0: vector_float4, v1: vector_float4, t: Float) -> vector_floa
 
 // Indices are m<column><row>.
 func matrix_make_rows(
-    m00: Float, m10: Float, m20: Float,
-    m01: Float, m11: Float, m21: Float,
-    m02: Float, m12: Float, m22: Float) -> matrix_float3x3 {
-    return matrix_float3x3(
-        vector_float3(m00, m01, m02),      // each line here provides column data
-        vector_float3(m10, m11, m12),
-        vector_float3(m20, m21, m22)
-    )
+    _ m00: Float, _ m10: Float, _ m20: Float,
+    _ m01: Float, _ m11: Float, _ m21: Float,
+    _ m02: Float, _ m12: Float, _ m22: Float
+) -> matrix_float3x3 {
+    return matrix_float3x3(rows: [
+        .init(00, m01, m02),      // each line here provides column data
+        .init(m10, m11, m12),
+        .init(m20, m21, m22)
+    ])
 }
 
 func matrix_make_rows(
-    m00: Float, m10: Float, m20: Float, m30: Float,
-    m01: Float, m11: Float, m21: Float, m31: Float,
-    m02: Float, m12: Float, m22: Float, m32: Float,
-    m03: Float, m13: Float, m23: Float, m33: Float,
-    ) -> matrix_float3x3 {
-    return matrix_float4x4(
-        m00, m01, m02, m03,      // each line here provides column data
-        m10, m11, m12, m13,
-        m20, m21, m22, m23,
-        m30, m31, m32, m33
-    )
+    _ m00: Float, _ m10: Float, _ m20: Float, _ m30: Float,
+    _ m01: Float, _ m11: Float, _ m21: Float, _ m31: Float,
+    _ m02: Float, _ m12: Float, _ m22: Float, _ m32: Float,
+    _ m03: Float, _ m13: Float, _ m23: Float, _ m33: Float
+) -> matrix_float4x4 {
+    return matrix_float4x4(rows: [
+        .init(m00, m01, m02, m03),      // each line here provides column data
+        .init(m10, m11, m12, m13),
+        .init(m20, m21, m22, m23),
+        .init(m30, m31, m32, m33)
+    ])
 }
 // Each arg is a column vector.
 func matrix_make_columns(
-    col0: vector_float3,
-    col1: vector_float3,
-    col2: vector_float3) -> matrix_float3x3 {
+    _ col0: vector_float3,
+    _ col1: vector_float3,
+    _ col2: vector_float3
+) -> matrix_float3x3 {
     return matrix_float3x3( col0, col1, col2 )
 }
 
 // Each arg is a column vector.
 func matrix_make_columns(
-    col0: vector_float4,
-    col1: vector_float4,
-    col2: vector_float4,
-    col3: vector_float4) -> matrix_float4x4 {
+    _ col0: vector_float4,
+    _ col1: vector_float4,
+    _ col2: vector_float4,
+    _ col3: vector_float4
+) -> matrix_float4x4 {
     return matrix_float4x4( col0, col1, col2, col3 )
 }
 
-func matrix3x3_from_quaternion(q: quaternion_float ) -> matrix_float3x3 {
+func matrix3x3_from_quaternion(_ q: quaternion_float ) -> matrix_float3x3 {
     let xx = q.x * q.x
     let xy = q.x * q.y
     let xz = q.x * q.z
@@ -169,45 +179,45 @@ func matrix3x3_from_quaternion(q: quaternion_float ) -> matrix_float3x3 {
                             m02, m12, m22)
 }
 
-func matrix3x3_rotation(radians: Float, axis: vector_float3) -> matrix_float3x3 {
-    axis = vector_normalize(axis)
+func matrix3x3_rotation(_ radians: Float, _ axis: vector_float3) -> matrix_float3x3 {
+    let normalizedAxis = normalize(axis)
     let ct = cosf(radians)
     let st = sinf(radians)
     let ci = 1 - ct
-    let x = axis.x, y = axis.y, z = axis.z
-    return matrix_make_rows(    ct + x * x * ci, x * y * ci - z * st, x * z * ci + y * st,
-                                y * x * ci + z * st, ct + y * y * ci, y * z * ci - x * st,
-                                z * x * ci - y * st, z * y * ci + x * st, ct + z * z * ci )
+    let x = normalizedAxis.x, y = normalizedAxis.y, z = normalizedAxis.z
+    return matrix_make_rows(ct + x * x * ci, x * y * ci - z * st, x * z * ci + y * st,
+                            y * x * ci + z * st, ct + y * y * ci, y * z * ci - x * st,
+                            z * x * ci - y * st, z * y * ci + x * st, ct + z * z * ci )
 }
 
-func matrix3x3_rotation(radians: Float, x: Float, y: Float, z: Float) -> matrix_float3x3 {
+func matrix3x3_rotation(_ radians: Float, _ x: Float, _ y: Float, _ z: Float) -> matrix_float3x3 {
     return matrix3x3_rotation(radians, vector_make(x, y, z))
 }
 
-func matrix3x3_scale(sx: Float, sy: Float, sz: Float) -> matrix_float3x3 {
+func matrix3x3_scale(_ sx: Float, _ sy: Float, _ sz: Float) -> matrix_float3x3 {
     return matrix_make_rows(sx, 0, 0,
                             0, sy, 0,
                             0, 0, sz)
 }
 
-func matrix3x3_scale(s: vector_float3) -> matrix_float3x3 {
+func matrix3x3_scale(_ s: vector_float3) -> matrix_float3x3 {
     return matrix_make_rows(s.x, 0, 0,
                             0, s.y, 0,
                             0, 0, s.z)
 }
 
-func matrix3x3_upper_left(m: matrix_float4x4) -> matrix_float3x3 {
-    let x = m.columns[0].xyz
-    let y = m.columns[1].xyz
-    let z = m.columns[2].xyz
+func matrix3x3_upper_left(_ m: matrix_float4x4) -> matrix_float3x3 {
+    let x = simd_make_float3(m[0])
+    let y = simd_make_float3(m[1])
+    let z = simd_make_float3(m[2])
     return matrix_make_columns(x, y, z)
 }
 
-func matrix_inverse_transpose(m: matrix_float3x3) -> matrix_float3x3 {
-    return matrix_invert(matrix_transpose(m))
+func matrix_inverse_transpose(_ m: matrix_float3x3) -> matrix_float3x3 {
+    return m.transpose.inverse
 }
 
-func matrix4x4_from_quaternion(q: quaternion_float) -> matrix_float4x4 {
+func matrix4x4_from_quaternion(_ q: quaternion_float) -> matrix_float4x4 {
     let xx = q.x * q.x
     let xy = q.x * q.y
     let xz = q.x * q.z
@@ -238,12 +248,12 @@ func matrix4x4_from_quaternion(q: quaternion_float) -> matrix_float4x4 {
     return matrix
 }
 
-func matrix4x4_rotation(radians: Float, axis: vector_float3) -> matrix_float4x4 {
-    axis = vector_normalize(axis)
+func matrix4x4_rotation(_ radians: Float, _ axis: vector_float3) -> matrix_float4x4 {
+    let normalizedAxis = normalize(axis)
     let ct = cosf(radians)
     let st = sinf(radians)
     let ci = 1 - ct
-    let x = axis.x, y = axis.y, z = axis.z
+    let x = normalizedAxis.x, y = normalizedAxis.y, z = normalizedAxis.z
     return matrix_make_rows(
         ct + x * x * ci, x * y * ci - z * st, x * z * ci + y * st, 0,
         y * x * ci + z * st, ct + y * y * ci, y * z * ci - x * st, 0,
@@ -251,7 +261,7 @@ func matrix4x4_rotation(radians: Float, axis: vector_float3) -> matrix_float4x4 
         0, 0, 0, 1)
 }
 
-func matrix4x4_rotation(radians: Float, x: Float, y: Float, z: Float) -> matrix_float4x4 {
+func matrix4x4_rotation(_ radians: Float, _ x: Float, _ y: Float, _ z: Float) -> matrix_float4x4 {
     return matrix4x4_rotation(radians, vector_make(x, y, z))
 }
 
@@ -262,46 +272,46 @@ func matrix4x4_identity() -> matrix_float4x4 {
                             0, 0, 0, 1 )
 }
 
-func matrix4x4_scale(sx: Float, sy: Float, sz: Float) -> matrix_float4x4 {
+func matrix4x4_scale(_ sx: Float, _ sy: Float, _ sz: Float) -> matrix_float4x4 {
     return matrix_make_rows(sx, 0, 0, 0,
                             0, sy, 0, 0,
                             0, 0, sz, 0,
                             0, 0, 0, 1 )
 }
 
-func matrix4x4_scale(s: vector_float3) -> matrix_float4x4 {
+func matrix4x4_scale(_ s: vector_float3) -> matrix_float4x4 {
     return matrix_make_rows(s.x, 0, 0, 0,
                             0, s.y, 0, 0,
                             0, 0, s.z, 0,
                             0, 0, 0, 1 )
 }
 
-func matrix4x4_translation(tx: Float, ty: Float, tz: Float) -> matrix_float4x4 {
+func matrix4x4_translation(_ tx: Float, _ ty: Float, _ tz: Float) -> matrix_float4x4 {
     return matrix_make_rows(1, 0, 0, tx,
                             0, 1, 0, ty,
                             0, 0, 1, tz,
                             0, 0, 0, 1 )
 }
 
-func matrix4x4_translation(t: vector_float3) -> matrix_float4x4 {
+func matrix4x4_translation(_ t: vector_float3) -> matrix_float4x4 {
     return matrix_make_rows(1, 0, 0, t.x,
                             0, 1, 0, t.y,
                             0, 0, 1, t.z,
                             0, 0, 0, 1 )
 }
 
-func matrix4x4_scale_translation(s: vector_float3, t: vector_float3) -> matrix_float4x4 {
+func matrix4x4_scale_translation(_ s: vector_float3, _ t: vector_float3) -> matrix_float4x4 {
     return matrix_make_rows(s.x, 0, 0, t.x,
                             0, s.y, 0, t.y,
                             0, 0, s.z, t.z,
                             0, 0, 0, 1 )
 }
 
-func matrix_look_at_left_hand(eye: vector_float3, target: vector_float3, up: vector_float3) -> matrix_float4x4 {
-    let z = vector_normalize(target - eye)
-    let x = vector_normalize(vector_cross(up, z))
-    let y = vector_cross(z, x)
-    let t = vector_make(-vector_dot(x, eye), -vector_dot(y, eye), -vector_dot(z, eye))
+func matrix_look_at_left_hand(_ eye: vector_float3, _ target: vector_float3, _ up: vector_float3) -> matrix_float4x4 {
+    let z = normalize(target - eye)
+    let x = normalize(cross(up, z))
+    let y = cross(z, x)
+    let t = vector_make(-dot(x, eye), -dot(y, eye), -dot(z, eye))
 
     return matrix_make_rows(x.x, x.y, x.z, t.x,
                             y.x, y.y, y.z, t.y,
@@ -309,9 +319,9 @@ func matrix_look_at_left_hand(eye: vector_float3, target: vector_float3, up: vec
                             0, 0, 0, 1 )
 }
 
-func matrix_look_at_left_hand(eyeX: Float, eyeY: Float, eyeZ: Float,
-                              centerX: Float, centerY: Float, centerZ: Float,
-                              upX: Float, upY: Float, upZ: Float) -> matrix_float4x4 {
+func matrix_look_at_left_hand(_ eyeX: Float, _ eyeY: Float, _ eyeZ: Float,
+                              _ centerX: Float, _ centerY: Float, _ centerZ: Float,
+                              _ upX: Float, _ upY: Float, _ upZ: Float) -> matrix_float4x4 {
     let eye = vector_make(eyeX, eyeY, eyeZ)
     let center = vector_make(centerX, centerY, centerZ)
     let up = vector_make(upX, upY, upZ)
@@ -319,11 +329,11 @@ func matrix_look_at_left_hand(eyeX: Float, eyeY: Float, eyeZ: Float,
     return matrix_look_at_left_hand(eye, center, up)
 }
 
-func matrix_look_at_right_hand(eye: vector_float3, target: vector_float3, up: vector_float3) -> matrix_float4x4 {
-    let z = vector_normalize(eye - target)
-    let x = vector_normalize(vector_cross(up, z))
-    let y = vector_cross(z, x)
-    let t = vector_make(-vector_dot(x, eye), -vector_dot(y, eye), -vector_dot(z, eye))
+func matrix_look_at_right_hand(_ eye: vector_float3, _ target: vector_float3, _ up: vector_float3) -> matrix_float4x4 {
+    let z = normalize(eye - target)
+    let x = normalize(cross(up, z))
+    let y = cross(z, x)
+    let t = vector_make(-dot(x, eye), -dot(y, eye), -dot(z, eye))
 
     return matrix_make_rows(x.x, x.y, x.z, t.x,
                             y.x, y.y, y.z, t.y,
@@ -331,9 +341,9 @@ func matrix_look_at_right_hand(eye: vector_float3, target: vector_float3, up: ve
                             0, 0, 0, 1 )
 }
 
-func matrix_look_at_right_hand(eyeX: Float, eyeY: Float, eyeZ: Float,
-                               centerX: Float, centerY: Float, centerZ: Float,
-                               upX: Float, upY: Float, upZ: Float) -> matrix_float4x4 {
+func matrix_look_at_right_hand(_ eyeX: Float, _ eyeY: Float, _ eyeZ: Float,
+                               _ centerX: Float, _ centerY: Float, _ centerZ: Float,
+                               _ upX: Float, _ upY: Float, _ upZ: Float) -> matrix_float4x4 {
     let eye = vector_make(eyeX, eyeY, eyeZ)
     let center = vector_make(centerX, centerY, centerZ)
     let up = vector_make(upX, upY, upZ)
@@ -341,7 +351,7 @@ func matrix_look_at_right_hand(eyeX: Float, eyeY: Float, eyeZ: Float,
     return matrix_look_at_right_hand(eye, center, up)
 }
 
-func matrix_ortho_left_hand(left: Float, right: Float, bottom: Float, top: Float, nearZ: Float, farZ: Float) -> matrix_float4x4 {
+func matrix_ortho_left_hand(_ left: Float, _ right: Float, _ bottom: Float, _ top: Float, _ nearZ: Float, _ farZ: Float) -> matrix_float4x4 {
     return matrix_make_rows(
         2 / (right - left), 0, 0, (left + right) / (left - right),
         0, 2 / (top - bottom), 0, (top + bottom) / (bottom - top),
@@ -349,7 +359,7 @@ func matrix_ortho_left_hand(left: Float, right: Float, bottom: Float, top: Float
         0, 0, 0, 1 )
 }
 
-func matrix_ortho_right_hand(left: Float, right: Float, bottom: Float, top: Float, nearZ: Float, farZ: Float) -> matrix_float4x4 {
+func matrix_ortho_right_hand(_ left: Float, _ right: Float, _ bottom: Float, _ top: Float, _ nearZ: Float, _ farZ: Float) -> matrix_float4x4 {
     return matrix_make_rows(
         2 / (right - left), 0, 0, (left + right) / (left - right),
         0, 2 / (top - bottom), 0, (top + bottom) / (bottom - top),
@@ -357,7 +367,7 @@ func matrix_ortho_right_hand(left: Float, right: Float, bottom: Float, top: Floa
         0, 0, 0, 1 )
 }
 
-func matrix_perspective_left_hand(fovyRadians: Float, aspect: Float, nearZ: Float, farZ: Float) -> matrix_float4x4 {
+func matrix_perspective_left_hand(_ fovyRadians: Float, _ aspect: Float, _ nearZ: Float, _ farZ: Float) -> matrix_float4x4 {
     let ys = 1 / tanf(fovyRadians * 0.5)
     let xs = ys / aspect
     let zs = farZ / (farZ - nearZ)
@@ -367,7 +377,7 @@ func matrix_perspective_left_hand(fovyRadians: Float, aspect: Float, nearZ: Floa
                             0, 0, 1, 0 )
 }
 
-func matrix_perspective_right_hand(fovyRadians: Float, aspect: Float, nearZ: Float, farZ: Float) -> matrix_float4x4 {
+func matrix_perspective_right_hand(_ fovyRadians: Float, _ aspect: Float, _ nearZ: Float, _ farZ: Float) -> matrix_float4x4 {
     let ys = 1 / tanf(fovyRadians * 0.5)
     let xs = ys / aspect
     let zs = farZ / (nearZ - farZ)
@@ -377,7 +387,7 @@ func matrix_perspective_right_hand(fovyRadians: Float, aspect: Float, nearZ: Flo
                             0, 0, -1, 0 )
 }
 
-func matrix_perspective_frustum_right_hand(l: Float, r: Float, b: Float, t: Float, n: Float, f: Float) -> matrix_float4x4 {
+func matrix_perspective_frustum_right_hand(_ l: Float, _ r: Float, _ b: Float, _ t: Float, _ n: Float, _ f: Float) -> matrix_float4x4 {
     return matrix_make_rows(
         2 * n / (r - l), 0, (r + l) / (r - l), 0,
         0, 2 * n / (t - b), (t + b) / (t - b), 0,
@@ -385,15 +395,15 @@ func matrix_perspective_frustum_right_hand(l: Float, r: Float, b: Float, t: Floa
         0, 0, -1, 0 )
 }
 
-func matrix_inverse_transpose(m: matrix_float4x4) -> matrix_float4x4 {
-    return matrix_invert(matrix_transpose(m))
+func matrix_inverse_transpose(_ m: matrix_float4x4) -> matrix_float4x4 {
+    return m.transpose.inverse
 }
 
-func quaternion(x: Float, y: Float, z: Float, w: Float) -> quaternion_float {
+func quaternion(_ x: Float, _ y: Float, _ z: Float, _ w: Float) -> quaternion_float {
     return quaternion_float( x, y, z, w )
 }
 
-func quaternion(v: vector_float3, w: Float) -> quaternion_float {
+func quaternion(_ v: vector_float3, _ w: Float) -> quaternion_float {
     return quaternion_float( v.x, v.y, v.z, w )
 }
 
@@ -401,20 +411,20 @@ func quaternion_identity() -> quaternion_float {
     return quaternion(0, 0, 0, 1)
 }
 
-func quaternion_from_axis_angle(axis: vector_float3, radians: Float) -> quaternion_float {
+func quaternion_from_axis_angle(_ axis: vector_float3, _ radians: Float) -> quaternion_float {
     let t = radians * 0.5
     return quaternion(axis.x * sinf(t), axis.y * sinf(t), axis.z * sinf(t), cosf(t))
 }
 
-func quaternion_from_euler(euler: vector_float3) -> quaternion_float {
-    let q
+func quaternion_from_euler(_ euler: vector_float3) -> quaternion_float {
+    var q = quaternion_float()
 
-    let cx = cosf(euler.x / 2.f)
-    let cy = cosf(euler.y / 2.f)
-    let cz = cosf(euler.z / 2.f)
-    let sx = sinf(euler.x / 2.f)
-    let sy = sinf(euler.y / 2.f)
-    let sz = sinf(euler.z / 2.f)
+    let cx = cosf(euler.x / 2.0)
+    let cy = cosf(euler.y / 2.0)
+    let cz = cosf(euler.z / 2.0)
+    let sx = sinf(euler.x / 2.0)
+    let sy = sinf(euler.y / 2.0)
+    let sz = sinf(euler.z / 2.0)
 
     q.w = cx * cy * cz + sx * sy * sz
     q.x = sx * cy * cz - cx * sy * sz
@@ -424,10 +434,10 @@ func quaternion_from_euler(euler: vector_float3) -> quaternion_float {
     return q
 }
 
-func quaternion(m: matrix_float3x3) -> quaternion_float {
-    let m00 = m.columns[0].x
-    let m11 = m.columns[1].y
-    let m22 = m.columns[2].z
+func quaternion(_ m: matrix_float3x3) -> quaternion_float {
+    let m00 = m.columns.0.x
+    let m11 = m.columns.1.y
+    let m22 = m.columns.2.z
     let x = sqrtf(1 + m00 - m11 - m22) * 0.5
     let y = sqrtf(1 - m00 + m11 - m22) * 0.5
     let z = sqrtf(1 - m00 - m11 + m22) * 0.5
@@ -435,23 +445,24 @@ func quaternion(m: matrix_float3x3) -> quaternion_float {
     return quaternion(x, y, z, w)
 }
 
-func quaternion(m: matrix_float4x4) -> quaternion_float {
+func quaternion(_ m: matrix_float4x4) -> quaternion_float {
     return quaternion(matrix3x3_upper_left(m))
 }
 
-func quaternion_length(q: quaternion_float) -> float {
+func quaternion_length(_ q: quaternion_float) -> Float {
     //  Return sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);.
-    return vector_length(q)
+    return length(q)
 }
 
-func quaternion_length_squared(q: quaternion_float) -> float {
+func quaternion_length_squared(_ q: quaternion_float) -> Float {
     //  Return q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;.
-    return vector_length_squared(q)
+    return length_squared(q)
 }
 
-func quaternion_axis(q: quaternion_float) -> vector_float3 {
+func quaternion_axis(_ qaut: quaternion_float) -> vector_float3 {
     // This query doesn't make sense if w > 1,  so force it to a unit
     // quaternion which returns something sensible.
+    var q = qaut
     if q.w > 1.0 {
         q = quaternion_normalize(q)
     }
@@ -466,25 +477,25 @@ func quaternion_axis(q: quaternion_float) -> vector_float3 {
     }
 }
 
-func quaternion_angle(q: quaternion_float) -> float {
+func quaternion_angle(_ q: quaternion_float) -> Float {
     return 2 * acosf(q.w)
 }
 
-func quaternion_normalize(q: quaternion_float) -> quaternion_float {
+func quaternion_normalize(_ q: quaternion_float) -> quaternion_float {
     //  Return q / quaternion_length(q);.
-    return vector_normalize(q)
+    return normalize(q)
 }
 
-func quaternion_inverse(q: quaternion_float) -> quaternion_float {
+func quaternion_inverse(_ q: quaternion_float) -> quaternion_float {
     return quaternion_conjugate(q) / quaternion_length_squared(q)
 }
 
-func quaternion_conjugate(q: quaternion_float) -> quaternion_float {
+func quaternion_conjugate(_ q: quaternion_float) -> quaternion_float {
     return quaternion(-q.x, -q.y, -q.z, q.w)
 }
 
-func quaternion_multiply(q0: quaternion_float, q1: quaternion_float) -> quaternion_float {
-    var q: quaternion_float
+func quaternion_multiply(_ q0: quaternion_float, _ q1: quaternion_float) -> quaternion_float {
+    var q = quaternion_float()
 
     q.x = q0.w*q1.x + q0.x*q1.w + q0.y*q1.z - q0.z*q1.y
     q.y = q0.w*q1.y - q0.x*q1.z + q0.y*q1.w + q0.z*q1.x
@@ -493,17 +504,17 @@ func quaternion_multiply(q0: quaternion_float, q1: quaternion_float) -> quaterni
     return q
 }
 
-func quaternion_slerp(q0: quaternion_float, q1: quaternion_float, t: Float) -> quaternion_float {
+func quaternion_slerp(_ q0: quaternion_float, _ q1: quaternion_float, t: Float) -> quaternion_float {
     var q: quaternion_float
 
-    let cosHalfTheta = vector_dot(q0, q1)
-    if fabs(cosHalfTheta) >= 1.f {
+    let cosHalfTheta = dot(q0, q1)
+    if abs(cosHalfTheta) >= 1.0 {
         return q0
     }
 
     let halfTheta = acosf(cosHalfTheta)
     let sinHalfTheta = sqrtf(1.0 - cosHalfTheta * cosHalfTheta)
-    if fabs(sinHalfTheta) < 0.001 {    // q0 & q1 180 degrees aren't defined.
+    if abs(sinHalfTheta) < 0.001 {    // q0 & q1 180 degrees aren't defined.
         return q0*0.5 + q1*0.5
     }
     let srcWeight = sin((1 - t) * halfTheta) / sinHalfTheta
@@ -514,119 +525,118 @@ func quaternion_slerp(q0: quaternion_float, q1: quaternion_float, t: Float) -> q
     return q
 }
 
-func quaternion_rotate_vector(q: quaternion_float, v: vector_float3) -> vector_float3 {
+func quaternion_rotate_vector(_ q: quaternion_float, _ v: vector_float3) -> vector_float3 {
     let qp = vector_make(q.x, q.y, q.z)
     let w = q.w
-    return 2 * vector_dot(qp, v) * qp +
-        ((w * w) - vector_dot(qp, qp)) * v +
-        2 * w * vector_cross(qp, v)
+    return 2 * dot(qp, v) * qp +
+        ((w * w) - dot(qp, qp)) * v +
+        2 * w * cross(qp, v)
 }
 
-func quaternion_from_matrix3x3(m: matrix_float3x3) -> quaternion_float {
-    var q: quaternion_float
-
-    let trace = 1 + m.columns[0][0] + m.columns[1][1] + m.columns[2][2]
+func quaternion_from_matrix3x3(_ m: matrix_float3x3) -> quaternion_float {
+    var q = quaternion_float()
+    
+    let trace = 1 + m[0,0] + m[1,1] + m[2,2]
 
     if trace > 0 {
         let diagonal = sqrt(trace) * 2.0
 
-        q.x = (m.columns[2][1] - m.columns[1][2]) / diagonal
-        q.y = (m.columns[0][2] - m.columns[2][0]) / diagonal
-        q.z = (m.columns[1][0] - m.columns[0][1]) / diagonal
+        q.x = (m[2,1] - m[1,2]) / diagonal
+        q.y = (m[0,2] - m[2,0]) / diagonal
+        q.z = (m[1,0] - m[0,1]) / diagonal
         q.w = diagonal / 4.0
 
-    } else if (m.columns[0][0] > m.columns[1][1] ) &&
-                    (m.columns[0][0] > m.columns[2][2]) {
+    } else if (m[0,0] > m[1,1] ) &&
+                    (m[0,0] > m[2,2]) {
 
-        let diagonal = sqrt(1.0 + m.columns[0][0] - m.columns[1][1] -  m.columns[2][2]) * 2.0
+        let diagonal = sqrt(1.0 + m[0,0] - m[1,1] -  m[2,2]) * 2.0
 
         q.x = diagonal / 4.0
-        q.y = (m.columns[0][1] + m.columns[1][0]) / diagonal
-        q.z = (m.columns[0][2] + m.columns[2][0]) / diagonal
-        q.w = (m.columns[2][1] - m.columns[1][2]) / diagonal
+        q.y = (m[0][1] + m[1][0]) / diagonal
+        q.z = (m[0][2] + m[2][0]) / diagonal
+        q.w = (m[2][1] - m[1][2]) / diagonal
 
-    } else if m.columns[1][1] >  m.columns[2][2] {
+    } else if m[1][1] >  m[2][2] {
 
-        let diagonal = sqrt(1.0 + m.columns[1][1] - m.columns[0][0] - m.columns[2][2]) * 2.0
+        let diagonal = sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2.0
 
-        q.x = (m.columns[0][1] + m.columns[1][0]) / diagonal
+        q.x = (m[0][1] + m[1][0]) / diagonal
         q.y = diagonal / 4.0
-        q.z = (m.columns[1][2] + m.columns[2][1]) / diagonal
-        q.w = (m.columns[0][2] - m.columns[2][0]) / diagonal
+        q.z = (m[1][2] + m[2][1]) / diagonal
+        q.w = (m[0][2] - m[2][0]) / diagonal
 
     } else {
 
-        let diagonal = sqrt(1.0 + m.columns[2][2] - m.columns[0][0] - m.columns[1][1]) * 2.0
+        let diagonal = sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2.0
 
-        q.x = (m.columns[0][2] + m.columns[2][0]) / diagonal
-        q.y = (m.columns[1][2] + m.columns[2][1]) / diagonal
+        q.x = (m[0][2] + m[2][0]) / diagonal
+        q.y = (m[1][2] + m[2][1]) / diagonal
         q.z = diagonal / 4.0
-        q.w = (m.columns[1][0] - m.columns[0][1]) / diagonal
+        q.w = (m[1][0] - m[0][1]) / diagonal
     }
 
     q = quaternion_normalize(q)
     return q
 }
 
-func quaternion_from_direction_vectors(forward: vector_float3, up: vector_float3, right_handed: int) -> quaternion_float {
+func quaternion_from_direction_vectors(_ forward: vector_float3, _ up: vector_float3, _ right_handed: Bool) -> quaternion_float {
 
-    forward = vector_normalize(forward)
-    up = vector_normalize(up)
+    let nForward = normalize(forward)
+    let nUp = normalize(up)
 
-    let side = vector_normalize(vector_cross(up, forward))
+    let side = normalize(cross(nUp, nForward))
 
-    let m = matrix_float3x3( side, up, forward )
+    let m = matrix_float3x3( side, nUp, nForward )
 
-    let q = quaternion_from_matrix3x3(m)
+    var q = quaternion_from_matrix3x3(m)
 
     if right_handed {
-        q = q.yxwz
-        q.xw = -q.xw
+        q = simd_make_float4(-q.y, q.x, q.w, -q.z)
     }
 
-    q = vector_normalize(q)
+    q = normalize(q)
 
     return q
 }
 
-func quaternion_from_direction_vectors_right_hand(forward: vector_float3, up: vector_float3) -> quaternion_float {
+func quaternion_from_direction_vectors_right_hand(_ forward: vector_float3, _ up: vector_float3) -> quaternion_float {
 
-    return quaternion_from_direction_vectors(forward, up, 1)
+    return quaternion_from_direction_vectors(forward, up, true)
 }
 
-func quaternion_from_direction_vectors_left_hand(forward: vector_float3, up: vector_float3) -> quaternion_float {
+func quaternion_from_direction_vectors_left_hand(_ forward: vector_float3, _ up: vector_float3) -> quaternion_float {
 
-    return quaternion_from_direction_vectors(forward, up, 0)
+    return quaternion_from_direction_vectors(forward, up, false)
 }
 
-func forward_direction_vector_from_quaternion(q: quaternion_float) -> vector_float3 {
-    var direction: vector_float3
+func forward_direction_vector_from_quaternion(_ q: quaternion_float) -> vector_float3 {
+    var direction = vector_float3()
     direction.x = 2.0 * (q.x*q.z - q.w*q.y)
     direction.y = 2.0 * (q.y*q.z + q.w*q.x)
     direction.z = 1.0 - 2.0 * ((q.x * q.x) + (q.y * q.y))
 
-    direction = vector_normalize(direction)
+    direction = normalize(direction)
     return direction
 }
 
-func up_direction_vector_from_quaternion(q: quaternion_float) -> vector_float3 {
-    var direction: vector_float3
+func up_direction_vector_from_quaternion(_ q: quaternion_float) -> vector_float3 {
+    var direction = vector_float3()
     direction.x = 2.0 * (q.x*q.y + q.w*q.z)
     direction.y = 1.0 - 2.0 * (q.x*q.x + q.z*q.z)
     direction.z = 2.0 * (q.y*q.z - q.w*q.x)
 
-    direction = vector_normalize(direction)
+    direction = normalize(direction)
     // Negate for a right-handed coordinate system.
     return direction
 }
 
-func right_direction_vector_from_quaternion(q: quaternion_float) -> vector_float3 {
-    var direction: vector_float3
+func right_direction_vector_from_quaternion(_ q: quaternion_float) -> vector_float3 {
+    var direction = vector_float3()
     direction.x = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
     direction.y = 2.0 * (q.x * q.y - q.w * q.z)
     direction.z = 2.0 * (q.x * q.z + q.w * q.y)
 
-    direction = vector_normalize(direction)
+    direction = normalize(direction)
     // Negate for a right-handed coordinate system.
     return direction
 }
