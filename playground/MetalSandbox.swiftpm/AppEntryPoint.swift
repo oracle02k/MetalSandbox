@@ -1,11 +1,25 @@
 import SwiftUI
+import PlaygroundTester
 
 @main
+struct Myapp: App {
+    init() {
+        PlaygroundTesterConfiguration.isTesting = true
+    }
+    var body: some Scene {
+        WindowGroup {
+            PlaygroundTester.PlaygroundTesterWrapperView {
+                // YourContentView()
+            }
+        }
+    }
+}
+
 struct AppEntryPoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            //ContentView()
         }
     }
 }
@@ -21,6 +35,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         System.shared.build(device)
+ 
         return true
     }
 }
