@@ -19,7 +19,7 @@ struct AppEntryPoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     var body: some Scene {
         WindowGroup {
-            //ContentView()
+            // ContentView()
         }
     }
 }
@@ -35,7 +35,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         System.shared.build(device)
- 
+
         return true
     }
 }

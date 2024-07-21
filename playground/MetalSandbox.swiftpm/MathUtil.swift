@@ -47,7 +47,7 @@ func float16_from_float32(_ f: Float) -> Float16 {
     return F32ToF16(f)
 }
 
-func generate_random_vector(_ range:ClosedRange<Float>) -> vector_float3 {
+func generate_random_vector(_ range: ClosedRange<Float>) -> vector_float3 {
     return vector_float3(
         Float.random(in: range),
         Float.random(in: range),
@@ -55,7 +55,7 @@ func generate_random_vector(_ range:ClosedRange<Float>) -> vector_float3 {
     )
 }
 
-func generate_random_vector(_ range:Range<Float>) -> vector_float3 {
+func generate_random_vector(_ range: Range<Float>) -> vector_float3 {
     return vector_float3(
         Float.random(in: range),
         Float.random(in: range),
@@ -72,7 +72,7 @@ func randi() -> Int {
     seed_hi = (seed_hi<<16) + (seed_hi>>16)
     seed_hi &+= seed_lo
     seed_lo &+= seed_hi
-    
+
     return Int(seed_hi)
 }
 
@@ -96,7 +96,7 @@ func vector_lerp(_ v0: vector_float3, _ v1: vector_float3, _ t: Float) -> vector
     return ((1 - t) * v0) + (t * v1)
 }
 
-func vector_lerp(_ v0: vector_float4,_ v1: vector_float4,_ t: Float) -> vector_float4 {
+func vector_lerp(_ v0: vector_float4, _ v1: vector_float4, _ t: Float) -> vector_float4 {
     return ((1 - t) * v0) + (t * v1)
 }
 
@@ -535,21 +535,21 @@ func quaternion_rotate_vector(_ q: quaternion_float, _ v: vector_float3) -> vect
 
 func quaternion_from_matrix3x3(_ m: matrix_float3x3) -> quaternion_float {
     var q = quaternion_float()
-    
-    let trace = 1 + m[0,0] + m[1,1] + m[2,2]
+
+    let trace = 1 + m[0, 0] + m[1, 1] + m[2, 2]
 
     if trace > 0 {
         let diagonal = sqrt(trace) * 2.0
 
-        q.x = (m[2,1] - m[1,2]) / diagonal
-        q.y = (m[0,2] - m[2,0]) / diagonal
-        q.z = (m[1,0] - m[0,1]) / diagonal
+        q.x = (m[2, 1] - m[1, 2]) / diagonal
+        q.y = (m[0, 2] - m[2, 0]) / diagonal
+        q.z = (m[1, 0] - m[0, 1]) / diagonal
         q.w = diagonal / 4.0
 
-    } else if (m[0,0] > m[1,1] ) &&
-                    (m[0,0] > m[2,2]) {
+    } else if (m[0, 0] > m[1, 1] ) &&
+                (m[0, 0] > m[2, 2]) {
 
-        let diagonal = sqrt(1.0 + m[0,0] - m[1,1] -  m[2,2]) * 2.0
+        let diagonal = sqrt(1.0 + m[0, 0] - m[1, 1] -  m[2, 2]) * 2.0
 
         q.x = diagonal / 4.0
         q.y = (m[0][1] + m[1][0]) / diagonal
