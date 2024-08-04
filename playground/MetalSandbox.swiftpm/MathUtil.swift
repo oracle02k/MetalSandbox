@@ -112,9 +112,9 @@ func matrix_make_rows(
     _ m02: Float, _ m12: Float, _ m22: Float
 ) -> matrix_float3x3 {
     return matrix_float3x3(rows: [
-        .init(00, m01, m02),      // each line here provides column data
-        .init(m10, m11, m12),
-        .init(m20, m21, m22)
+        .init(m00, m10, m20),      // each line here provides column data
+        .init(m01, m11, m21),
+        .init(m02, m12, m22)
     ])
 }
 
@@ -125,10 +125,10 @@ func matrix_make_rows(
     _ m03: Float, _ m13: Float, _ m23: Float, _ m33: Float
 ) -> matrix_float4x4 {
     return matrix_float4x4(rows: [
-        .init(m00, m01, m02, m03),      // each line here provides column data
-        .init(m10, m11, m12, m13),
-        .init(m20, m21, m22, m23),
-        .init(m30, m31, m32, m33)
+        .init(m00, m10, m20, m30),      // each line here provides column data
+        .init(m01, m11, m21, m31),
+        .init(m02, m12, m22, m32),
+        .init(m03, m13, m23, m33)
     ])
 }
 // Each arg is a column vector.
@@ -254,6 +254,7 @@ func matrix4x4_rotation(_ radians: Float, _ axis: vector_float3) -> matrix_float
     let st = sinf(radians)
     let ci = 1 - ct
     let x = normalizedAxis.x, y = normalizedAxis.y, z = normalizedAxis.z
+    
     return matrix_make_rows(
         ct + x * x * ci, x * y * ci - z * st, x * z * ci + y * st, 0,
         y * x * ci + z * st, ct + y * y * ci, y * z * ci - x * st, 0,
