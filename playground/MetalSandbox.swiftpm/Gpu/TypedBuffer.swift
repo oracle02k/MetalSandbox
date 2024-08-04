@@ -1,26 +1,37 @@
 import MetalKit
 
 class TypedBuffer<T> {
-    let rawBuffer: MTLBuffer
-    let count: Int
-    let bufferedPointer: UnsafeMutableBufferPointer<T>
-
-    init(rawBuffer: MTLBuffer, count: Int) {
-        self.rawBuffer = rawBuffer
-        self.count = count
-        let rawbufferSize = MemoryLayout<T>.stride * count
-        let rawPointer = rawBuffer.contents()
-        let typedPointer = rawPointer.bindMemory(to: T.self, capacity: rawbufferSize)
-        bufferedPointer = UnsafeMutableBufferPointer(start: typedPointer, count: count)
+    var count:Int {alignedBuffer.count}
+    var align: size_t {alignedBuffer.align}
+    var stride: size_t {alignedBuffer.stride}
+    var byteSize: size_t { alignedBuffer.byteSize }
+    lazy var rawBuffer: MTLBuffer = uninitialized()
+    private let alignedBuffer: AlignedBuffer<T>
+    
+    init (_ alignedBuffer: AlignedBuffer<T>) {
+        self.alignedBuffer = alignedBuffer
     }
-
+    
+    func bind(_ buffer: MTLBuffer){
+        rawBuffer = buffer
+        alignedBuffer.bind(pointer: rawBuffer.contents())
+    }
+    
+    func read(_ index: Int) -> T{
+        return alignedBuffer.read(index)
+    }
+    
+    func write(_ index: Int, value: T) {
+        alignedBuffer.write(index, value: value)
+    }
+    
     var contents: T {
-        get { bufferedPointer[0] }
-        set { bufferedPointer[0] = newValue }
+        get { alignedBuffer.read(0) }
+        set { alignedBuffer.write(0, value: newValue) }
     }
-
+    
     subscript(index: Int) -> T {
-        get { bufferedPointer[index] }
-        set { bufferedPointer[index] = newValue }
+        get { alignedBuffer.read(index) }
+        set { alignedBuffer.write(index, value: newValue) }
     }
 }
