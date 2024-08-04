@@ -1,8 +1,8 @@
 import SwiftUI
 import PlaygroundTester
 
-@main
-struct Myapp: App {
+//@main
+struct AppTest: App {
     init() {
         PlaygroundTesterConfiguration.isTesting = true
     }
@@ -15,11 +15,12 @@ struct Myapp: App {
     }
 }
 
+@main
 struct AppEntryPoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     var body: some Scene {
         WindowGroup {
-            // ContentView()
+            ContentView()
         }
     }
 }
