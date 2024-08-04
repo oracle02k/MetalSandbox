@@ -34,23 +34,23 @@ final class TestMathUtil: TestCase {
     func testMatrix4x4Identity() {
         let a = matrix_identity_float4x4
         let b = matrix4x4_identity()
-        
+
         NAssertEqual(a, actual: b)
     }
-    
+
     func testMatrixMakeRows() {
         let m1 = matrix_make_rows(
-            1,2,3,
-            1,2,3,
-            1,2,3
+            1, 2, 3,
+            1, 2, 3,
+            1, 2, 3
         )
-        
+
         let m2 = matrix_float3x3(
-            .init(1,2,3),
-            .init(1,2,3),
-            .init(1,2,3)
+            .init(1, 2, 3),
+            .init(1, 2, 3),
+            .init(1, 2, 3)
         )
-        
+
         NAssertEqual(m2, actual: m1)
     }
 }

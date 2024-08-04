@@ -110,7 +110,7 @@ class GpuContext {
         return commandBuffer
     }
 
-    func makeTypedBuffer<T>(elementCount: Int = 1, align:Int? = nil, options: MTLResourceOptions) -> TypedBuffer<T> {
+    func makeTypedBuffer<T>(elementCount: Int = 1, align: Int? = nil, options: MTLResourceOptions) -> TypedBuffer<T> {
         let alignedBuffer = AlignedBuffer<T>(count: elementCount, align: align)
         let typedBuffer = TypedBuffer<T>(alignedBuffer)
         let rawBuffer = makeBuffer(length: typedBuffer.byteSize, options: options)

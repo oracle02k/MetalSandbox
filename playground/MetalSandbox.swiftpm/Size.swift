@@ -1,10 +1,10 @@
 import Foundation
 
-func sizeof<T>(_ type:T.Type) -> size_t {
+func sizeof<T>(_ type: T.Type) -> size_t {
     return MemoryLayout<T>.stride
 }
 
-func alignof<T>(_ type:T.Type) -> size_t {
+func alignof<T>(_ type: T.Type) -> size_t {
     return MemoryLayout<T>.alignment
 }
 

@@ -254,7 +254,7 @@ func matrix4x4_rotation(_ radians: Float, _ axis: vector_float3) -> matrix_float
     let st = sinf(radians)
     let ci = 1 - ct
     let x = normalizedAxis.x, y = normalizedAxis.y, z = normalizedAxis.z
-    
+
     return matrix_make_rows(
         ct + x * x * ci, x * y * ci - z * st, x * z * ci + y * st, 0,
         y * x * ci + z * st, ct + y * y * ci, y * z * ci - x * st, 0,

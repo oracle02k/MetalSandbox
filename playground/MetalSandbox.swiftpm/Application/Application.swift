@@ -115,13 +115,12 @@ final class Application {
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
 
-    //    indirectRenderer.update()
-         tileRenderer.changeSize(size: viewportSize)
-         tileRenderer.updateState(currentBufferIndex: frameIndex)
-        //actorRenderer.changeSize(size: viewportSize)
-        //actorRenderer.updateState(currentBufferIndex: frameIndex)
+        //    indirectRenderer.update()
+        tileRenderer.changeSize(size: viewportSize)
+        tileRenderer.updateState(currentBufferIndex: frameIndex)
+        // actorRenderer.changeSize(size: viewportSize)
+        // actorRenderer.updateState(currentBufferIndex: frameIndex)
 
-    
         let viewport = MTLViewport(
             originX: 0,
             originY: 0,
@@ -131,21 +130,21 @@ final class Application {
             zfar: 1.0
         )
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
-/*
-        gpu.doCommand { commandBuffer in
-            let blitEncoder = commandBuffer.makeBlitCommandEncoderWithSafe()
-            indirectRenderer.beforeDraw(blitEncoder, frameIndex: frameIndex)
-            blitEncoder.endEncoding()
+        /*
+         gpu.doCommand { commandBuffer in
+         let blitEncoder = commandBuffer.makeBlitCommandEncoderWithSafe()
+         indirectRenderer.beforeDraw(blitEncoder, frameIndex: frameIndex)
+         blitEncoder.endEncoding()
 
-            let computeEncoder = commandBuffer.makeComputeCommandEncoderWithSafe()
-            addArrayCompute.dispatch(encoder: computeEncoder)
-            computeEncoder.endEncoding()
+         let computeEncoder = commandBuffer.makeComputeCommandEncoderWithSafe()
+         addArrayCompute.dispatch(encoder: computeEncoder)
+         computeEncoder.endEncoding()
 
-            commandBuffer.commit()
-            commandBuffer.waitUntilCompleted()
-            addArrayCompute.verifyResult()
-        }
- */
+         commandBuffer.commit()
+         commandBuffer.waitUntilCompleted()
+         addArrayCompute.verifyResult()
+         }
+         */
 
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
@@ -167,18 +166,17 @@ final class Application {
                 Debug.flush()
                 frameBuffer.releaseBufferIndex()
             }
-            
-         //   actorRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
-            
-      
-            tileRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
-/*
-            let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
-            encoder.setViewport(viewport)
-            triangleRenderer.draw(encoder)
-     //       indirectRenderer.draw(encoder)
-            encoder.endEncoding()
- */
+
+            //   actorRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
+
+            tileRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex: frameIndex)
+            /*
+             let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
+             encoder.setViewport(viewport)
+             triangleRenderer.draw(encoder)
+             //       indirectRenderer.draw(encoder)
+             encoder.endEncoding()
+             */
 
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
             let viewEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: viewRenderPassDescriptor)

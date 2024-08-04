@@ -1,7 +1,7 @@
 import SwiftUI
 import PlaygroundTester
 
-//@main
+// @main
 struct AppTest: App {
     init() {
         PlaygroundTesterConfiguration.isTesting = true
