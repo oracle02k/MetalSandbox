@@ -15,6 +15,7 @@ final class Application {
     private let screenRenderer: ScreenRenderer
     private let addArrayCompute: AddArrayCompute
     private let indirectRenderer: IndirectRenderer
+    private let tileRenderer: TileRenderer
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
@@ -34,6 +35,7 @@ final class Application {
         self.triangleRenderer = TriangleRenderer(gpu: gpu, meshFactory: meshFactory)
         self.addArrayCompute = AddArrayCompute(gpu)
         self.indirectRenderer = IndirectRenderer(gpu)
+        self.tileRenderer = TileRenderer(gpu)
 
         viewportSize = .init(width: 320, height: 320)
     }
@@ -46,6 +48,7 @@ final class Application {
         triangleRenderer.build()
         addArrayCompute.build()
         indirectRenderer.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
+        tileRenderer.build()
         refreshRenderPass()
     }
 
@@ -109,12 +112,16 @@ final class Application {
     }
 
     func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
-
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
 
-        indirectRenderer.update()
+    //    indirectRenderer.update()
+         tileRenderer.changeSize(size: viewportSize)
+         tileRenderer.updateState(currentBufferIndex: frameIndex)
+        //actorRenderer.changeSize(size: viewportSize)
+        //actorRenderer.updateState(currentBufferIndex: frameIndex)
 
+    
         let viewport = MTLViewport(
             originX: 0,
             originY: 0,
@@ -124,7 +131,7 @@ final class Application {
             zfar: 1.0
         )
         Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
-
+/*
         gpu.doCommand { commandBuffer in
             let blitEncoder = commandBuffer.makeBlitCommandEncoderWithSafe()
             indirectRenderer.beforeDraw(blitEncoder, frameIndex: frameIndex)
@@ -138,6 +145,7 @@ final class Application {
             commandBuffer.waitUntilCompleted()
             addArrayCompute.verifyResult()
         }
+ */
 
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
@@ -159,12 +167,18 @@ final class Application {
                 Debug.flush()
                 frameBuffer.releaseBufferIndex()
             }
-
+            
+         //   actorRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
+            
+      
+            tileRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
+/*
             let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
             encoder.setViewport(viewport)
             triangleRenderer.draw(encoder)
-            indirectRenderer.draw(encoder)
+     //       indirectRenderer.draw(encoder)
             encoder.endEncoding()
+ */
 
             viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
             let viewEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: viewRenderPassDescriptor)

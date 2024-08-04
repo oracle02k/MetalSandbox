@@ -11,6 +11,12 @@ class GpuContext {
         case IndirectRendererVertexFunction = "IndirectRenderer::vertexShader"
         case IndirectRendererVertexFunction2 = "IndirectRenderer::vertexShader2"
         case IndirectRendererFragmentFunction = "IndirectRenderer::fragmentShader"
+        case TileRendererFowardVertext = "TileRenderer::forwardVertex"
+        case TileRendererOpaqueFragment = "TileRenderer::processOpaqueFragment"
+        case TileRendererTransparentFragment = "TileRenderer::processTransparentFragment"
+        case TileRendererBlendFragments = "TileRenderer::blendFragments"
+        case TileRendererInitTransparentFragmentStore = "TileRenderer::initTransparentFragmentStore"
+        case TileRendererQuadPassVertex = "TileRenderer::quadPassVertex"
     }
 
     let device: MTLDevice
