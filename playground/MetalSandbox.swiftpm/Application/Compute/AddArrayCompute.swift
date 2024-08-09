@@ -24,7 +24,8 @@ class AddArrayCompute {
         bufferResult = gpu.makeBuffer(length: MemoryLayout<Float>.stride * elementNum, options: .storageModeShared)
     }
 
-    func dispatch(encoder: MTLComputeCommandEncoder) {
+    func dispatch(_ commandBuffer: MTLCommandBuffer) {
+        let encoder = commandBuffer.makeComputeCommandEncoderWithSafe()
         encoder.setComputePipelineState(computePipelineState)
         encoder.setBuffer(bufferA, offset: 0, index: 0)
         encoder.setBuffer(bufferB, offset: 0, index: 1)

@@ -1,12 +1,12 @@
 import MetalKit
 
-struct Vertex {
-    var position: simd_float3
-    var color: simd_float4
-    var texCoord: simd_float2
-}
-
 final class Application {
+    enum Pipeline {
+        case TriangleRender
+        case IndirectRender
+        case TileRender
+    }
+    
     private let gpu: GpuContext
     private let frameBuffer: FrameBuffer
 
@@ -19,9 +19,8 @@ final class Application {
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
-    private lazy var offscreenRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-
-    private lazy var counterSampleBuffer: MTLCounterSampleBuffer = uninitialized()
+    
+    private var activePipeline = Pipeline.TileRender
 
     init(
         gpu: GpuContext,
@@ -32,7 +31,7 @@ final class Application {
         self.gpu = gpu
         self.frameBuffer = frameBuffer
         self.screenRenderer = ScreenRenderer(gpu: gpu, indexedMeshFactory: indexedMeshFactory)
-        self.triangleRenderer = TriangleRenderer(gpu: gpu, meshFactory: meshFactory)
+        self.triangleRenderer = TriangleRenderer(gpu)
         self.addArrayCompute = AddArrayCompute(gpu)
         self.indirectRenderer = IndirectRenderer(gpu)
         self.tileRenderer = TileRenderer(gpu)
@@ -46,9 +45,10 @@ final class Application {
         frameBuffer.build()
         screenRenderer.build()
         triangleRenderer.build()
-        addArrayCompute.build()
         indirectRenderer.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         tileRenderer.build()
+        //addArrayCompute.build()
+        
         refreshRenderPass()
     }
 
@@ -79,113 +79,133 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-
-        offscreenRenderPassDescriptor = {
-            let descriptor = MTLRenderPassDescriptor()
-            descriptor.colorAttachments[0].texture = offscreenTexture
-            descriptor.colorAttachments[0].loadAction = .clear
-            descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
-            descriptor.colorAttachments[0].storeAction = .store
-
-            descriptor.depthAttachment.texture = depthTexture
-            descriptor.depthAttachment.loadAction = .clear
-            descriptor.depthAttachment.clearDepth = 0.5
-            descriptor.depthAttachment.storeAction = .store
-
-            guard let sampleAttachment = descriptor.sampleBufferAttachments[0] else {
-                appFatalError("sample buffer error.")
-            }
-
-            guard let counterSampleBuffer = gpu.makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
-                appFatalError("sample buffer error.")
-            }
-
-            self.counterSampleBuffer = counterSampleBuffer
-            sampleAttachment.sampleBuffer = self.counterSampleBuffer
-            sampleAttachment.startOfVertexSampleIndex = 0
-            sampleAttachment.endOfVertexSampleIndex = 1
-            sampleAttachment.startOfFragmentSampleIndex = 2
-            sampleAttachment.endOfFragmentSampleIndex = 3
-
-            return descriptor
-        }()
     }
-
-    func draw(viewDrawable: CAMetalDrawable, viewRenderPassDescriptor: MTLRenderPassDescriptor) {
+    
+    func draw(to metalLayer: CAMetalLayer) {
+        switch(activePipeline){
+        case .TriangleRender: drawTriangleRenderPipeline(to: metalLayer)
+        case .IndirectRender: drawIndirectRenderPipeline(to: metalLayer)
+        case .TileRender: drawTileRenderPipeline(to: metalLayer)
+        }
+    }
+    
+    func drawTileRenderPipeline(to metalLayer: CAMetalLayer) {
+        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget.texture = offscreenTexture
+        colorTarget.loadAction = .clear
+        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget.storeAction = .store
+        
+        let depthTarget = MTLRenderPassDepthAttachmentDescriptor()
+        depthTarget.texture = depthTexture
+        depthTarget.loadAction = .clear
+        depthTarget.clearDepth = 1.0
+        depthTarget.storeAction = .dontCare
+        
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
-
-        //    indirectRenderer.update()
+        Debug.frameLog("view: \(viewportSize)")
+        
         tileRenderer.changeSize(size: viewportSize)
         tileRenderer.updateState(currentBufferIndex: frameIndex)
-        // actorRenderer.changeSize(size: viewportSize)
-        // actorRenderer.updateState(currentBufferIndex: frameIndex)
-
-        let viewport = MTLViewport(
-            originX: 0,
-            originY: 0,
-            width: Double(viewportSize.width),
-            height: Double(viewportSize.height),
-            znear: 0.0,
-            zfar: 1.0
-        )
-        Debug.frameLog("viewportSize: \(viewportSize.width), \(viewportSize.height)")
-        /*
-         gpu.doCommand { commandBuffer in
-         let blitEncoder = commandBuffer.makeBlitCommandEncoderWithSafe()
-         indirectRenderer.beforeDraw(blitEncoder, frameIndex: frameIndex)
-         blitEncoder.endEncoding()
-
-         let computeEncoder = commandBuffer.makeComputeCommandEncoderWithSafe()
-         addArrayCompute.dispatch(encoder: computeEncoder)
-         computeEncoder.endEncoding()
-
-         commandBuffer.commit()
-         commandBuffer.waitUntilCompleted()
-         addArrayCompute.verifyResult()
-         }
-         */
-
+        
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
-                Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
-
-                guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<6) else {
-                    appFatalError("Device failed to create a counter sample buffer.")
-                }
-
-                sampleData.withUnsafeBytes { body in
-                    let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
-                    let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
-                    let fragmentInterval = Float(sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
-                    Debug.frameLog(String(format: "VertexTime: %.2fms", vertexInterval))
-                    Debug.frameLog(String(format: "FragmentTime: %.2fms", fragmentInterval))
-                }
-
-                Debug.flush()
+            commandBuffer.addCompletedHandler { [self] _ in 
+                debugGpuTime(from: commandBuffer)
+                tileRenderer.debugFrameStatus()
+                screenRenderer.debugFrameStatus()
                 frameBuffer.releaseBufferIndex()
+                Debug.flush()
             }
-
-            //   actorRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex:frameIndex)
-
-            tileRenderer.draw(commandBuffer: commandBuffer, drawable: offscreenTexture, depthStencil: depthTexture, currentBufferIndex: frameIndex)
-            /*
-             let encoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: offscreenRenderPassDescriptor)
-             encoder.setViewport(viewport)
-             triangleRenderer.draw(encoder)
-             //       indirectRenderer.draw(encoder)
-             encoder.endEncoding()
-             */
-
-            viewRenderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1, green: 1, blue: 0, alpha: 1)
-            let viewEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: viewRenderPassDescriptor)
-            viewEncoder.setViewport(viewport)
-            screenRenderer.draw(viewEncoder, offscreenTexture: offscreenTexture)
-            viewEncoder.endEncoding()
-
-            commandBuffer.present(viewDrawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+            
+            tileRenderer.draw(
+                toColor: colorTarget, 
+                toDepth: depthTarget, 
+                using: commandBuffer, 
+                frameIndex: frameIndex
+            )
+            drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
         }
+    }
+    
+    func drawIndirectRenderPipeline(to metalLayer: CAMetalLayer) {
+        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget.texture = offscreenTexture
+        colorTarget.loadAction = .clear
+        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget.storeAction = .store
+        
+        let depthTarget = MTLRenderPassDepthAttachmentDescriptor()
+        depthTarget.texture = depthTexture
+        depthTarget.loadAction = .clear
+        depthTarget.clearDepth = 1.0
+        depthTarget.storeAction = .dontCare
+        
+        let frameIndex = frameBuffer.waitForNextBufferIndex()
+        Debug.frameLog("frame: \(frameBuffer.frameNumber)")
+        
+        indirectRenderer.update()
+        
+        gpu.doCommand { commandBuffer in
+            indirectRenderer.preparaToDraw(using: commandBuffer, frameIndex: frameIndex)
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+        }
+        
+        gpu.doCommand { commandBuffer in
+            commandBuffer.addCompletedHandler { [self] _ in 
+                debugGpuTime(from: commandBuffer)
+                indirectRenderer.debugFrameStatus()
+                screenRenderer.debugFrameStatus()
+                frameBuffer.releaseBufferIndex()
+                Debug.flush()
+            }
+            
+            indirectRenderer.draw(toColor: colorTarget, toDepth: depthTarget, using: commandBuffer, indirect: true)
+            drawViewRenderPass(to: metalLayer, using: commandBuffer)
+            commandBuffer.commit()
+        }
+    }
+    
+    func drawTriangleRenderPipeline(to metalLayer: CAMetalLayer) {
+        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget.texture = offscreenTexture
+        colorTarget.loadAction = .clear
+        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget.storeAction = .store
+        
+        gpu.doCommand { commandBuffer in
+            commandBuffer.addCompletedHandler { [self] _ in 
+                debugGpuTime(from: commandBuffer)
+                triangleRenderer.debugFrameStatus()
+                screenRenderer.debugFrameStatus()
+                Debug.flush()
+            }
+            
+            triangleRenderer.draw(toColor: colorTarget, using: commandBuffer)
+            drawViewRenderPass(to: metalLayer, using: commandBuffer)
+            commandBuffer.commit()
+        }
+    }
+    
+    func drawViewRenderPass(to metalLayer: CAMetalLayer, using commandBuffer: MTLCommandBuffer) {
+        guard let drawable = metalLayer.nextDrawable() else {
+            appFatalError("drawable error.")
+        }
+        
+        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget.texture = drawable.texture
+        colorTarget.loadAction = .clear
+        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget.storeAction = .store
+        
+        screenRenderer.draw(toColor: colorTarget, using: commandBuffer, source: offscreenTexture)
+        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+    }
+    
+    func debugGpuTime(from commandBuffer: MTLCommandBuffer) {
+        let interval = commandBuffer.gpuEndTime - commandBuffer.gpuStartTime
+        Debug.frameLog(String(format: "GpuTime: %.2fms", interval*1000))
     }
 }

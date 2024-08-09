@@ -51,15 +51,6 @@ extension GpuContext {
             return nil
         }
 
-        /*
-         let existCounter = counterSet.counters
-         .contains {$0.name.caseInsensitiveCompare(MTLCommonCounter.timestamp.rawValue) == .orderedSame}
-
-         guard existCounter else {
-         return nil
-         }
-         */
-
         // Create and configure a descriptor for the counter sample buffer.
         let descriptor = MTLCounterSampleBufferDescriptor()
         // This counter set instance belongs to the `device` instance.
@@ -78,5 +69,45 @@ extension GpuContext {
         }
 
         return buffer
+    }
+    
+    func attachCounterSample(to descriptor: MTLRenderPassDescriptor, index: Int) -> MTLCounterSampleBuffer?{
+        guard let sampleAttachment = descriptor.sampleBufferAttachments[index] else {
+            //appFatalError("sample buffer error.")
+            return nil
+        }
+        
+        guard let counterSampleBuffer = makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
+            //appFatalError("sample buffer error.")
+            return nil
+        }
+        
+        sampleAttachment.sampleBuffer = counterSampleBuffer
+        sampleAttachment.startOfVertexSampleIndex = 0
+        sampleAttachment.endOfVertexSampleIndex = 1
+        sampleAttachment.startOfFragmentSampleIndex = 2
+        sampleAttachment.endOfFragmentSampleIndex = 3
+        
+        return counterSampleBuffer
+    }
+    
+    func debugCountreSample(from counterSampleBuffer: MTLCounterSampleBuffer?){
+        guard let counterSampleBuffer = counterSampleBuffer else{
+            return
+        }
+        
+        let sampleCount = counterSampleBuffer.sampleCount
+        guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<sampleCount) else {
+            //appFatalError("Device failed to create a counter sample buffer.")
+            return 
+        }
+        
+        sampleData.withUnsafeBytes { body in
+            let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
+            let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
+            let fragmentInterval = Float(sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
+            Debug.frameLog(String(format: "VertexTime: %.2fms", vertexInterval))
+            Debug.frameLog(String(format: "FragmentTime: %.2fms", fragmentInterval))
+        }
     }
 }

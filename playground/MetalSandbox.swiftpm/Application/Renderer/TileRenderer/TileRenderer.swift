@@ -57,6 +57,7 @@ class TileRenderer {
     lazy var blendPipelineState: MTLRenderPipelineState = uninitialized()
 
     lazy var forwardRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
 
     var actorParamsBuffers = [TypedBuffer<ActorParams>]()
     var cameraParamsBuffers = [TypedBuffer<CameraParams>]()
@@ -272,12 +273,10 @@ class TileRenderer {
         }
 
         forwardRenderPassDescriptor = MTLRenderPassDescriptor()
-        forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
-        forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue].loadAction = .clear
-        forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue].storeAction = .store
-        forwardRenderPassDescriptor.depthAttachment.clearDepth = 1.0
-        forwardRenderPassDescriptor.depthAttachment.loadAction = .clear
-        forwardRenderPassDescriptor.depthAttachment.storeAction = .dontCare
+        counterSampleBuffer = gpu.attachCounterSample(
+            to: forwardRenderPassDescriptor, 
+            index: RenderTargetIndices.Color.rawValue
+        )
 
         if supportsOrderIndependentTransparency {
             // Set the tile size for the fragment shader.
@@ -405,13 +404,8 @@ class TileRenderer {
     }
 
     /// Draws the opaque and transparent meshes with an explicit image block in a fragment function that implements order-independent transparency.
-    func drawWithOrderIndependentTransparency(commandBuffer: MTLCommandBuffer, drawable: MTLTexture, depthStencil: MTLTexture, currentBufferIndex: Int) {
+    func drawWithOrderIndependentTransparency(_ renderEncoder: MTLRenderCommandEncoder, currentBufferIndex: Int) {
         Debug.frameLog("drawTrans")
-        forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue].texture = drawable
-        forwardRenderPassDescriptor.depthAttachment.texture = depthStencil
-
-        let renderEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: forwardRenderPassDescriptor)
-        renderEncoder.label = "Forward Pass"
 
         // Initialize the image block's memory before rendering.
         renderEncoder.pushDebugGroup("Init Image Block")
@@ -429,30 +423,39 @@ class TileRenderer {
         renderEncoder.setDepthStencilState(noDepthStencilState)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         renderEncoder.popDebugGroup()
-        renderEncoder.endEncoding()
     }
 
     /// Draws the opaque and transparent meshes with a pipeline's alpha blending.
-    func drawUnorderedAlphaBlending(commandBuffer: MTLCommandBuffer, drawable: MTLTexture, depthStencil: MTLTexture, currentBufferIndex: Int) {
+    func drawUnorderedAlphaBlending(_ renderEncoder: MTLRenderCommandEncoder, currentBufferIndex: Int) {
         Debug.frameLog("drawBlend")
-        forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue].texture = drawable
-        forwardRenderPassDescriptor.depthAttachment.texture = depthStencil
-
-        let renderEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: forwardRenderPassDescriptor)
-        renderEncoder.label = "Forward Render Pass"
-
         bindCommonActorBuffers(renderEncoder: renderEncoder, currentBufferIndex: currentBufferIndex)
         drawOpaqueObjects(renderEncoder: renderEncoder, renderPipelineState: opaquePipeline)
         drawTransparentObjects(renderEncoder: renderEncoder, renderPipelineState: opaquePipeline)
-
-        renderEncoder.endEncoding()
     }
 
-    func draw(commandBuffer: MTLCommandBuffer, drawable: MTLTexture, depthStencil: MTLTexture, currentBufferIndex: Int) {
-        if enableOrderIndependentTransparency {
-            drawWithOrderIndependentTransparency(commandBuffer: commandBuffer, drawable: drawable, depthStencil: depthStencil, currentBufferIndex: currentBufferIndex)
+    func draw(
+        toColor: MTLRenderPassColorAttachmentDescriptor,
+        toDepth: MTLRenderPassDepthAttachmentDescriptor,
+        using commandBuffer: MTLCommandBuffer, 
+        frameIndex: Int
+    ) {
+        let encoder = {
+            forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
+            forwardRenderPassDescriptor.depthAttachment = toDepth
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: forwardRenderPassDescriptor)
+        }()
+        encoder.label = "Forward Render Pass"
+
+        if supportsOrderIndependentTransparency {
+            drawWithOrderIndependentTransparency(encoder, currentBufferIndex: frameIndex)
         } else {
-            drawUnorderedAlphaBlending(commandBuffer: commandBuffer, drawable: drawable, depthStencil: depthStencil, currentBufferIndex: currentBufferIndex)
+            drawUnorderedAlphaBlending(encoder, currentBufferIndex: frameIndex)
         }
+        
+        encoder.endEncoding()
+    }
+    
+    func debugFrameStatus(){
+        gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }

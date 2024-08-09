@@ -21,6 +21,10 @@ class IndirectRenderer {
         case ObjectParams
         case FrameState
     }
+    
+    enum RenderTargetIndices: Int {
+        case Color           = 0
+    }
 
     var NumObjects: Int {Int(GridWidth * GridHeight)}
     let GridWidth: Float = 20
@@ -31,6 +35,8 @@ class IndirectRenderer {
     private var screenViewport: Viewport
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
+    private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private var vertices = [TypedBuffer<Vertex>]()
     private var frameStateBuffer = [TypedBuffer<FrameState>]()
     private lazy var objectParameters: TypedBuffer<ObjectPerameters> = uninitialized()
@@ -69,6 +75,25 @@ class IndirectRenderer {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
+        
+        renderPassDescriptor = MTLRenderPassDescriptor()
+        counterSampleBuffer = gpu.attachCounterSample(
+            to: renderPassDescriptor, 
+            index: 0
+        )
+        /*
+        renderPassDescriptor = {
+            let descriptor = MTLRenderPassDescriptor()
+            let colorTarget = RenderTargetIndices.Color.rawValue
+            descriptor.colorAttachments[colorTarget].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
+            descriptor.colorAttachments[colorTarget].loadAction = .clear
+            descriptor.colorAttachments[colorTarget].storeAction = .store
+            descriptor.depthAttachment.clearDepth = 1.0
+            descriptor.depthAttachment.loadAction = .clear
+            descriptor.depthAttachment.storeAction = .dontCare
+            return descriptor
+        }()
+         */
 
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))
@@ -170,20 +195,39 @@ class IndirectRenderer {
     func update() {
     }
 
-    func beforeDraw(_ encoder: MTLBlitCommandEncoder, frameIndex: Int) {
+    func preparaToDraw(using commandBuffer: MTLCommandBuffer, frameIndex: Int) {
+        let encoder = commandBuffer.makeBlitCommandEncoderWithSafe()
         frameStateBuffer[frameIndex].contents.aspectScale = aspectScale
         encoder.copy(
             from: frameStateBuffer[frameIndex].rawBuffer, sourceOffset: 0,
             to: indirectFrameStateBuffer, destinationOffset: 0,
             size: indirectFrameStateBuffer.length
         )
+        encoder.endEncoding()
     }
 
-    func draw(_ encoder: MTLRenderCommandEncoder) {
+    func draw(
+        toColor: MTLRenderPassColorAttachmentDescriptor,
+        toDepth: MTLRenderPassDepthAttachmentDescriptor,
+        using commandBuffer: MTLCommandBuffer,
+        indirect: Bool
+    ) {
+        let encoder = {
+            renderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
+            renderPassDescriptor.depthAttachment = toDepth
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
+        }()
+        
         encoder.setCullMode(.back)
         encoder.setRenderPipelineState(renderPipelineState)
-        // normalDraw(encoder)
-        indirectDraw(encoder)
+        
+        if indirect {
+            indirectDraw(encoder)
+        }else{
+            normalDraw(encoder)
+        }
+        
+        encoder.endEncoding()
     }
 
     func normalDraw(_ encoder: MTLRenderCommandEncoder) {
@@ -205,6 +249,10 @@ class IndirectRenderer {
         encoder.useResource(indirectFrameStateBuffer, usage: .read)
         // Draw everything in the indirect command buffer.
         encoder.executeCommandsInBuffer(indirectCommandBuffer, range: 0..<NumObjects)
+    }
+    
+    func debugFrameStatus(){
+        gpu.debugCountreSample(from: counterSampleBuffer)
     }
 
     /// Create a Metal buffer containing a 2D "gear" mesh

@@ -1,4 +1,5 @@
-import SwiftUI
+import MetalKit
+import Foundation
 
 class GpuContext {
     enum Function: String, CaseIterable {

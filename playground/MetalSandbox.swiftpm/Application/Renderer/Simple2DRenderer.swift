@@ -1,6 +1,10 @@
 import MetalKit
 
 class TriangleRenderer {
+    enum RenderTargetIndices: Int {
+        case Color           = 0
+    }
+    
     struct Vertex {
         var position: simd_float3
         var color: simd_float4
@@ -9,18 +13,14 @@ class TriangleRenderer {
 
     private let gpu: GpuContext
     private var screenViewport: Viewport
-    private let meshFactory: Mesh.Factory
-    private lazy var mesh: Mesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
+    private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
-    init (
-        gpu: GpuContext,
-        meshFactory: Mesh.Factory
-    ) {
+    init (_ gpu: GpuContext) {
         self.gpu = gpu
-        self.meshFactory = meshFactory
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
@@ -31,7 +31,7 @@ class TriangleRenderer {
             descriptor.sampleCount = 1
             descriptor.vertexFunction = gpu.findFunction(by: .Simple2dVertexFunction)
             descriptor.fragmentFunction = gpu.findFunction(by: .Simple2dFragmentFunction)
-            descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            descriptor.colorAttachments[RenderTargetIndices.Color.rawValue].pixelFormat = .bgra8Unorm
             descriptor.depthAttachmentPixelFormat = .depth32Float
             return gpu.makeRenderPipelineState(descriptor)
         }()
@@ -43,30 +43,25 @@ class TriangleRenderer {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
-
-        mesh = {
-            let vertexBufferDescriptor = VertexBufferDescriptor<Vertex>()
-            vertexBufferDescriptor.content = [
-                .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0)),
-                .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0)),
-                .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
-            ]
-
-            let descriptor = Mesh.Descriptor()
-            descriptor.vertexBufferDescriptors = [vertexBufferDescriptor]
-            descriptor.vertexCount = vertexBufferDescriptor.count
-            descriptor.toporogy = .triangle
-
-            return meshFactory.make(descriptor)
-        }()
-
+        
+        renderPassDescriptor = MTLRenderPassDescriptor()
+        counterSampleBuffer = gpu.attachCounterSample(
+            to: renderPassDescriptor, 
+            index: RenderTargetIndices.Color.rawValue
+        )
+    
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
-        vertices[0] = .init(position: .init(160, 0, 0.5), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
-        vertices[1] = .init(position: .init(0, 320, 0.5), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
-        vertices[2] = .init(position: .init(320, 320, 0.5), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
+        vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
+        vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
+        vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
     }
 
-    func draw(_ encoder: MTLRenderCommandEncoder) {
+    func draw(toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {
+        let encoder = {
+            renderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
+        }()
+        
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
         withUnsafeMutablePointer(to: &screenViewport) {
@@ -74,6 +69,10 @@ class TriangleRenderer {
         }
         encoder.setVertexBuffer(vertices.rawBuffer, offset: 0, index: VertexInputIndex.Vertices1.rawValue)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        // encoder.drawMesh(mesh)
+        encoder.endEncoding()
+    }
+    
+    func debugFrameStatus(){
+        gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }

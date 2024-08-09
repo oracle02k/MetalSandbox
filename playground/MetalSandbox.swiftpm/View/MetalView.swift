@@ -142,17 +142,6 @@ class MetalViewDelegate: AAPLViewDelegate {
     }
 
     func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView) {
-        metalLayer.pixelFormat = view.colorPixelFormat
-        guard let drawable = metalLayer.nextDrawable() else {
-            appFatalError("drawable error.")
-        }
-
-        let descriptor = MTLRenderPassDescriptor()
-        descriptor.colorAttachments[0].texture = drawable.texture
-        descriptor.colorAttachments[0].loadAction = .clear
-        descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1)
-        descriptor.colorAttachments[0].storeAction = .store
-
-        System.shared.app.draw(viewDrawable: drawable, viewRenderPassDescriptor: descriptor)
+        System.shared.app.draw(to: metalLayer)
     }
 }

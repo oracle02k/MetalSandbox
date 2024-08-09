@@ -1,10 +1,18 @@
 import MetalKit
 
 class ScreenRenderer {
+    struct Vertex {
+        var position: simd_float3
+        var color: simd_float4
+        var texCoord: simd_float2
+    }
+    
     private let gpu: GpuContext
     private let indexedMeshFactory: IndexedMesh.Factory
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
+    private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
 
     init(gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
         self.gpu = gpu
@@ -21,6 +29,12 @@ class ScreenRenderer {
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             return gpu.makeRenderPipelineState(descriptor)
         }()
+        
+        renderPassDescriptor = MTLRenderPassDescriptor()
+        counterSampleBuffer = gpu.attachCounterSample(
+            to: renderPassDescriptor, 
+            index: 0
+        )
 
         indexedMesh = {
             let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
@@ -42,10 +56,24 @@ class ScreenRenderer {
             return indexedMeshFactory.make(descriptor)
         }()
     }
-
-    func draw(_ encoder: MTLRenderCommandEncoder, offscreenTexture: MTLTexture) {
+    
+    func draw(
+        toColor: MTLRenderPassColorAttachmentDescriptor,
+        using commandBuffer: MTLCommandBuffer,
+        source: MTLTexture
+    ) {
+        let encoder = {
+            renderPassDescriptor.colorAttachments[0] = toColor
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
+        }()
+        
         encoder.setRenderPipelineState(renderPipelineState)
-        encoder.setFragmentTexture(offscreenTexture, index: 0)
+        encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
+        encoder.endEncoding()
+    }
+    
+    func debugFrameStatus(){
+        gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }
