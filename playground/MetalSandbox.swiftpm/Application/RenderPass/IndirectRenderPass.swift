@@ -1,6 +1,6 @@
 import MetalKit
 
-class IndirectRenderer {
+class IndirectRenderPass {
     struct Vertex {
         var position: packed_float2
         var texcoord: packed_float2
@@ -49,7 +49,7 @@ class IndirectRenderer {
     // aspectScale
     private lazy var aspectScale = simd_float2(1, 1)
 
-    init (_ gpu: GpuContext) {
+    init (with gpu: GpuContext) {
         self.gpu = gpu
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
@@ -81,20 +81,7 @@ class IndirectRenderer {
             to: renderPassDescriptor, 
             index: 0
         )
-        /*
-        renderPassDescriptor = {
-            let descriptor = MTLRenderPassDescriptor()
-            let colorTarget = RenderTargetIndices.Color.rawValue
-            descriptor.colorAttachments[colorTarget].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
-            descriptor.colorAttachments[colorTarget].loadAction = .clear
-            descriptor.colorAttachments[colorTarget].storeAction = .store
-            descriptor.depthAttachment.clearDepth = 1.0
-            descriptor.depthAttachment.loadAction = .clear
-            descriptor.depthAttachment.storeAction = .dontCare
-            return descriptor
-        }()
-         */
-
+        
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))
             frameStateBuffer[i].rawBuffer.label = "Frame state buffer \(i)"

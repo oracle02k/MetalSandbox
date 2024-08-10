@@ -1,6 +1,6 @@
 import MetalKit
 
-class TriangleRenderer {
+class TriangleRenderPass {
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
@@ -19,7 +19,7 @@ class TriangleRenderer {
     private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
-    init (_ gpu: GpuContext) {
+    init (with gpu: GpuContext) {
         self.gpu = gpu
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }

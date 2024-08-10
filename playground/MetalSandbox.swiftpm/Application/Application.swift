@@ -11,11 +11,11 @@ final class Application {
     private let frameBuffer: FrameBuffer
 
     private var viewportSize: CGSize
-    private let triangleRenderer: TriangleRenderer
-    private let screenRenderer: ScreenRenderer
+    private let triangleRenderPass: TriangleRenderPass
+    private let screenRenderPass: ScreenRenderPass
     private let addArrayCompute: AddArrayCompute
-    private let indirectRenderer: IndirectRenderer
-    private let tileRenderer: TileRenderer
+    private let indirectRenderPass: IndirectRenderPass
+    private let tileRenderPass: TileRenderPass
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
@@ -30,11 +30,11 @@ final class Application {
     ) {
         self.gpu = gpu
         self.frameBuffer = frameBuffer
-        self.screenRenderer = ScreenRenderer(gpu: gpu, indexedMeshFactory: indexedMeshFactory)
-        self.triangleRenderer = TriangleRenderer(gpu)
-        self.addArrayCompute = AddArrayCompute(gpu)
-        self.indirectRenderer = IndirectRenderer(gpu)
-        self.tileRenderer = TileRenderer(gpu)
+        self.screenRenderPass = ScreenRenderPass(with: gpu, indexedMeshFactory: indexedMeshFactory)
+        self.triangleRenderPass = TriangleRenderPass(with: gpu)
+        self.addArrayCompute = AddArrayCompute(with: gpu)
+        self.indirectRenderPass = IndirectRenderPass(with: gpu)
+        self.tileRenderPass = TileRenderPass(with: gpu)
 
         viewportSize = .init(width: 320, height: 320)
     }
@@ -43,21 +43,21 @@ final class Application {
         gpu.build()
         _ = gpu.checkCounterSample()
         frameBuffer.build()
-        screenRenderer.build()
-        triangleRenderer.build()
-        indirectRenderer.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
-        tileRenderer.build()
+        screenRenderPass.build()
+        triangleRenderPass.build()
+        indirectRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
+        tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         //addArrayCompute.build()
         
-        refreshRenderPass()
+        refreshRenderTextures()
     }
 
     func changeViewportSize(_ size: CGSize) {
         viewportSize = size
-        refreshRenderPass()
+        refreshRenderTextures()
     }
 
-    func refreshRenderPass() {
+    func refreshRenderTextures() {
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -106,23 +106,24 @@ final class Application {
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
         Debug.frameLog("view: \(viewportSize)")
         
-        tileRenderer.changeSize(size: viewportSize)
-        tileRenderer.updateState(currentBufferIndex: frameIndex)
+        tileRenderPass.changeSize(size: viewportSize)
+        tileRenderPass.updateState(currentBufferIndex: frameIndex)
         
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in 
                 debugGpuTime(from: commandBuffer)
-                tileRenderer.debugFrameStatus()
-                screenRenderer.debugFrameStatus()
+                tileRenderPass.debugFrameStatus()
+                screenRenderPass.debugFrameStatus()
                 frameBuffer.releaseBufferIndex()
                 Debug.flush()
             }
             
-            tileRenderer.draw(
+            tileRenderPass.draw(
                 toColor: colorTarget, 
                 toDepth: depthTarget, 
                 using: commandBuffer, 
-                frameIndex: frameIndex
+                frameIndex: frameIndex,
+                transparency: false
             )
             drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
@@ -145,10 +146,10 @@ final class Application {
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
         
-        indirectRenderer.update()
+        indirectRenderPass.update()
         
         gpu.doCommand { commandBuffer in
-            indirectRenderer.preparaToDraw(using: commandBuffer, frameIndex: frameIndex)
+            indirectRenderPass.preparaToDraw(using: commandBuffer, frameIndex: frameIndex)
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
         }
@@ -156,13 +157,13 @@ final class Application {
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in 
                 debugGpuTime(from: commandBuffer)
-                indirectRenderer.debugFrameStatus()
-                screenRenderer.debugFrameStatus()
+                indirectRenderPass.debugFrameStatus()
+                screenRenderPass.debugFrameStatus()
                 frameBuffer.releaseBufferIndex()
                 Debug.flush()
             }
             
-            indirectRenderer.draw(toColor: colorTarget, toDepth: depthTarget, using: commandBuffer, indirect: true)
+            indirectRenderPass.draw(toColor: colorTarget, toDepth: depthTarget, using: commandBuffer, indirect: true)
             drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
         }
@@ -178,12 +179,12 @@ final class Application {
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in 
                 debugGpuTime(from: commandBuffer)
-                triangleRenderer.debugFrameStatus()
-                screenRenderer.debugFrameStatus()
+                triangleRenderPass.debugFrameStatus()
+                screenRenderPass.debugFrameStatus()
                 Debug.flush()
             }
             
-            triangleRenderer.draw(toColor: colorTarget, using: commandBuffer)
+            triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
             drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
         }
@@ -200,7 +201,7 @@ final class Application {
         colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         colorTarget.storeAction = .store
         
-        screenRenderer.draw(toColor: colorTarget, using: commandBuffer, source: offscreenTexture)
+        screenRenderPass.draw(toColor: colorTarget, using: commandBuffer, source: offscreenTexture)
         commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
     }
     

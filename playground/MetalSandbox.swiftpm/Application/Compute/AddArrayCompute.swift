@@ -8,7 +8,7 @@ class AddArrayCompute {
     lazy var bufferResult: MTLBuffer = uninitialized()
     let elementNum = 100
 
-    init (_ gpu: GpuContext) {
+    init (with gpu: GpuContext) {
         self.gpu = gpu
     }
 

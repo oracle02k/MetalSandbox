@@ -6,7 +6,7 @@
  */
 import MetalKit
 
-class TileRenderer {
+class TileRenderPass {
     enum BufferIndices: Int {
         case Vertices         = 1
         case ActorParams      = 2
@@ -77,17 +77,17 @@ class TileRenderer {
 
     var gpu: GpuContext
 
-    init(_ gpu: GpuContext) {
+    init(with gpu: GpuContext) {
         self.gpu = gpu
     }
 
-    func build() {
-        loadResources()
+    func build(maxFramesInFlight: Int) {
+        loadResources(maxFramesInFlight: maxFramesInFlight)
         loadMetal()
     }
 
     /// Initializes the app's starting values, and creates actors and constant buffers.
-    func loadResources() {
+    func loadResources(maxFramesInFlight: Int) {
         enableOrderIndependentTransparency = true
         rotation = 0
         enableRotation = true
@@ -155,7 +155,7 @@ class TileRenderer {
         }
 
         // Create the constant buffers for each frame.
-        for i in 0..<MaxBuffersInFlight {
+        for i in 0..<maxFramesInFlight {
             // let actorParamsBuffer = gpu.makeBuffer(length: Align(sizeof(ActorParams.self),BufferOffsetAlign),
             // options: .storageModeShared)
             let actorParamsBuffer = gpu.makeTypedBuffer(elementCount: MaxActor, align: BufferOffsetAlign, options: .storageModeShared) as TypedBuffer<ActorParams>
@@ -437,7 +437,8 @@ class TileRenderer {
         toColor: MTLRenderPassColorAttachmentDescriptor,
         toDepth: MTLRenderPassDepthAttachmentDescriptor,
         using commandBuffer: MTLCommandBuffer, 
-        frameIndex: Int
+        frameIndex: Int,
+        transparency: Bool
     ) {
         let encoder = {
             forwardRenderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
@@ -446,7 +447,7 @@ class TileRenderer {
         }()
         encoder.label = "Forward Render Pass"
 
-        if supportsOrderIndependentTransparency {
+        if supportsOrderIndependentTransparency && transparency {
             drawWithOrderIndependentTransparency(encoder, currentBufferIndex: frameIndex)
         } else {
             drawUnorderedAlphaBlending(encoder, currentBufferIndex: frameIndex)

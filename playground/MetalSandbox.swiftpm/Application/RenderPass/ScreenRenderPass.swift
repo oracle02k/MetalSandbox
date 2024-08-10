@@ -1,6 +1,6 @@
 import MetalKit
 
-class ScreenRenderer {
+class ScreenRenderPass {
     struct Vertex {
         var position: simd_float3
         var color: simd_float4
@@ -14,7 +14,7 @@ class ScreenRenderer {
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
     private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
 
-    init(gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
+    init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
         self.gpu = gpu
         self.indexedMeshFactory = indexedMeshFactory
     }
