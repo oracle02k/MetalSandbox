@@ -21,7 +21,7 @@ class IndirectRenderPass {
         case ObjectParams
         case FrameState
     }
-    
+
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
@@ -75,13 +75,13 @@ class IndirectRenderPass {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
-        
+
         renderPassDescriptor = MTLRenderPassDescriptor()
         counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor, 
+            to: renderPassDescriptor,
             index: 0
         )
-        
+
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))
             frameStateBuffer[i].rawBuffer.label = "Frame state buffer \(i)"
@@ -204,16 +204,16 @@ class IndirectRenderPass {
             renderPassDescriptor.depthAttachment = toDepth
             return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
         }()
-        
+
         encoder.setCullMode(.back)
         encoder.setRenderPipelineState(renderPipelineState)
-        
+
         if indirect {
             indirectDraw(encoder)
-        }else{
+        } else {
             normalDraw(encoder)
         }
-        
+
         encoder.endEncoding()
     }
 
@@ -237,8 +237,8 @@ class IndirectRenderPass {
         // Draw everything in the indirect command buffer.
         encoder.executeCommandsInBuffer(indirectCommandBuffer, range: 0..<NumObjects)
     }
-    
-    func debugFrameStatus(){
+
+    func debugFrameStatus() {
         gpu.debugCountreSample(from: counterSampleBuffer)
     }
 

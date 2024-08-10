@@ -70,38 +70,38 @@ extension GpuContext {
 
         return buffer
     }
-    
-    func attachCounterSample(to descriptor: MTLRenderPassDescriptor, index: Int) -> MTLCounterSampleBuffer?{
+
+    func attachCounterSample(to descriptor: MTLRenderPassDescriptor, index: Int) -> MTLCounterSampleBuffer? {
         guard let sampleAttachment = descriptor.sampleBufferAttachments[index] else {
-            //appFatalError("sample buffer error.")
+            // appFatalError("sample buffer error.")
             return nil
         }
-        
+
         guard let counterSampleBuffer = makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
-            //appFatalError("sample buffer error.")
+            // appFatalError("sample buffer error.")
             return nil
         }
-        
+
         sampleAttachment.sampleBuffer = counterSampleBuffer
         sampleAttachment.startOfVertexSampleIndex = 0
         sampleAttachment.endOfVertexSampleIndex = 1
         sampleAttachment.startOfFragmentSampleIndex = 2
         sampleAttachment.endOfFragmentSampleIndex = 3
-        
+
         return counterSampleBuffer
     }
-    
-    func debugCountreSample(from counterSampleBuffer: MTLCounterSampleBuffer?){
-        guard let counterSampleBuffer = counterSampleBuffer else{
+
+    func debugCountreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) {
+        guard let counterSampleBuffer = counterSampleBuffer else {
             return
         }
-        
+
         let sampleCount = counterSampleBuffer.sampleCount
         guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<sampleCount) else {
-            //appFatalError("Device failed to create a counter sample buffer.")
-            return 
+            // appFatalError("Device failed to create a counter sample buffer.")
+            return
         }
-        
+
         sampleData.withUnsafeBytes { body in
             let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
             let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)

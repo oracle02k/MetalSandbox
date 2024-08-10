@@ -6,7 +6,7 @@ class ScreenRenderPass {
         var color: simd_float4
         var texCoord: simd_float2
     }
-    
+
     private let gpu: GpuContext
     private let indexedMeshFactory: IndexedMesh.Factory
     private lazy var indexedMesh: IndexedMesh = uninitialized()
@@ -29,10 +29,10 @@ class ScreenRenderPass {
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             return gpu.makeRenderPipelineState(descriptor)
         }()
-        
+
         renderPassDescriptor = MTLRenderPassDescriptor()
         counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor, 
+            to: renderPassDescriptor,
             index: 0
         )
 
@@ -56,7 +56,7 @@ class ScreenRenderPass {
             return indexedMeshFactory.make(descriptor)
         }()
     }
-    
+
     func draw(
         toColor: MTLRenderPassColorAttachmentDescriptor,
         using commandBuffer: MTLCommandBuffer,
@@ -66,14 +66,14 @@ class ScreenRenderPass {
             renderPassDescriptor.colorAttachments[0] = toColor
             return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
         }()
-        
+
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
     }
-    
-    func debugFrameStatus(){
+
+    func debugFrameStatus() {
         gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }

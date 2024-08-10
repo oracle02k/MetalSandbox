@@ -4,7 +4,7 @@ class TriangleRenderPass {
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
-    
+
     struct Vertex {
         var position: simd_float3
         var color: simd_float4
@@ -43,13 +43,13 @@ class TriangleRenderPass {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
-        
+
         renderPassDescriptor = MTLRenderPassDescriptor()
         counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor, 
+            to: renderPassDescriptor,
             index: RenderTargetIndices.Color.rawValue
         )
-    
+
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
         vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
@@ -61,7 +61,7 @@ class TriangleRenderPass {
             renderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
             return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
         }()
-        
+
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setDepthStencilState(depthStencilState)
         withUnsafeMutablePointer(to: &screenViewport) {
@@ -71,8 +71,8 @@ class TriangleRenderPass {
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
     }
-    
-    func debugFrameStatus(){
+
+    func debugFrameStatus() {
         gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }

@@ -274,7 +274,7 @@ class TileRenderPass {
 
         forwardRenderPassDescriptor = MTLRenderPassDescriptor()
         counterSampleBuffer = gpu.attachCounterSample(
-            to: forwardRenderPassDescriptor, 
+            to: forwardRenderPassDescriptor,
             index: RenderTargetIndices.Color.rawValue
         )
 
@@ -436,7 +436,7 @@ class TileRenderPass {
     func draw(
         toColor: MTLRenderPassColorAttachmentDescriptor,
         toDepth: MTLRenderPassDepthAttachmentDescriptor,
-        using commandBuffer: MTLCommandBuffer, 
+        using commandBuffer: MTLCommandBuffer,
         frameIndex: Int,
         transparency: Bool
     ) {
@@ -452,11 +452,11 @@ class TileRenderPass {
         } else {
             drawUnorderedAlphaBlending(encoder, currentBufferIndex: frameIndex)
         }
-        
+
         encoder.endEncoding()
     }
-    
-    func debugFrameStatus(){
+
+    func debugFrameStatus() {
         gpu.debugCountreSample(from: counterSampleBuffer)
     }
 }
