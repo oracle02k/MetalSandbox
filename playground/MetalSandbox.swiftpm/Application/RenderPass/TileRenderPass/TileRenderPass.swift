@@ -222,6 +222,7 @@ class TileRenderPass {
                 renderPipelineDesc.stencilAttachmentPixelFormat = .invalid
 
                 transparencyPipeline = gpu.makeRenderPipelineState(renderPipelineDesc)
+                
             }
             // Configure the kernel tile shader to initialize the image block for each frame.
             do {

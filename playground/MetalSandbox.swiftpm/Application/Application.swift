@@ -5,6 +5,7 @@ final class Application {
         case TriangleRender
         case IndirectRender
         case TileRender
+        case MrtRender
     }
 
     private let gpu: GpuContext
@@ -16,11 +17,13 @@ final class Application {
     private let addArrayCompute: AddArrayCompute
     private let indirectRenderPass: IndirectRenderPass
     private let tileRenderPass: TileRenderPass
+    private let rasterOrderGroupRenderPass: RasterOrderGroupRenderPass
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
+    private lazy var offscreenTexture2: MTLTexture = uninitialized()
 
-    private var activePipeline = Pipeline.TileRender
+    private var activePipeline = Pipeline.MrtRender
 
     init(
         gpu: GpuContext,
@@ -35,6 +38,10 @@ final class Application {
         self.addArrayCompute = AddArrayCompute(with: gpu)
         self.indirectRenderPass = IndirectRenderPass(with: gpu)
         self.tileRenderPass = TileRenderPass(with: gpu)
+        self.rasterOrderGroupRenderPass = RasterOrderGroupRenderPass(
+            with: gpu, 
+            indexedMeshFactory: indexedMeshFactory
+        )
 
         viewportSize = .init(width: 320, height: 320)
     }
@@ -47,6 +54,7 @@ final class Application {
         triangleRenderPass.build()
         indirectRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
+        rasterOrderGroupRenderPass.build()
         // addArrayCompute.build()
 
         refreshRenderTextures()
@@ -79,6 +87,16 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
+        
+        offscreenTexture2 = {
+            let descriptor = MTLTextureDescriptor()
+            descriptor.textureType = .type2D
+            descriptor.width = Int(viewportSize.width)
+            descriptor.height = Int(viewportSize.height)
+            descriptor.pixelFormat = .bgra8Unorm
+            descriptor.usage = [.shaderWrite, .shaderRead]
+            return gpu.makeTexture(descriptor)
+        }()
     }
 
     func draw(to metalLayer: CAMetalLayer) {
@@ -86,6 +104,7 @@ final class Application {
         case .TriangleRender: drawTriangleRenderPipeline(to: metalLayer)
         case .IndirectRender: drawIndirectRenderPipeline(to: metalLayer)
         case .TileRender: drawTileRenderPipeline(to: metalLayer)
+        case .MrtRender: drawMrtRenderPipeline(to: metalLayer)
         }
     }
 
@@ -123,7 +142,7 @@ final class Application {
                 toDepth: depthTarget,
                 using: commandBuffer,
                 frameIndex: frameIndex,
-                transparency: false
+                transparency: true
             )
             drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
@@ -168,14 +187,14 @@ final class Application {
             commandBuffer.commit()
         }
     }
-
+    
     func drawTriangleRenderPipeline(to metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
         colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         colorTarget.storeAction = .store
-
+        
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 debugGpuTime(from: commandBuffer)
@@ -183,8 +202,39 @@ final class Application {
                 screenRenderPass.debugFrameStatus()
                 Debug.flush()
             }
-
+            
             triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
+            drawViewRenderPass(to: metalLayer, using: commandBuffer)
+            commandBuffer.commit()
+        }
+    }
+
+    func drawMrtRenderPipeline(to metalLayer: CAMetalLayer) {
+                Debug.frameLog("view: \(viewportSize)")
+        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget.texture = offscreenTexture
+        colorTarget.loadAction = .clear
+        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget.storeAction = .store
+        
+        let colorTarget2 = MTLRenderPassColorAttachmentDescriptor()
+        colorTarget2.texture = offscreenTexture2
+        colorTarget2.loadAction = .clear
+        colorTarget2.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        colorTarget2.storeAction = .store
+
+        gpu.doCommand { commandBuffer in
+            commandBuffer.addCompletedHandler { [self] _ in
+                debugGpuTime(from: commandBuffer)
+                rasterOrderGroupRenderPass.debugFrameStatus()
+                screenRenderPass.debugFrameStatus()
+                Debug.flush()
+            }
+
+            rasterOrderGroupRenderPass.draw(
+                toColor: colorTarget, 
+                write: offscreenTexture2,
+                using: commandBuffer)
             drawViewRenderPass(to: metalLayer, using: commandBuffer)
             commandBuffer.commit()
         }
@@ -201,7 +251,7 @@ final class Application {
         colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         colorTarget.storeAction = .store
 
-        screenRenderPass.draw(toColor: colorTarget, using: commandBuffer, source: offscreenTexture)
+        screenRenderPass.draw(toColor: colorTarget, using: commandBuffer, source: offscreenTexture2)
         commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
     }
 

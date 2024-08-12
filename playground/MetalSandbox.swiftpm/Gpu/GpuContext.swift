@@ -8,6 +8,8 @@ class GpuContext {
         case RedFragmentFunction = "red_fragment_function"
         case TexcoordVertexFuction = "texcoord_vertex_function"
         case TexcoordFragmentFunction = "texcoord_fragment_function"
+        case RasterOrderGroup0Fragment = "raster_order_group0_fragment"
+        case RasterOrderGroup1Fragment = "raster_order_group1_fragment"
         case AddArrayComputeFunction = "add_arrays_compute_function"
         case IndirectRendererVertexFunction = "IndirectRenderer::vertexShader"
         case IndirectRendererVertexFunction2 = "IndirectRenderer::vertexShader2"

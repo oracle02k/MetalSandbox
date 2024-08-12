@@ -24,6 +24,7 @@ struct VertexIn {
 
 struct VertexOut {
     simd_float4 position [[ position ]];
+    simd_float4 pos;
     simd_float4 color;
     simd_float2 texCoord;
 };
@@ -60,11 +61,14 @@ vertex VertexOut texcoord_vertex_function(
 ) {
     VertexOut vOut;
     vOut.position = simd_float4(vertices[vertexID].position,1);
+    vOut.pos = vOut.position;
     vOut.color = vertices[vertexID].color;
     vOut.texCoord = vertices[vertexID].texCoord;
 
     return vOut;
 }
+
+
 
 fragment simd_float4 texcoord_fragment_function(
     VertexOut vIn [[ stage_in ]],
@@ -72,7 +76,45 @@ fragment simd_float4 texcoord_fragment_function(
 ) {
     constexpr sampler colorSampler(mip_filter::linear, mag_filter::linear, min_filter::linear);
     simd_float4 color = colorTexture.sample(colorSampler, vIn.texCoord);
-    return simd_float4(color.rgb, 1.0);
+    return simd_float4(color.rgb,1);
+}
+
+fragment simd_float4 raster_order_group0_fragment(
+    VertexOut vIn [[ stage_in ]],
+    texture2d<float> colorTexture [[texture(0)]],
+    texture2d<float, metal::access::write> writeTexture [[texture(1), raster_order_group(0)]]
+) {
+    constexpr sampler colorSampler(mip_filter::linear, mag_filter::linear, min_filter::linear);
+    simd_float4 color = colorTexture.sample(colorSampler, vIn.texCoord);
+    color = simd_float4(color.rgb,  vIn.color.w);
+    
+    float vx = (vIn.pos.x + 1.0)/2.f;
+    float vy = 1.f - (vIn.pos.y + 1.0)/2.f;
+    uint2 coord = uint2(vx * 760, vy * 760);
+    
+    float4 color2 = float4(vx,vy,0,1);
+    writeTexture.write(color, coord);
+    
+    return color;
+}
+
+fragment simd_float4 raster_order_group1_fragment(
+  VertexOut vIn [[ stage_in ]],
+  texture2d<float> colorTexture [[texture(0)]],
+  texture2d<float, metal::access::write> writeTexture [[texture(1), raster_order_group(1)]]
+) {
+    constexpr sampler colorSampler(mip_filter::linear, mag_filter::linear, min_filter::linear);
+    simd_float4 color = colorTexture.sample(colorSampler, vIn.texCoord);
+    color = simd_float4(color.rgb,  vIn.color.w);
+    
+    float vx = (vIn.pos.x + 1.0)/2.f;
+    float vy = 1.f - (vIn.pos.y + 1.0)/2.f;
+    uint2 coord = uint2(vx * 760, vy * 760);
+    
+    float4 color2 = float4(vx,vy,0,1);
+    writeTexture.write(color, coord);
+    
+    return color;
 }
 
  kernel void add_arrays_compute_function(
@@ -291,7 +333,7 @@ struct TransparentFragmentValues
 struct TransparentFragmentStore
 {
     TransparentFragmentValues values [[imageblock_data]];
-};
+}; 
 
 /// Initializes an image block structure to sentinel values.
 kernel void initTransparentFragmentStore
@@ -306,6 +348,7 @@ kernel void initTransparentFragmentStore
         fragmentValues->colors[i] = half4(0.0h);
         fragmentValues->depths[i] = half(INFINITY);
     }
+    
 }
 
 /// Adds transparent fragments into an image block structure in depth order.
