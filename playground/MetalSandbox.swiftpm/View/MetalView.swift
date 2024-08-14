@@ -19,6 +19,7 @@ class MetalView: UIView {
     }
 
     override func didMoveToWindow() {
+        Logger.log("MetalView.didMoveToWindow begin.")
         super.didMoveToWindow()
         stopRenderLoop()
         if Config.mainThreadRender {
@@ -29,6 +30,7 @@ class MetalView: UIView {
                 RunLoop.current.run()
             }
         }
+        Logger.log("MetalView.didMoveToWindow done.")
     }
 
     @objc func render(_ displayLink: CADisplayLink) {
@@ -57,6 +59,7 @@ class MetalView: UIView {
     }
 
     func setupCADisplayLinkForScreen(screen: UIScreen) {
+        Logger.log("MetalView.setupCADisplayLinkForScreen begin.")
         displayLink = screen.displayLink(withTarget: self, selector: #selector(Self.render(_:)))!
         displayLink?.preferredFrameRateRange = .init(
             minimum: Config.minFps,
@@ -65,14 +68,19 @@ class MetalView: UIView {
         )
         displayLink?.isPaused = self.paused
         displayLink?.add(to: .current, forMode: .default)
+        Logger.log("MetalView.setupCADisplayLinkForScreen done.")
     }
 
     func didEnterBackground(notification: NSNotification) {
+        Logger.log("MetalView.didEnterBackground begin.")
         paused = true
+        Logger.log("MetalView.didEnterBackground end.")
     }
 
     func willEnterForeground(notification: NSNotification) {
+        Logger.log("MetalView.willEnterForeground begin.")
         paused = false
+        Logger.log("MetalView.willEnterForeground end.")
     }
 
     func stopRenderLoop() {
@@ -80,13 +88,17 @@ class MetalView: UIView {
     }
 
     func setContentScaleFactor(contentScaleFactor: CGFloat) {
+        Logger.log("MetalView.setContentScaleFactor begin.")
         super.contentScaleFactor = contentScaleFactor
         resizeDrawable(scaleFactor: window!.screen.nativeScale)
+        Logger.log("MetalView.setContentScaleFactor done.")
     }
 
     override func layoutSubviews() {
+        Logger.log("MetalView.layoutSubviews begin.")
         super.layoutSubviews()
         resizeDrawable(scaleFactor: window!.screen.nativeScale)
+        Logger.log("MetalView.layoutSubviews done.")
     }
 
     override var frame: CGRect {
@@ -112,6 +124,7 @@ class MetalView: UIView {
     }
 
     func resizeDrawable(scaleFactor: CGFloat) {
+        Logger.log("MetalView.resizeDrawable begin.")
         var newSize = self.bounds.size
         newSize.width *= scaleFactor
         newSize.height *= scaleFactor
@@ -133,6 +146,7 @@ class MetalView: UIView {
             metalLayer.drawableSize = newSize
             delegate.drawableResize(size: newSize)
         }
+        Logger.log("MetalView.resizeDrawable done.")
     }
 }
 

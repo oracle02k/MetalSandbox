@@ -4,33 +4,41 @@ class TriangleRenderPass {
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
+    
+    enum Function: String, CaseIterable {
+        case VertexShader = "triangle::vertex_shader"
+        case FragmentShader = "triangle::fragment_shader"
+    }
 
     struct Vertex {
         var position: simd_float3
         var color: simd_float4
-        var texCoord: simd_float2
     }
 
     private let gpu: GpuContext
     private var screenViewport: Viewport
+    private let functions: FunctionContainer<Function>
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
     private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
-    init (with gpu: GpuContext) {
+    init (with gpu: GpuContext, functions: FunctionContainer<Function>) {
         self.gpu = gpu
-        screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
+        self.functions = functions
+        self.screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
     func build() {
+        functions.build(fileName: "triangle.cpp")
+        
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = gpu.findFunction(by: .Simple2dVertexFunction)
-            descriptor.fragmentFunction = gpu.findFunction(by: .Simple2dFragmentFunction)
+            descriptor.vertexFunction = functions.find(by: .VertexShader)
+            descriptor.fragmentFunction = functions.find(by: .FragmentShader)
             descriptor.colorAttachments[RenderTargetIndices.Color.rawValue].pixelFormat = .bgra8Unorm
             descriptor.depthAttachmentPixelFormat = .depth32Float
             return gpu.makeRenderPipelineState(descriptor)
@@ -51,9 +59,9 @@ class TriangleRenderPass {
         )
 
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
-        vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1), texCoord: .init(0, 0))
-        vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1), texCoord: .init(0, 0))
-        vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1), texCoord: .init(0, 0))
+        vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1))
+        vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1))
+        vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
     }
 
     func draw(toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {

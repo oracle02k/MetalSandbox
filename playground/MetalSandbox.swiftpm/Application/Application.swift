@@ -12,18 +12,18 @@ final class Application {
     private let frameBuffer: FrameBuffer
 
     private var viewportSize: CGSize
-    private let triangleRenderPass: TriangleRenderPass
     private let screenRenderPass: ScreenRenderPass
     private let addArrayCompute: AddArrayCompute
     private let indirectRenderPass: IndirectRenderPass
     private let tileRenderPass: TileRenderPass
     private let rasterOrderGroupRenderPass: RasterOrderGroupRenderPass
+    private let triangleRenderPipeline: TriangleRenderPipeline
 
     private lazy var depthTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture2: MTLTexture = uninitialized()
 
-    private var activePipeline = Pipeline.MrtRender
+    private var activePipeline = Pipeline.TriangleRender
 
     init(
         gpu: GpuContext,
@@ -34,13 +34,22 @@ final class Application {
         self.gpu = gpu
         self.frameBuffer = frameBuffer
         self.screenRenderPass = ScreenRenderPass(with: gpu, indexedMeshFactory: indexedMeshFactory)
-        self.triangleRenderPass = TriangleRenderPass(with: gpu)
         self.addArrayCompute = AddArrayCompute(with: gpu)
         self.indirectRenderPass = IndirectRenderPass(with: gpu)
         self.tileRenderPass = TileRenderPass(with: gpu)
         self.rasterOrderGroupRenderPass = RasterOrderGroupRenderPass(
             with: gpu, 
             indexedMeshFactory: indexedMeshFactory
+        )
+        self.triangleRenderPipeline = TriangleRenderPipeline(
+            gpu: gpu,
+            triangleRenderPass: TriangleRenderPass(
+                with: gpu,
+                functions: FunctionContainer<TriangleRenderPass.Function>(with: gpu)
+            ),
+            viewRenderPass: ViewRenderPass(
+                with: ScreenRenderPass(with: gpu, indexedMeshFactory: indexedMeshFactory)
+            )
         )
 
         viewportSize = .init(width: 320, height: 320)
@@ -51,11 +60,12 @@ final class Application {
         _ = gpu.checkCounterSample()
         frameBuffer.build()
         screenRenderPass.build()
-        triangleRenderPass.build()
         indirectRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         rasterOrderGroupRenderPass.build()
+
         // addArrayCompute.build()
+        triangleRenderPipeline.build()
 
         refreshRenderTextures()
     }
@@ -63,6 +73,7 @@ final class Application {
     func changeViewportSize(_ size: CGSize) {
         viewportSize = size
         refreshRenderTextures()
+        triangleRenderPipeline.changeSize(viewportSize: size)
     }
 
     func refreshRenderTextures() {
@@ -101,7 +112,7 @@ final class Application {
 
     func draw(to metalLayer: CAMetalLayer) {
         switch activePipeline {
-        case .TriangleRender: drawTriangleRenderPipeline(to: metalLayer)
+        case .TriangleRender: triangleRenderPipeline.draw(to: metalLayer)
         case .IndirectRender: drawIndirectRenderPipeline(to: metalLayer)
         case .TileRender: drawTileRenderPipeline(to: metalLayer)
         case .MrtRender: drawMrtRenderPipeline(to: metalLayer)
@@ -188,27 +199,6 @@ final class Application {
         }
     }
     
-    func drawTriangleRenderPipeline(to metalLayer: CAMetalLayer) {
-        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
-        colorTarget.texture = offscreenTexture
-        colorTarget.loadAction = .clear
-        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
-        colorTarget.storeAction = .store
-        
-        gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                debugGpuTime(from: commandBuffer)
-                triangleRenderPass.debugFrameStatus()
-                screenRenderPass.debugFrameStatus()
-                Debug.flush()
-            }
-            
-            triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
-            drawViewRenderPass(to: metalLayer, using: commandBuffer)
-            commandBuffer.commit()
-        }
-    }
-
     func drawMrtRenderPipeline(to metalLayer: CAMetalLayer) {
                 Debug.frameLog("view: \(viewportSize)")
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
