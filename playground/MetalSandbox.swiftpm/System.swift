@@ -5,22 +5,18 @@ class System {
 
     let appDebuger: AppDebugger
     let debugVM: DebugVM
-    lazy var device: MTLDevice = uninitialized()
     lazy var app: Application = uninitialized()
 
-    private init( ) {
+    private init() {
         self.debugVM = DebugVM()
         self.appDebuger = AppDebuggerBindVM(debugVM)
     }
 
-    func build(_ device: MTLDevice) {
+    func build() {
         Logger.log("begin entrypoint init")
-        self.device = device
         self.app = Application(
-            gpu: GpuContext(device),
-            frameBuffer: FrameBuffer(),
-            indexedMeshFactory: IndexedMesh.Factory(device),
-            meshFactory: Mesh.Factory(device)
+            gpu: DIContainer.resolve(GpuContext.self),
+            frameBuffer: FrameBuffer()
         )
 
         app.build()

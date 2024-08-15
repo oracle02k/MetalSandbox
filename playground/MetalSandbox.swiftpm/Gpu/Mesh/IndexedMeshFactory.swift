@@ -2,22 +2,22 @@ import MetalKit
 
 extension IndexedMesh {
     class Factory {
-        let device: MTLDevice
+        let gpu: GpuContext
 
-        init(_ device: MTLDevice) {
-            self.device = device
+        init(gpu: GpuContext) {
+            self.gpu = gpu
         }
 
         func make(_ descriptor: IndexedMesh.Descriptor) -> IndexedMesh {
             let vertexBuffers = descriptor.vertexBufferDescriptors.map { descriptor in
                 descriptor.withUnsafeRawPointer {
-                    device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
+                    gpu.device.makeBuffer(bytes: $0, length: descriptor.byteSize, options: [])!
                 }
             }
 
             let indexBufferDescriptor = descriptor.indexBufferDescriptor
             let indexBuffer = indexBufferDescriptor.withUnsafeRawPointer {
-                device.makeBuffer(bytes: $0, length: indexBufferDescriptor.byteSize, options: [])!
+                gpu.device.makeBuffer(bytes: $0, length: indexBufferDescriptor.byteSize, options: [])!
             }
 
             return IndexedMesh(

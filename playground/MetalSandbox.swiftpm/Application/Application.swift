@@ -27,30 +27,22 @@ final class Application {
 
     init(
         gpu: GpuContext,
-        frameBuffer: FrameBuffer,
-        indexedMeshFactory: IndexedMesh.Factory,
-        meshFactory: Mesh.Factory
+        frameBuffer: FrameBuffer
     ) {
         self.gpu = gpu
         self.frameBuffer = frameBuffer
-        self.screenRenderPass = ScreenRenderPass(with: gpu, indexedMeshFactory: indexedMeshFactory)
+        self.screenRenderPass = ScreenRenderPass(
+            with: gpu, 
+            indexedMeshFactory: DIContainer.resolve(IndexedMesh.Factory.self)
+        )
         self.addArrayCompute = AddArrayCompute(with: gpu)
         self.indirectRenderPass = IndirectRenderPass(with: gpu)
         self.tileRenderPass = TileRenderPass(with: gpu)
         self.rasterOrderGroupRenderPass = RasterOrderGroupRenderPass(
             with: gpu, 
-            indexedMeshFactory: indexedMeshFactory
+            indexedMeshFactory: DIContainer.resolve(IndexedMesh.Factory.self)
         )
-        self.triangleRenderPipeline = TriangleRenderPipeline(
-            gpu: gpu,
-            triangleRenderPass: TriangleRenderPass(
-                with: gpu,
-                functions: FunctionContainer<TriangleRenderPass.Function>(with: gpu)
-            ),
-            viewRenderPass: ViewRenderPass(
-                with: ScreenRenderPass(with: gpu, indexedMeshFactory: indexedMeshFactory)
-            )
-        )
+        self.triangleRenderPipeline = DIContainer.resolve(TriangleRenderPipeline.self)
 
         viewportSize = .init(width: 320, height: 320)
     }

@@ -31,11 +31,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
 
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            appFatalError("GPU not available ")
-        }
-
-        System.shared.build(device)
+        DIContainer.register()
+        System.shared.build()
 
         return true
     }

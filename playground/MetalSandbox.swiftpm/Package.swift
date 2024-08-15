@@ -35,13 +35,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/Losiowaty/PlaygroundTester", "0.3.1"..<"1.0.0")
+        .package(url: "https://github.com/Losiowaty/PlaygroundTester", "0.3.1"..<"1.0.0"),
+        .package(url: "https://github.com/Swinject/Swinject", "2.9.1"..<"3.0.0")
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
             dependencies: [
-                .product(name: "PlaygroundTester", package: "PlaygroundTester")
+                .product(name: "PlaygroundTester", package: "PlaygroundTester"),
+                .product(name: "Swinject", package: "Swinject")
             ],
             path: ".",
             resources: [

@@ -22,17 +22,18 @@ class GpuContext {
         case TileRendererQuadPassVertex = "TileRenderer::quadPassVertex"
     }
 
-    let device: MTLDevice
-    private var container: [Function: MTLFunction]
+    lazy var device: MTLDevice = uninitialized()
+    private let metalDeviceResolver: MetalDeviceResolver
+    private var container = [Function: MTLFunction]()
     private lazy var library: MTLLibrary = uninitialized()
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
 
-    init(_ device: MTLDevice) {
-        self.device = device
-        self.container = [:]
+    init(resolver: MetalDeviceResolver) {
+        self.metalDeviceResolver = resolver
     }
 
     func build() {
+        device = metalDeviceResolver.resolve()
         commandQueue = buildCommandQueue()
         library = buildFunction()
     }
