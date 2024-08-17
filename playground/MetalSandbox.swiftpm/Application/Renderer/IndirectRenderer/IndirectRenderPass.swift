@@ -1,6 +1,24 @@
 import MetalKit
 
 class IndirectRenderPass {
+    typealias Functions = FunctionContainer<FunctionNames>
+    
+    enum FunctionNames: String, CaseIterable {
+        case VertexShaderWithInstance = "indirect::vertex_shader_with_instance"
+        case VertexShader = "indirect::vertex_shader"
+        case FragmentShader = "indirect::fragment_shader"
+    }
+    
+    enum VertexBufferIndex: Int {
+        case Vertices = 0
+        case ObjectParams
+        case FrameState
+    }
+    
+    enum RenderTargetIndices: Int {
+        case Color           = 0
+    }
+    
     struct Vertex {
         var position: packed_float2
         var texcoord: packed_float2
@@ -16,16 +34,6 @@ class IndirectRenderPass {
         var position: packed_float2
     }
 
-    enum VertexBufferIndex: Int {
-        case Vertices = 0
-        case ObjectParams
-        case FrameState
-    }
-
-    enum RenderTargetIndices: Int {
-        case Color           = 0
-    }
-
     var NumObjects: Int {Int(GridWidth * GridHeight)}
     let GridWidth: Float = 20
     let GridHeight: Float = 20
@@ -33,6 +41,7 @@ class IndirectRenderPass {
 
     private let gpu: GpuContext
     private var screenViewport: Viewport
+    private let functions: Functions
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
@@ -49,18 +58,20 @@ class IndirectRenderPass {
     // aspectScale
     private lazy var aspectScale = simd_float2(1, 1)
 
-    init (with gpu: GpuContext) {
+    init (with gpu: GpuContext, functions: Functions) {
         self.gpu = gpu
+        self.functions = functions
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
     func build(maxFramesInFlight: Int) {
+        functions.build(fileName: "indirect.cpp")
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = gpu.findFunction(by: .IndirectRendererVertexFunction)
-            descriptor.fragmentFunction = gpu.findFunction(by: .IndirectRendererFragmentFunction)
+            descriptor.vertexFunction = functions.find(by: .VertexShaderWithInstance)
+            descriptor.fragmentFunction = functions.find(by: .FragmentShader)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             descriptor.depthAttachmentPixelFormat = .depth32Float
             // Needed for this pipeline state to be used in indirect command buffers.

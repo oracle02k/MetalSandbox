@@ -1,6 +1,14 @@
 import MetalKit
 
 class RasterOrderGroupRenderPass {
+    typealias Functions = FunctionContainer<FunctionNames>
+    
+    enum FunctionNames: String, CaseIterable {
+        case TexcoordVertexShader = "raster_order_group::texcoord_vertex_shader"
+        case Rog0Fragment = "raster_order_group::rog_0_fragment"
+        case Rog1Fragment = "raster_order_group::rog_1_fragment"
+    }
+    
     struct Vertex {
         var position: simd_float3
         var color: simd_float4
@@ -9,6 +17,7 @@ class RasterOrderGroupRenderPass {
     
     private let gpu: GpuContext
     private let indexedMeshFactory: IndexedMesh.Factory
+    private let functions: Functions
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var indexedMesh2: IndexedMesh = uninitialized()
     private lazy var indexedMesh3: IndexedMesh = uninitialized()
@@ -18,18 +27,20 @@ class RasterOrderGroupRenderPass {
     private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var texture: MTLTexture = uninitialized()
     
-    init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
+    init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory, functions: Functions) {
         self.gpu = gpu
         self.indexedMeshFactory = indexedMeshFactory
+        self.functions = functions
     }
     
     func build() {
+        functions.build(fileName: "raster_order_group.cpp")
         rasterOrderGroup0 = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Raster Order Group 0 Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = gpu.findFunction(by: .TexcoordVertexFuction)
-            descriptor.fragmentFunction = gpu.findFunction(by: .RasterOrderGroup0Fragment)
+            descriptor.vertexFunction = functions.find(by: .TexcoordVertexShader)
+            descriptor.fragmentFunction = functions.find(by: .Rog0Fragment)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             return gpu.makeRenderPipelineState(descriptor)
         }()
@@ -38,8 +49,8 @@ class RasterOrderGroupRenderPass {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Raster Order Group 1 Pipeline"
             descriptor.sampleCount = 1
-            descriptor.vertexFunction = gpu.findFunction(by: .TexcoordVertexFuction)
-            descriptor.fragmentFunction = gpu.findFunction(by: .RasterOrderGroup1Fragment)
+            descriptor.vertexFunction = functions.find(by: .TexcoordVertexShader)
+            descriptor.fragmentFunction = functions.find(by: .Rog1Fragment)
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             return gpu.makeRenderPipelineState(descriptor)
         }()

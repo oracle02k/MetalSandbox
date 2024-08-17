@@ -7,6 +7,17 @@
 import MetalKit
 
 class TileRenderPass {
+    typealias Functions = FunctionContainer<FunctionNames>
+    
+    enum FunctionNames: String, CaseIterable {
+        case FowardVertex = "tile::forward_vertex"
+        case OpaqueFragment = "tile::process_opaque_fragment"
+        case TransparentFragment = "tile::process_transparent_fragment"
+        case BlendFragments = "tile::blend_fragments"
+        case InitTransparentFragmentStore = "tile::init_transparent_fragment_store"
+        case QuadPassVertex = "tile::quad_pass_vertex"
+    }
+    
     enum BufferIndices: Int {
         case Vertices         = 1
         case ActorParams      = 2
@@ -75,13 +86,16 @@ class TileRenderPass {
     var enableOrderIndependentTransparency = true
     var enableRotation = false
 
-    var gpu: GpuContext
+    let gpu: GpuContext
+    let functions: Functions
 
-    init(with gpu: GpuContext) {
+    init(with gpu: GpuContext, functions: Functions) {
         self.gpu = gpu
+        self.functions = functions
     }
 
     func build(maxFramesInFlight: Int) {
+        functions.build(fileName: "tile.cpp")
         loadResources(maxFramesInFlight: maxFramesInFlight)
         loadMetal()
     }
@@ -175,8 +189,8 @@ class TileRenderPass {
         Logger.log("Selected Device \(gpu.device.name)")
 
         do {
-            let vertexFunc = gpu.findFunction(by: .TileRendererFowardVertext)
-            let fragmentFunc = gpu.findFunction(by: .TileRendererOpaqueFragment)
+            let vertexFunc = functions.find(by: .FowardVertex)
+            let fragmentFunc = functions.find(by: .OpaqueFragment)
 
             let renderPipelineDesc = MTLRenderPipelineDescriptor()
             renderPipelineDesc.label = "Unordered alpha blending pipeline"
@@ -204,8 +218,8 @@ class TileRenderPass {
 
             // Set up the transparency pipeline so that it populates the image block with fragment values.
             do {
-                let vertexFunction = gpu.findFunction(by: .TileRendererFowardVertext)
-                let fragmentFunction = gpu.findFunction(by: .TileRendererTransparentFragment)
+                let vertexFunction = functions.find(by: .FowardVertex)
+                let fragmentFunction = functions.find(by: .TransparentFragment)
 
                 let renderPipelineDesc = MTLRenderPipelineDescriptor()
                 renderPipelineDesc.label = "Transparent Fragment Store Op"
@@ -226,7 +240,7 @@ class TileRenderPass {
             }
             // Configure the kernel tile shader to initialize the image block for each frame.
             do {
-                let kernelTileFunction = gpu.findFunction(by: .TileRendererInitTransparentFragmentStore)
+                let kernelTileFunction = functions.find(by: .InitTransparentFragmentStore)
                 let tileDesc = MTLTileRenderPipelineDescriptor()
                 tileDesc.label = "Init Image Block Kernel"
                 tileDesc.tileFunction = kernelTileFunction
@@ -237,8 +251,8 @@ class TileRenderPass {
             }
             // Configure the pipeline to blend transparent and opaque fragments.
             do {
-                let vertexFunction = gpu.findFunction(by: .TileRendererQuadPassVertex)
-                let fragmentFunction = gpu.findFunction(by: .TileRendererBlendFragments)
+                let vertexFunction = functions.find(by: .QuadPassVertex)
+                let fragmentFunction = functions.find(by: .BlendFragments)
                 let renderPipelineDesc = MTLRenderPipelineDescriptor()
                 renderPipelineDesc.label = "Transparent Fragment Blending"
                 renderPipelineDesc.vertexFunction = vertexFunction

@@ -30,9 +30,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _: UIApplication,
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-
         DIContainer.register()
-        System.shared.build()
+        
+        Logger.log("begin entrypoint init")
+        let app = DIContainer.resolve(Application.self)
+        app.build()
+        Logger.log("done entrypoint init")
 
         return true
     }

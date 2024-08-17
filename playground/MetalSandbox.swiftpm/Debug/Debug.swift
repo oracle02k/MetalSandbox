@@ -1,21 +1,25 @@
 class Debug {
+    static let appDebuger = {
+        DIContainer.resolve(AppDebuggerBindVM.self) 
+    }()
+    
     static func allClear() {
-        System.shared.appDebuger.allClear()
+        appDebuger.allClear()
     }
 
     static func frameClear() {
-        System.shared.appDebuger.frameClear()
+        appDebuger.frameClear()
     }
 
     static func initLog(_ message: String) {
-        System.shared.appDebuger.initLog(message)
+        appDebuger.initLog(message)
     }
 
     static func frameLog(_ message: String) {
-        System.shared.appDebuger.frameLog(message)
+        appDebuger.frameLog(message)
     }
 
     static func flush() {
-        System.shared.appDebuger.flush()
+        appDebuger.flush()
     }
 }

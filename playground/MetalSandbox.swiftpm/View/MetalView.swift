@@ -152,10 +152,12 @@ class MetalView: UIView {
 
 class MetalViewDelegate: AAPLViewDelegate {
     func drawableResize(size: CGSize) {
-        System.shared.app.changeViewportSize(size)
+        let app = DIContainer.resolve(Application.self)
+        app.changeViewportSize(size)
     }
 
     func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView) {
-        System.shared.app.draw(to: metalLayer)
+        let app = DIContainer.resolve(Application.self)
+        app.draw(to: metalLayer)
     }
 }

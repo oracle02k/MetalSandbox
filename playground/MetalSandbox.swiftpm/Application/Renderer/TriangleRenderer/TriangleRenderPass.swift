@@ -1,11 +1,13 @@
 import MetalKit
 
 class TriangleRenderPass {
+    typealias Functions = FunctionContainer<FunctionNames>
+    
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
     
-    enum Function: String, CaseIterable {
+    enum FunctionNames: String, CaseIterable {
         case VertexShader = "triangle::vertex_shader"
         case FragmentShader = "triangle::fragment_shader"
     }
@@ -17,14 +19,14 @@ class TriangleRenderPass {
 
     private let gpu: GpuContext
     private var screenViewport: Viewport
-    private let functions: FunctionContainer<Function>
+    private let functions: Functions
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
     private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
-    init (with gpu: GpuContext, functions: FunctionContainer<Function>) {
+    init (with gpu: GpuContext, functions: Functions) {
         self.gpu = gpu
         self.functions = functions
         self.screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))

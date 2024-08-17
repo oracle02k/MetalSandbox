@@ -2,6 +2,7 @@
 #include <simd/simd.h>
 
 using namespace metal;
+
 namespace triangle {
 
 enum VertexInputIndex {

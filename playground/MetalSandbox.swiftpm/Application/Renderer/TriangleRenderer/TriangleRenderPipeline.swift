@@ -1,6 +1,6 @@
 import MetalKit
 
-class TriangleRenderPipeline {
+class TriangleRenderPipeline: RenderPipeline {
     private let gpu: GpuContext
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
