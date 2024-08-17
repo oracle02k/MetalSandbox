@@ -31,7 +31,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         DIContainer.register()
-        
+
         Logger.log("begin entrypoint init")
         let app = DIContainer.resolve(Application.self)
         app.build()

@@ -10,7 +10,7 @@ final class Application {
 
     private let gpu: GpuContext
     private var viewportSize: CGSize
-    private var activePipeline: RenderPipeline? 
+    private var activePipeline: RenderPipeline?
 
     init( gpu: GpuContext ) {
         self.gpu = gpu
@@ -21,11 +21,11 @@ final class Application {
     func build() {
         gpu.build()
         _ = gpu.checkCounterSample()
-        
+
         changePipeline(pipeline: .TileRender)
     }
-    
-    func changePipeline(pipeline: Pipeline){
+
+    func changePipeline(pipeline: Pipeline) {
         activePipeline = switch pipeline {
         case .TriangleRender: DIContainer.resolve(TriangleRenderPipeline.self)
         case .IndirectRender: DIContainer.resolve(IndirectRenderPipeline.self)

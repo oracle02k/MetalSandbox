@@ -3,8 +3,8 @@ import SwiftUI
 struct DebugView: View {
     @ObservedObject private var content: DebugVM
     @State private var selectionPipeline: Application.Pipeline
-    
-    init(){
+
+    init() {
         content = DIContainer.resolve(DebugVM.self)
         selectionPipeline = .TriangleRender
     }

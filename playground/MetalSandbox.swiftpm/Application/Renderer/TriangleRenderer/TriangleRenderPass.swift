@@ -2,11 +2,11 @@ import MetalKit
 
 class TriangleRenderPass {
     typealias Functions = FunctionContainer<FunctionNames>
-    
+
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
-    
+
     enum FunctionNames: String, CaseIterable {
         case VertexShader = "triangle::vertex_shader"
         case FragmentShader = "triangle::fragment_shader"
@@ -34,7 +34,7 @@ class TriangleRenderPass {
 
     func build() {
         functions.build(fileName: "triangle.cpp")
-        
+
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"

@@ -2,13 +2,13 @@ import Swinject
 
 class DIContainer {
     private static let container = Container()
-    
-    static func register(){
+
+    static func register() {
         // Application
         container.register(Application.self) { r in
             Application(gpu: r.resolve(GpuContext.self)!)
         }.inObjectScope(.container)
-        
+
         // Debug
         container.register(DebugVM.self) { _ in
             DebugVM()
@@ -16,30 +16,30 @@ class DIContainer {
         container.register(AppDebuggerBindVM.self) { r in
             AppDebuggerBindVM(r.resolve(DebugVM.self)!)
         }.inObjectScope(.container)
-        
+
         // Metal Device
         container.register(MetalDeviceResolver.self) { _ in
             MetalDeviceResolver()
         }.inObjectScope(.container)
         container.register(GpuContext.self) { r in
-            GpuContext(resolver:r.resolve(MetalDeviceResolver.self)!)
+            GpuContext(resolver: r.resolve(MetalDeviceResolver.self)!)
         }.inObjectScope(.container)
-        
+
         // Renderer Common
         container.register(FrameBuffer.self) { _ in FrameBuffer() }
         container.register(IndexedMesh.Factory.self) { r in
             IndexedMesh.Factory(gpu: r.resolve(GpuContext.self)!)
         }
-        container.register(ScreenRenderPass.self) { r in 
+        container.register(ScreenRenderPass.self) { r in
             ScreenRenderPass(
                 with: r.resolve(GpuContext.self)!,
                 indexedMeshFactory: r.resolve(IndexedMesh.Factory.self)!
             )
         }
-        container.register(ViewRenderPass.self) { r in 
+        container.register(ViewRenderPass.self) { r in
             ViewRenderPass(with: r.resolve(ScreenRenderPass.self)!)
         }
-        
+
         // TriangleRenderPipeline
         container.register(TriangleRenderPipeline.self) { r in
             TriangleRenderPipeline(
@@ -54,10 +54,10 @@ class DIContainer {
                 functions: r.resolve(TriangleRenderPass.Functions.self)!
             )
         }
-        container.register(TriangleRenderPass.Functions.self){ r in
+        container.register(TriangleRenderPass.Functions.self) { r in
             TriangleRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        
+
         // IndirectRenderPipeline
         container.register(IndirectRenderPipeline.self) { r in
             IndirectRenderPipeline(
@@ -73,10 +73,10 @@ class DIContainer {
                 functions: r.resolve(IndirectRenderPass.Functions.self)!
             )
         }
-        container.register(IndirectRenderPass.Functions.self){ r in
+        container.register(IndirectRenderPass.Functions.self) { r in
             IndirectRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        
+
         // TileRenderPipeline
         container.register(TileRenderPipeline.self) { r in
             TileRenderPipeline(
@@ -92,10 +92,10 @@ class DIContainer {
                 functions: r.resolve(TileRenderPass.Functions.self)!
             )
         }
-        container.register(TileRenderPass.Functions.self){ r in
+        container.register(TileRenderPass.Functions.self) { r in
             TileRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        
+
         // RasterOrderGroupRenderPipeline
         container.register(RasterOrderGroupRenderPipeline.self) { r in
             RasterOrderGroupRenderPipeline(
@@ -111,11 +111,11 @@ class DIContainer {
                 functions: r.resolve(RasterOrderGroupRenderPass.Functions.self)!
             )
         }
-        container.register(RasterOrderGroupRenderPass.Functions.self){ r in
+        container.register(RasterOrderGroupRenderPass.Functions.self) { r in
             RasterOrderGroupRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
     }
-    
+
     static func resolve<T>(_ type: T.Type = T.self) -> T {
         return container.resolve(type.self)!
     }

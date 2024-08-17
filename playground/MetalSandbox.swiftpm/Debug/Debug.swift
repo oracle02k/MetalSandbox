@@ -1,8 +1,8 @@
 class Debug {
     static let appDebuger = {
-        DIContainer.resolve(AppDebuggerBindVM.self) 
+        DIContainer.resolve(AppDebuggerBindVM.self)
     }()
-    
+
     static func allClear() {
         appDebuger.allClear()
     }

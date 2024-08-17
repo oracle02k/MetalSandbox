@@ -2,23 +2,23 @@ import MetalKit
 
 class IndirectRenderPass {
     typealias Functions = FunctionContainer<FunctionNames>
-    
+
     enum FunctionNames: String, CaseIterable {
         case VertexShaderWithInstance = "indirect::vertex_shader_with_instance"
         case VertexShader = "indirect::vertex_shader"
         case FragmentShader = "indirect::fragment_shader"
     }
-    
+
     enum VertexBufferIndex: Int {
         case Vertices = 0
         case ObjectParams
         case FrameState
     }
-    
+
     enum RenderTargetIndices: Int {
         case Color           = 0
     }
-    
+
     struct Vertex {
         var position: packed_float2
         var texcoord: packed_float2

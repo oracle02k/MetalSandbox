@@ -7,26 +7,26 @@ class TileRenderPipeline: RenderPipeline {
     private let frameBuffer: FrameBuffer
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var depthTexture: MTLTexture = uninitialized()
-    
+
     init(
         gpu: GpuContext,
         tileRenderPass: TileRenderPass,
         viewRenderPass: ViewRenderPass,
         frameBuffer: FrameBuffer
-    ){
+    ) {
         self.gpu = gpu
         self.tileRenderPass = tileRenderPass
         self.viewRenderPass = viewRenderPass
         self.frameBuffer = frameBuffer
     }
-    
-    func build(){
+
+    func build() {
         frameBuffer.build()
         tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }
-    
+
     func changeSize(viewportSize: CGSize) {
         tileRenderPass.changeSize(size: viewportSize)
         offscreenTexture = {
@@ -38,7 +38,7 @@ class TileRenderPipeline: RenderPipeline {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-        
+
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -51,25 +51,25 @@ class TileRenderPipeline: RenderPipeline {
             return gpu.makeTexture(descriptor)
         }()
     }
-    
+
     func draw(to metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
         colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         colorTarget.storeAction = .store
-        
+
         let depthTarget = MTLRenderPassDepthAttachmentDescriptor()
         depthTarget.texture = depthTexture
         depthTarget.loadAction = .clear
         depthTarget.clearDepth = 1.0
         depthTarget.storeAction = .dontCare
-        
+
         let frameIndex = frameBuffer.waitForNextBufferIndex()
         Debug.frameLog("frame: \(frameBuffer.frameNumber)")
-        
+
         tileRenderPass.updateState(currentBufferIndex: frameIndex)
-        
+
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 commandBuffer.debugGpuTime()
@@ -78,7 +78,7 @@ class TileRenderPipeline: RenderPipeline {
                 frameBuffer.releaseBufferIndex()
                 Debug.flush()
             }
-            
+
             tileRenderPass.draw(
                 toColor: colorTarget,
                 toDepth: depthTarget,

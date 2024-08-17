@@ -8,7 +8,7 @@ import MetalKit
 
 class TileRenderPass {
     typealias Functions = FunctionContainer<FunctionNames>
-    
+
     enum FunctionNames: String, CaseIterable {
         case FowardVertex = "tile::forward_vertex"
         case OpaqueFragment = "tile::process_opaque_fragment"
@@ -17,7 +17,7 @@ class TileRenderPass {
         case InitTransparentFragmentStore = "tile::init_transparent_fragment_store"
         case QuadPassVertex = "tile::quad_pass_vertex"
     }
-    
+
     enum BufferIndices: Int {
         case Vertices         = 1
         case ActorParams      = 2
@@ -236,7 +236,7 @@ class TileRenderPass {
                 renderPipelineDesc.stencilAttachmentPixelFormat = .invalid
 
                 transparencyPipeline = gpu.makeRenderPipelineState(renderPipelineDesc)
-                
+
             }
             // Configure the kernel tile shader to initialize the image block for each frame.
             do {

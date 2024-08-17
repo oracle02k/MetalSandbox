@@ -3,8 +3,8 @@ import SwiftUI
 final class DebugVM: ObservableObject {
     @Published var initLog: String = "initLog"
     @Published var frameLog: String = "frameLog"
-    
-    func changePipeline(pipeline: Application.Pipeline){
+
+    func changePipeline(pipeline: Application.Pipeline) {
         let app = DIContainer.resolve(Application.self)
         app.changePipeline(pipeline: pipeline)
     }
