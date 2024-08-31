@@ -22,17 +22,14 @@ class LifegamePipeline: RenderPipeline {
         self.lifegame = lifegame
     }
     
-    func build() {
-        let width = 1000
-        let height = 1000
-        useCompute = true
+    func build(width:Int, height:Int, useCompute:Bool) {
+        self.useCompute = useCompute
         
         if useCompute {
             lifegameComputePass.build(width: width, height: height)
             gpu.doCommand { commandBuffer in
                 lifegameComputePass.reset(using: commandBuffer)
                 commandBuffer.commit()
-                commandBuffer.waitUntilCompleted()
             }
         }else{
             lifegame.reset(width: width, height: height)
@@ -89,7 +86,6 @@ class LifegamePipeline: RenderPipeline {
             lifegameRenderPass.draw(fieldBuffer: fieldBuffer, toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.commit()
-            commandBuffer.waitUntilCompleted()
         }
     }
 }

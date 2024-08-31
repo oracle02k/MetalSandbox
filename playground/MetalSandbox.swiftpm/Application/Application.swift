@@ -6,7 +6,8 @@ final class Application {
         case IndirectRender
         case TileRender
         case RogRender
-        case Lifegame
+        case LifegameCPU
+        case LifegameGPU
     }
 
     private let gpu: GpuContext
@@ -23,26 +24,54 @@ final class Application {
         gpu.build()
         _ = gpu.checkCounterSample()
 
-        changePipeline(pipeline: .Lifegame)
+        changePipeline(pipeline: .TriangleRender)
     }
 
     func changePipeline(pipeline: Pipeline) {
-        activePipeline = switch pipeline {
-        case .TriangleRender: DIContainer.resolve(TriangleRenderPipeline.self)
-        case .IndirectRender: DIContainer.resolve(IndirectRenderPipeline.self)
-        case .TileRender: DIContainer.resolve(TileRenderPipeline.self)
-        case .RogRender: DIContainer.resolve(RasterOrderGroupRenderPipeline.self)
-        case .Lifegame: DIContainer.resolve(LifegamePipeline.self)
+        synchronized(self){
+            activePipeline = switch pipeline {
+            case .TriangleRender: {
+                let pipeline = DIContainer.resolve(TriangleRenderPipeline.self)
+                pipeline.build()
+                return pipeline
+            }()
+            case .IndirectRender: {
+                let pipeline = DIContainer.resolve(IndirectRenderPipeline.self)
+                pipeline.build()
+                return pipeline
+            }()
+            case .TileRender: {
+                let pipeline = DIContainer.resolve(TileRenderPipeline.self)
+                pipeline.build()
+                return pipeline
+            }()
+            case .RogRender: {
+                let pipeline = DIContainer.resolve(RasterOrderGroupRenderPipeline.self)
+                pipeline.build()
+                return pipeline
+            }()
+            case .LifegameCPU: {
+                let pipeline = DIContainer.resolve(LifegamePipeline.self)
+                pipeline.build(width: 100, height: 100, useCompute: false)
+                return pipeline
+            }()
+            case .LifegameGPU: {
+                let pipeline = DIContainer.resolve(LifegamePipeline.self)
+                pipeline.build(width: 1000, height: 1000, useCompute: true)
+                return pipeline
+            }()
+            }
         }
-        activePipeline?.build()
     }
-
+    
     func changeViewportSize(_ size: CGSize) {
         viewportSize = size
         activePipeline?.changeSize(viewportSize: size)
     }
 
     func draw(to metalLayer: CAMetalLayer) {
-        activePipeline?.draw(to: metalLayer)
+        synchronized(self){
+            activePipeline?.draw(to: metalLayer)
+        }
     }
 }
