@@ -6,6 +6,7 @@ final class Application {
         case IndirectRender
         case TileRender
         case RogRender
+        case Lifegame
     }
 
     private let gpu: GpuContext
@@ -22,7 +23,7 @@ final class Application {
         gpu.build()
         _ = gpu.checkCounterSample()
 
-        changePipeline(pipeline: .TileRender)
+        changePipeline(pipeline: .Lifegame)
     }
 
     func changePipeline(pipeline: Pipeline) {
@@ -31,6 +32,7 @@ final class Application {
         case .IndirectRender: DIContainer.resolve(IndirectRenderPipeline.self)
         case .TileRender: DIContainer.resolve(TileRenderPipeline.self)
         case .RogRender: DIContainer.resolve(RasterOrderGroupRenderPipeline.self)
+        case .Lifegame: DIContainer.resolve(LifegamePipeline.self)
         }
         activePipeline?.build()
     }

@@ -114,6 +114,36 @@ class DIContainer {
         container.register(RasterOrderGroupRenderPass.Functions.self) { r in
             RasterOrderGroupRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
+        
+        // LifegamePipeline
+        container.register(LifegamePipeline.self) { r in
+            LifegamePipeline(
+                gpu: r.resolve(GpuContext.self)!,
+                lifegameRenderPass: r.resolve(LifegameRenderPass.self)!,
+                lifegameComputePass: r.resolve(LifegameComputePass.self)!,
+                viewRenderPass: r.resolve(ViewRenderPass.self)!,
+                lifegame: r.resolve(Lifegame.self)!
+            )
+        }
+        container.register(LifegameRenderPass.self) { r in
+            LifegameRenderPass(
+                with: r.resolve(GpuContext.self)!,
+                functions: r.resolve(LifegameRenderPass.Functions.self)!
+            )
+        }
+        container.register(LifegameRenderPass.Functions.self) { r in
+            LifegameRenderPass.Functions(with: r.resolve(GpuContext.self)!)
+        }
+        container.register(LifegameComputePass.self) { r in
+            LifegameComputePass(
+                with: r.resolve(GpuContext.self)!,
+                functions: r.resolve(LifegameComputePass.Functions.self)!
+            )
+        }
+        container.register(LifegameComputePass.Functions.self) { r in
+            LifegameComputePass.Functions(with: r.resolve(GpuContext.self)!)
+        }
+        container.register(Lifegame.self) { _ in Lifegame() }
     }
 
     static func resolve<T>(_ type: T.Type = T.self) -> T {
