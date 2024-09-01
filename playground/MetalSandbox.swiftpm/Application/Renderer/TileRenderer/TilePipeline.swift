@@ -1,6 +1,6 @@
 import MetalKit
 
-class TileRenderPipeline: RenderPipeline {
+class TilePipeline: FramePipeline {
     private let gpu: GpuContext
     private let tileRenderPass: TileRenderPass
     private let viewRenderPass: ViewRenderPass
@@ -52,7 +52,7 @@ class TileRenderPipeline: RenderPipeline {
         }()
     }
 
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear

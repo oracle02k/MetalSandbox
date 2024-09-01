@@ -1,6 +1,6 @@
 import MetalKit
 
-class RasterOrderGroupRenderPipeline: RenderPipeline {
+class RasterOrderGroupPipeline: FramePipeline {
     private let gpu: GpuContext
     private let rasterOrderGroupRenderPass: RasterOrderGroupRenderPass
     private let viewRenderPass: ViewRenderPass
@@ -45,7 +45,7 @@ class RasterOrderGroupRenderPipeline: RenderPipeline {
         }()
     }
 
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear

@@ -1,6 +1,6 @@
 import MetalKit
 
-class LifegamePipeline: RenderPipeline {
+class LifegamePipeline: FramePipeline {
     private let gpu: GpuContext
     private let lifegameRenderPass: LifegameRenderPass
     private let lifegameComputePass: LifegameComputePass
@@ -53,7 +53,7 @@ class LifegamePipeline: RenderPipeline {
         }()
     }
     
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer) {
         lazy var fieldBuffer: MTLBuffer = uninitialized()
         
         if !useCompute {

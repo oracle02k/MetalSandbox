@@ -1,6 +1,6 @@
 import MetalKit
 
-class TriangleRenderPipeline: RenderPipeline {
+class TrianglePipeline: FramePipeline {
     private let gpu: GpuContext
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
@@ -30,7 +30,7 @@ class TriangleRenderPipeline: RenderPipeline {
         }()
     }
 
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear

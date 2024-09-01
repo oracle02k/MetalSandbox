@@ -41,8 +41,8 @@ class DIContainer {
         }
 
         // TriangleRenderPipeline
-        container.register(TriangleRenderPipeline.self) { r in
-            TriangleRenderPipeline(
+        container.register(TrianglePipeline.self) { r in
+            TrianglePipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 triangleRenderPass: r.resolve(TriangleRenderPass.self)!,
                 viewRenderPass: r.resolve(ViewRenderPass.self)!
@@ -58,9 +58,9 @@ class DIContainer {
             TriangleRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
 
-        // IndirectRenderPipeline
-        container.register(IndirectRenderPipeline.self) { r in
-            IndirectRenderPipeline(
+        // IndirectPipeline
+        container.register(IndirectPipeline.self) { r in
+            IndirectPipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 indirectRenderPass: r.resolve(IndirectRenderPass.self)!,
                 viewRenderPass: r.resolve(ViewRenderPass.self)!,
@@ -77,9 +77,9 @@ class DIContainer {
             IndirectRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
 
-        // TileRenderPipeline
-        container.register(TileRenderPipeline.self) { r in
-            TileRenderPipeline(
+        // TilePipeline
+        container.register(TilePipeline.self) { r in
+            TilePipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 tileRenderPass: r.resolve(TileRenderPass.self)!,
                 viewRenderPass: r.resolve(ViewRenderPass.self)!,
@@ -96,9 +96,9 @@ class DIContainer {
             TileRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
 
-        // RasterOrderGroupRenderPipeline
-        container.register(RasterOrderGroupRenderPipeline.self) { r in
-            RasterOrderGroupRenderPipeline(
+        // RasterOrderGroupPipeline
+        container.register(RasterOrderGroupPipeline.self) { r in
+            RasterOrderGroupPipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 rasterOrderGroupRenderPass: r.resolve(RasterOrderGroupRenderPass.self)!,
                 viewRenderPass: r.resolve(ViewRenderPass.self)!

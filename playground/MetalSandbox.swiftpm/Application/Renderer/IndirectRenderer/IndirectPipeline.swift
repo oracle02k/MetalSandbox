@@ -1,6 +1,6 @@
 import MetalKit
 
-class IndirectRenderPipeline: RenderPipeline {
+class IndirectPipeline: FramePipeline {
     private let gpu: GpuContext
     private let indirectRenderPass: IndirectRenderPass
     private let viewRenderPass: ViewRenderPass
@@ -51,7 +51,7 @@ class IndirectRenderPipeline: RenderPipeline {
         }()
     }
 
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear

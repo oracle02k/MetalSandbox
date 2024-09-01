@@ -12,7 +12,7 @@ final class Application {
 
     private let gpu: GpuContext
     private var viewportSize: CGSize
-    private var activePipeline: RenderPipeline?
+    private var activePipeline: FramePipeline?
 
     init( gpu: GpuContext ) {
         self.gpu = gpu
@@ -31,22 +31,22 @@ final class Application {
         synchronized(self){
             activePipeline = switch pipeline {
             case .TriangleRender: {
-                let pipeline = DIContainer.resolve(TriangleRenderPipeline.self)
+                let pipeline = DIContainer.resolve(TrianglePipeline.self)
                 pipeline.build()
                 return pipeline
             }()
             case .IndirectRender: {
-                let pipeline = DIContainer.resolve(IndirectRenderPipeline.self)
+                let pipeline = DIContainer.resolve(IndirectPipeline.self)
                 pipeline.build()
                 return pipeline
             }()
             case .TileRender: {
-                let pipeline = DIContainer.resolve(TileRenderPipeline.self)
+                let pipeline = DIContainer.resolve(TilePipeline.self)
                 pipeline.build()
                 return pipeline
             }()
             case .RogRender: {
-                let pipeline = DIContainer.resolve(RasterOrderGroupRenderPipeline.self)
+                let pipeline = DIContainer.resolve(RasterOrderGroupPipeline.self)
                 pipeline.build()
                 return pipeline
             }()
@@ -71,7 +71,7 @@ final class Application {
 
     func draw(to metalLayer: CAMetalLayer) {
         synchronized(self){
-            activePipeline?.draw(to: metalLayer)
+            activePipeline?.update(drawTo: metalLayer)
         }
     }
 }
