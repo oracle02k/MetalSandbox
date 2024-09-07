@@ -2,7 +2,7 @@ import SwiftUI
 
 protocol AAPLViewDelegate {
     func drawableResize(size: CGSize)
-    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView)
+    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView, frameStatus: FrameStatus)
 }
 
 class MetalView: UIView {
@@ -40,14 +40,16 @@ class MetalView: UIView {
 
         let delta = displayLink.targetTimestamp - previousTimeStamp
         let actualFramesPerSecond = 1 / (displayLink.targetTimestamp - displayLink.timestamp)
-
-        Debug.frameClear()
-        Debug.frameLog(String(format: "DeltaTime: %.2fms", delta*1000))
-        Debug.frameLog(String(format: "Duration: %.2fms", displayLink.duration*1000))
-        Debug.frameLog(String(format: "actualFPS: %.2ffps", actualFramesPerSecond))
+        
+        let frameStatus = FrameStatus(
+            delta: .init(deltaTime: delta),
+            preferredFps: Config.preferredFps,
+            actualFps: Float(actualFramesPerSecond),
+            displayLinkDuration: displayLink.duration
+        )
 
         synchronized(metalLayer) {
-            delegate.renderToMetalLayer(metalLayer: metalLayer, view: self)
+            delegate.renderToMetalLayer(metalLayer: metalLayer, view: self, frameStatus: frameStatus)
         }
 
         previousTimeStamp = displayLink.targetTimestamp
@@ -156,8 +158,8 @@ class MetalViewDelegate: AAPLViewDelegate {
         app.changeViewportSize(size)
     }
 
-    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView) {
+    func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView, frameStatus: FrameStatus) {
         let app = DIContainer.resolve(Application.self)
-        app.draw(to: metalLayer)
+        app.update(drawTo: metalLayer, frameStatus: frameStatus)
     }
 }

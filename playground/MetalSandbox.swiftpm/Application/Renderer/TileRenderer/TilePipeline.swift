@@ -52,7 +52,11 @@ class TilePipeline: FramePipeline {
         }()
     }
 
-    func update(drawTo metalLayer: CAMetalLayer) {
+    func update(
+        drawTo metalLayer: CAMetalLayer,
+        logTo frameLogger: FrameStatisticsLogger?,
+        _ frameComplited: @escaping ()->Void
+    ) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
@@ -71,14 +75,6 @@ class TilePipeline: FramePipeline {
         tileRenderPass.updateState(currentBufferIndex: frameIndex)
 
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                commandBuffer.debugGpuTime()
-                tileRenderPass.debugFrameStatus()
-                viewRenderPass.debugFrameStatus()
-                frameBuffer.releaseBufferIndex()
-                Debug.flush()
-            }
-
             tileRenderPass.draw(
                 toColor: colorTarget,
                 toDepth: depthTarget,
@@ -87,6 +83,20 @@ class TilePipeline: FramePipeline {
                 transparency: true
             )
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
+            
+            commandBuffer.addCompletedHandler { [self] _ in
+                frameLogger?.addCommandBufferLog(.init(
+                    label: "tile pipeline",
+                    commandBuffer: commandBuffer,
+                    details: [
+                        tileRenderPass.debugFrameStatus(),
+                        viewRenderPass.debugFrameStatus()
+                    ]
+                ))
+                
+                frameBuffer.releaseBufferIndex()
+                frameComplited()
+            }
             commandBuffer.commit()
         }
     }

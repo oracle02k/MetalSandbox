@@ -72,8 +72,8 @@ class ScreenRenderPass {
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
     }
-
-    func debugFrameStatus() {
-        gpu.debugCountreSample(from: counterSampleBuffer)
+    
+    func debugFrameStatus() -> String {
+        return gpu.debugCountreSampleLog(label: "screen render pass", from: counterSampleBuffer)
     }
 }

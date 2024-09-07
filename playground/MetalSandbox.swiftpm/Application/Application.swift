@@ -23,7 +23,7 @@ final class Application {
     func build() {
         gpu.build()
         _ = gpu.checkCounterSample()
-
+        
         changePipeline(pipeline: .TriangleRender)
     }
 
@@ -69,9 +69,18 @@ final class Application {
         activePipeline?.changeSize(viewportSize: size)
     }
 
-    func draw(to metalLayer: CAMetalLayer) {
+    func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
+        Debug.frameClear()
+        
+        let frameLogger = FrameStatisticsLogger()
         synchronized(self){
-            activePipeline?.update(drawTo: metalLayer)
+            activePipeline?.update(drawTo: metalLayer, logTo:frameLogger) { [self] in
+                frameLogger.setFrameStatus(frameStatus)
+                frameLogger.measureCpuAndMemory()
+                frameLogger.measureMetal(gpu.device)
+                frameLogger.debugLog()
+                Debug.flush()
+            }
         }
     }
 }

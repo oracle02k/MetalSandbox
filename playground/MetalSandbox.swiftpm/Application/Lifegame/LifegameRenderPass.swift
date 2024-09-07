@@ -130,7 +130,7 @@ class LifegameRenderPass {
         encoder.endEncoding()
     }
     
-    func debugFrameStatus() {
-        gpu.debugCountreSample(from: counterSampleBuffer)
+    func debugFrameStatus() -> String {
+        return gpu.debugCountreSampleLog(label: "lifegame render pass", from: counterSampleBuffer)
     }
 }

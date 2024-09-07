@@ -249,10 +249,6 @@ class IndirectRenderPass {
         encoder.executeCommandsInBuffer(indirectCommandBuffer, range: 0..<NumObjects)
     }
 
-    func debugFrameStatus() {
-        gpu.debugCountreSample(from: counterSampleBuffer)
-    }
-
     /// Create a Metal buffer containing a 2D "gear" mesh
     func newGearMeshWithNumTeeth(_ numTeeth: Int) -> TypedBuffer<Vertex> {
         // NSAssert(numTeeth >= 3, "Can only build a gear with at least 3 teeth")
@@ -344,5 +340,9 @@ class IndirectRenderPass {
         }
 
         return meshVertices
+    }
+    
+    func debugFrameStatus() -> String {
+        return gpu.debugCountreSampleLog(label: "indirect render pass", from: counterSampleBuffer)
     }
 }

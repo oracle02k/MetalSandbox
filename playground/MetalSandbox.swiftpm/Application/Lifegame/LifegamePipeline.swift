@@ -53,7 +53,11 @@ class LifegamePipeline: FramePipeline {
         }()
     }
     
-    func update(drawTo metalLayer: CAMetalLayer) {
+    func update(
+        drawTo metalLayer: CAMetalLayer,
+        logTo frameLogger: FrameStatisticsLogger?,
+        _ frameComplited: @escaping ()->Void
+    ) {
         lazy var fieldBuffer: MTLBuffer = uninitialized()
         
         if !useCompute {
@@ -68,23 +72,22 @@ class LifegamePipeline: FramePipeline {
         colorTarget.storeAction = .store
         
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                let usage = getCPUUsage()
-                let memory = getMemoryUsed()
-                Debug.frameLog("cpu: \(usage)")
-                Debug.frameLog("memory: \(memory)")
-                Debug.frameLog("allocated size: \(gpu.device.currentAllocatedSize)")
-                commandBuffer.debugGpuTime()
-                lifegameRenderPass.debugFrameStatus()
-                viewRenderPass.debugFrameStatus()
-                Debug.flush()
-            }
-            
             if useCompute {
                 fieldBuffer = lifegameComputePass.update(using: commandBuffer)
             }
             lifegameRenderPass.draw(fieldBuffer: fieldBuffer, toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
+            commandBuffer.addCompletedHandler { [self] _ in
+                frameLogger?.addCommandBufferLog(.init(
+                    label: "lifegame pipeline",
+                    commandBuffer: commandBuffer,
+                    details: [
+                        lifegameRenderPass.debugFrameStatus(),
+                        viewRenderPass.debugFrameStatus()
+                    ]
+                ))
+                frameComplited()
+            }
             commandBuffer.commit()
         }
     }

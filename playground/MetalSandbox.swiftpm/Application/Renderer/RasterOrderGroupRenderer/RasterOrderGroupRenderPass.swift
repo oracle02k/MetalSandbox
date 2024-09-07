@@ -128,7 +128,7 @@ class RasterOrderGroupRenderPass {
         encoder.endEncoding()
     }
 
-    func debugFrameStatus() {
-        gpu.debugCountreSample(from: counterSampleBuffer)
+    func debugFrameStatus() -> String {
+        return gpu.debugCountreSampleLog(label: "rog render pass", from: counterSampleBuffer)
     }
 }

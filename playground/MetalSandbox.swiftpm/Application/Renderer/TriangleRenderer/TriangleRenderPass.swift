@@ -81,8 +81,8 @@ class TriangleRenderPass {
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
     }
-
-    func debugFrameStatus() {
-        gpu.debugCountreSample(from: counterSampleBuffer)
+    
+    func debugFrameStatus() -> String {
+        return gpu.debugCountreSampleLog(label: "tirangle render pass", from: counterSampleBuffer)
     }
 }

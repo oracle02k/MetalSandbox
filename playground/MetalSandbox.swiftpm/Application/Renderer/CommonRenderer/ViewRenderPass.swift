@@ -30,7 +30,7 @@ class ViewRenderPass {
         commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
     }
 
-    func debugFrameStatus() {
-        screenRenderPass.debugFrameStatus()
+    func debugFrameStatus() -> String {
+        return screenRenderPass.debugFrameStatus()
     }
 }

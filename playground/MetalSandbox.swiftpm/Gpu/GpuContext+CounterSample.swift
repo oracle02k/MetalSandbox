@@ -1,5 +1,9 @@
 import MetalKit
 
+class CounterSample{
+    
+}
+
 extension GpuContext {
     func checkCounterSample() -> [MTLCounterSamplingPoint] {
         let boundaryNames = ["atStageBoundary",
@@ -87,27 +91,58 @@ extension GpuContext {
         sampleAttachment.endOfVertexSampleIndex = 1
         sampleAttachment.startOfFragmentSampleIndex = 2
         sampleAttachment.endOfFragmentSampleIndex = 3
-
+        
+        return counterSampleBuffer
+    }
+    
+    func attachComputeCounterSample(
+        to descriptor: MTLComputePassDescriptor, 
+        index: Int
+    ) -> MTLCounterSampleBuffer? {
+        guard let sampleAttachment = descriptor.sampleBufferAttachments[index] else {
+            // appFatalError("sample buffer error.")
+            return nil
+        }
+        
+        guard let counterSampleBuffer = makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
+            // appFatalError("sample buffer error.")
+            return nil
+        }
+        
+        sampleAttachment.sampleBuffer = counterSampleBuffer
+        sampleAttachment.startOfEncoderSampleIndex = 0
+        sampleAttachment.endOfEncoderSampleIndex = 1
+        
         return counterSampleBuffer
     }
 
-    func debugCountreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) {
+    func countreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) -> (Float, Float)? {
         guard let counterSampleBuffer = counterSampleBuffer else {
-            return
+            return nil
         }
 
         let sampleCount = counterSampleBuffer.sampleCount
         guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<sampleCount) else {
             // appFatalError("Device failed to create a counter sample buffer.")
-            return
+            return nil
         }
 
-        sampleData.withUnsafeBytes { body in
+        return sampleData.withUnsafeBytes { body in
             let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
             let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
             let fragmentInterval = Float(sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
-            Debug.frameLog(String(format: "VertexTime: %.2fms", vertexInterval))
-            Debug.frameLog(String(format: "FragmentTime: %.2fms", fragmentInterval))
+            
+            return (vertexInterval, fragmentInterval)
         }
+    }
+    
+    func debugCountreSampleLog(label: String, from counterSampleBuffer: MTLCounterSampleBuffer?) -> String {
+        var log = label
+        if let times = countreSample(from: counterSampleBuffer) {
+            log += String(format: " vt:%.3fms ft:%.3fms", times.0, times.1)
+        } else {
+            log += " none"
+        }
+       return log
     }
 }

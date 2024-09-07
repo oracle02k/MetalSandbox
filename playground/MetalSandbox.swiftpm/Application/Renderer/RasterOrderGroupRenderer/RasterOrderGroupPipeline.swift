@@ -45,7 +45,11 @@ class RasterOrderGroupPipeline: FramePipeline {
         }()
     }
 
-    func update(drawTo metalLayer: CAMetalLayer) {
+    func update(
+        drawTo metalLayer: CAMetalLayer,
+        logTo frameLogger: FrameStatisticsLogger?,
+        _ frameComplited:@escaping()->Void
+    ) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
@@ -59,19 +63,24 @@ class RasterOrderGroupPipeline: FramePipeline {
         colorTarget2.storeAction = .store
 
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                commandBuffer.debugGpuTime()
-                rasterOrderGroupRenderPass.debugFrameStatus()
-                viewRenderPass.debugFrameStatus()
-                Debug.flush()
-            }
-
             rasterOrderGroupRenderPass.draw(
                 toColor: colorTarget,
                 write: offscreenTexture2,
                 using: commandBuffer
             )
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture2)
+            
+            commandBuffer.addCompletedHandler { [self] _ in
+                frameLogger?.addCommandBufferLog(.init(
+                    label: "rog pipeline",
+                    commandBuffer: commandBuffer,
+                    details: [
+                        rasterOrderGroupRenderPass.debugFrameStatus(),
+                        viewRenderPass.debugFrameStatus()
+                    ]
+                ))
+                frameComplited()
+            }
             commandBuffer.commit()
         }
     }

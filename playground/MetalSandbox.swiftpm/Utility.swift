@@ -44,10 +44,10 @@ func getCPUUsage() -> Float {
 }
 
 // 使用者が単位を把握できるようにするため
-typealias MegaByte = UInt64
+typealias KByte = UInt64
 
 // 引数にenumで任意の単位を指定できるのが好ましい e.g. unit = .auto (デフォルト引数)
-func getMemoryUsed() -> MegaByte? {
+func getMemoryUsed() -> KByte? {
     // タスク情報を取得
     var info = mach_task_basic_info()
     // `info`の値からその型に必要なメモリを取得
@@ -61,5 +61,5 @@ func getMemoryUsed() -> MegaByte? {
         }, &count)
     }
     // MB表記に変換して返却
-    return result == KERN_SUCCESS ? info.resident_size / 1024 / 1024 : nil
+    return result == KERN_SUCCESS ? info.resident_size / 1024 : nil
 }

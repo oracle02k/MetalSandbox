@@ -21,20 +21,13 @@ struct DebugView: View {
                 print("changet to \(newValue)")
                 content.changePipeline(pipeline: newValue)
             }
-            Text("Init Logs:")
-            GeometryReader { geometry in
-                ScrollView(.vertical, showsIndicators: true) {
-                    Text(content.initLog)
-                        .multilineTextAlignment(.leading)
-                        .frame(width: geometry.size.width, alignment: .leading)
-                }
-            }
             Text("Frame Logs:")
             GeometryReader { geometry in
                 ScrollView(.vertical, showsIndicators: true) {
                     Text(content.frameLog)
                         .multilineTextAlignment(.leading)
                         .frame(width: geometry.size.width, alignment: .leading)
+                        .textSelection(.enabled)
                 }
             }
             Spacer()

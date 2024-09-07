@@ -30,7 +30,11 @@ class TrianglePipeline: FramePipeline {
         }()
     }
 
-    func update(drawTo metalLayer: CAMetalLayer) {
+    func update(
+        drawTo metalLayer: CAMetalLayer,
+        logTo frameLogger: FrameStatisticsLogger?,
+        _ frameComplited:@escaping ()->Void
+    ) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
@@ -38,15 +42,19 @@ class TrianglePipeline: FramePipeline {
         colorTarget.storeAction = .store
 
         gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                commandBuffer.debugGpuTime()
-                triangleRenderPass.debugFrameStatus()
-                viewRenderPass.debugFrameStatus()
-                Debug.flush()
-            }
-
             triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
+            commandBuffer.addCompletedHandler { [self] _ in
+                frameLogger?.addCommandBufferLog(.init(
+                    label: "triangle pipeline",
+                    commandBuffer: commandBuffer,
+                    details: [
+                        triangleRenderPass.debugFrameStatus(),
+                        viewRenderPass.debugFrameStatus()
+                    ]
+                ))
+                frameComplited()
+            }
             commandBuffer.commit()
         }
     }
