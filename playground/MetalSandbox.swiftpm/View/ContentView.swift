@@ -6,7 +6,7 @@ struct ContentView: View {
             SwiftUIView { MetalView() }
                 .frame(minWidth: 380, minHeight: 380)
                 .aspectRatio(CGSize(width: 1, height: 1), contentMode: .fit)
-            DebugView()
+            StatsView()
         }
     }
 }
