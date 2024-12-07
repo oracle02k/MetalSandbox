@@ -1,5 +1,8 @@
 import simd
 
+typealias MilliSecond = Float
+typealias KByte = UInt64
+
 enum VertexInputIndex: Int {
     case Vertices1
     case Vertices2

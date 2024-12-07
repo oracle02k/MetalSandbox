@@ -6,7 +6,7 @@ public func synchronized(_ obj: AnyObject, closure: () -> Void) {
     objc_sync_exit(obj)
 }
 
-// CPU使用率を0%~100%で取得
+// CPU使用率を0-1で取得
 func getCPUUsage() -> Float {
     // カーネル処理の結果
     var result: Int32
@@ -37,14 +37,12 @@ func getCPUUsage() -> Float {
             if result != KERN_SUCCESS { return nil }
             let isIdle = threadInfo.flags == TH_FLAGS_IDLE
             // CPU使用率がスケール調整済みのため`TH_USAGE_SCALE`で除算し戻す
-            return !isIdle ? (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE)) * 100 : nil
+            return !isIdle ? (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE)) : nil
         }
     // 合計算出
         .reduce(0, +)
 }
 
-// 使用者が単位を把握できるようにするため
-typealias KByte = UInt64
 
 // 引数にenumで任意の単位を指定できるのが好ましい e.g. unit = .auto (デフォルト引数)
 func getMemoryUsed() -> KByte? {
