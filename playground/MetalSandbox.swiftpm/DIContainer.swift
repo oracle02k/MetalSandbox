@@ -4,9 +4,48 @@ class DIContainer {
     private static let container = Container()
 
     static func register() {
+        // Metal Device
+        container.register(MetalDeviceResolver.self) { _ in
+            MetalDeviceResolver()
+        }.inObjectScope(.container)
+        container.register(GpuContext.self) { r in
+            GpuContext(resolver: r.resolve(MetalDeviceResolver.self)!)
+        }.inObjectScope(.container)
+        
+        // GpuCounterSampler
+        container.register(GpuCounterSampler.self) { r in
+            GpuCounterSampler(counterSampleContainer: r.resolve(GpuCounterSampleContainer.self)!)
+        }.inObjectScope(.container)
+        container.register(GpuCounterSampleContainer.self) { r in
+            GpuCounterSampleContainer(
+                gpu: r.resolve(GpuContext.self)!,
+                sampleItemRepository: r.resolve(GpuCounterSampleItemRepository.self)!
+            )
+        }.inObjectScope(.container)
+        container.register(GpuCounterSampleItemRepository.self) { _ in
+            GpuCounterSampleItemRepository()
+        }.inObjectScope(.container)
+        
+        // FrameStatsReporter
+        container.register(FrameStatsReporter.self) { r in
+            FrameStatsReporter(repository: r.resolve(FrameStatsReportRepository.self)!)
+        }.inObjectScope(.container)
+        container.register(FrameStatsReportRepository.self) { r in
+            FrameStatsReportRepository()
+        }.inObjectScope(.container)
+        
+        //StatsModel
+        container.register(StatsModel.self) { r in
+            StatsModel(repository: r.resolve(FrameStatsReportRepository.self)!)    
+        }
+        
         // Application
         container.register(Application.self) { r in
-            Application(gpu: r.resolve(GpuContext.self)!)
+            Application(
+                gpu: r.resolve(GpuContext.self)!,
+                frameStatsReporter: r.resolve(FrameStatsReporter.self)!,
+                gpuCounterSampler: r.resolve(GpuCounterSampler.self)!
+            )
         }.inObjectScope(.container)
 
         // Debug
@@ -16,15 +55,7 @@ class DIContainer {
         container.register(AppDebuggerBindVM.self) { r in
             AppDebuggerBindVM(r.resolve(DebugVM.self)!)
         }.inObjectScope(.container)
-
-        // Metal Device
-        container.register(MetalDeviceResolver.self) { _ in
-            MetalDeviceResolver()
-        }.inObjectScope(.container)
-        container.register(GpuContext.self) { r in
-            GpuContext(resolver: r.resolve(MetalDeviceResolver.self)!)
-        }.inObjectScope(.container)
-
+        
         // Renderer Common
         container.register(FrameBuffer.self) { _ in FrameBuffer() }
         container.register(IndexedMesh.Factory.self) { r in
