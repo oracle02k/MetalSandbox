@@ -1,9 +1,5 @@
 import MetalKit
 
-class CounterSample{
-    
-}
-
 extension GpuContext {
     func checkCounterSample() -> [MTLCounterSamplingPoint] {
         let boundaryNames = ["atStageBoundary",
@@ -41,7 +37,7 @@ extension GpuContext {
         return boundaries
     }
 
-    func makeCounterSampleBuffer(_ sampleSet: MTLCommonCounterSet) -> MTLCounterSampleBuffer? {
+    func makeCounterSampleBuffer(_ sampleSet: MTLCommonCounterSet, _ size: Int = 6) -> MTLCounterSampleBuffer? {
         var counterSet: MTLCounterSet?
 
         for set in device.counterSets! {
@@ -66,7 +62,7 @@ extension GpuContext {
         // – Vertex stage's completion time
         // – Fragment stage's start time
         // – Fragment stage's completion time
-        descriptor.sampleCount = 6
+        descriptor.sampleCount = size
         // Create the sample buffer by passing the descriptor to the device's factory method.
         guard let buffer = try? device.makeCounterSampleBuffer(descriptor: descriptor) else {
             appFatalError("Device failed to create a counter sample buffer.")
@@ -95,27 +91,6 @@ extension GpuContext {
         return counterSampleBuffer
     }
     
-    func attachComputeCounterSample(
-        to descriptor: MTLComputePassDescriptor, 
-        index: Int
-    ) -> MTLCounterSampleBuffer? {
-        guard let sampleAttachment = descriptor.sampleBufferAttachments[index] else {
-            // appFatalError("sample buffer error.")
-            return nil
-        }
-        
-        guard let counterSampleBuffer = makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
-            // appFatalError("sample buffer error.")
-            return nil
-        }
-        
-        sampleAttachment.sampleBuffer = counterSampleBuffer
-        sampleAttachment.startOfEncoderSampleIndex = 0
-        sampleAttachment.endOfEncoderSampleIndex = 1
-        
-        return counterSampleBuffer
-    }
-
     func countreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) -> (Float, Float)? {
         guard let counterSampleBuffer = counterSampleBuffer else {
             return nil
