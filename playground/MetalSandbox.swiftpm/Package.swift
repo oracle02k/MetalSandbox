@@ -10,7 +10,7 @@ import AppleProductTypes
 let package = Package(
     name: "MetalSandbox",
     platforms: [
-        .iOS("15.2")
+        .iOS("17.0")
     ],
     products: [
         .iOSApplication(
