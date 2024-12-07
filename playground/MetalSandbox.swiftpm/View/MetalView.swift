@@ -13,6 +13,7 @@ class MetalView: UIView {
     var colorPixelFormat: MTLPixelFormat = .bgra8Unorm
     var depthStencilPixelFormat: MTLPixelFormat = .depth32Float
     var sampleCount = 1
+    var frameCount = 0
 
     override class var layerClass: AnyClass {
         return CAMetalLayer.self
@@ -45,13 +46,15 @@ class MetalView: UIView {
             delta: .init(deltaTime: delta),
             preferredFps: Config.preferredFps,
             actualFps: Float(actualFramesPerSecond),
-            displayLinkDuration: displayLink.duration
+            displayLinkDuration: displayLink.duration,
+            count: UInt64(frameCount)
         )
 
         synchronized(metalLayer) {
             delegate.renderToMetalLayer(metalLayer: metalLayer, view: self, frameStatus: frameStatus)
         }
 
+        frameCount += 1
         previousTimeStamp = displayLink.targetTimestamp
     }
 
