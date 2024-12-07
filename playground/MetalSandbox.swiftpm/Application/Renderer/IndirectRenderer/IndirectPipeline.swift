@@ -51,11 +51,7 @@ class IndirectPipeline: FramePipeline {
         }()
     }
 
-    func update(
-        drawTo metalLayer: CAMetalLayer, 
-        logTo frameLogger: FrameStatisticsLogger?,
-        _ frameComplited: @escaping ()->Void)
-    {
+    func update(frameStatus: FrameStatus, drawTo metalLayer: CAMetalLayer) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
         colorTarget.loadAction = .clear
@@ -84,17 +80,7 @@ class IndirectPipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             
             commandBuffer.addCompletedHandler { [self] _ in
-                frameLogger?.addCommandBufferLog(.init(
-                    label: "indirect pipeline",
-                    commandBuffer: commandBuffer,
-                    details: [
-                        indirectRenderPass.debugFrameStatus(),
-                        viewRenderPass.debugFrameStatus()
-                    ]
-                ))
-                
                 frameBuffer.releaseBufferIndex()
-                frameComplited()
             }
             commandBuffer.commit()
         }

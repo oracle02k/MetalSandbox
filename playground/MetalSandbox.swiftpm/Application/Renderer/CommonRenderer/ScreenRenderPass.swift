@@ -12,14 +12,13 @@ class ScreenRenderPass {
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
 
     init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
         self.gpu = gpu
         self.indexedMeshFactory = indexedMeshFactory
     }
 
-    func build() {
+    func build(with gpuCountreSampleGroup:GpuCounterSampleGroup? = nil) {
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Screen Render Pipeline"
@@ -31,11 +30,8 @@ class ScreenRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor,
-            index: 0
-        )
-
+        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "screen render pass")
+            
         indexedMesh = {
             let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
             vertextBufferDescriptor.content = [
@@ -71,9 +67,5 @@ class ScreenRenderPass {
         encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
-    }
-    
-    func debugFrameStatus() -> String {
-        return gpu.debugCountreSampleLog(label: "screen render pass", from: counterSampleBuffer)
     }
 }

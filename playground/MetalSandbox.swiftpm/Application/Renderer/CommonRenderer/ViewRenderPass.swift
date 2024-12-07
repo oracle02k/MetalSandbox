@@ -7,8 +7,8 @@ class ViewRenderPass {
         self.screenRenderPass = screenRenderPass
     }
 
-    func build() {
-        screenRenderPass.build()
+    func build(with gpuCountreSampleGroup:GpuCounterSampleGroup? = nil) {
+        screenRenderPass.build(with: gpuCountreSampleGroup)
     }
 
     func draw(
@@ -27,10 +27,11 @@ class ViewRenderPass {
         colorTarget.storeAction = .store
 
         screenRenderPass.draw(toColor: colorTarget, using: commandBuffer, source: source)
-        commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+        //commandBuffer.present(drawable, afterMinimumDuration: 1.0/Double(Config.preferredFps))
+        commandBuffer.present(drawable)
     }
 
     func debugFrameStatus() -> String {
-        return screenRenderPass.debugFrameStatus()
+        return ""
     }
 }

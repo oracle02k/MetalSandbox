@@ -54,9 +54,8 @@ class LifegamePipeline: FramePipeline {
     }
     
     func update(
-        drawTo metalLayer: CAMetalLayer,
-        logTo frameLogger: FrameStatisticsLogger?,
-        _ frameComplited: @escaping ()->Void
+        frameStatus: FrameStatus,
+        drawTo metalLayer: CAMetalLayer
     ) {
         lazy var fieldBuffer: MTLBuffer = uninitialized()
         
@@ -77,16 +76,7 @@ class LifegamePipeline: FramePipeline {
             }
             lifegameRenderPass.draw(fieldBuffer: fieldBuffer, toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
-            commandBuffer.addCompletedHandler { [self] _ in
-                frameLogger?.addCommandBufferLog(.init(
-                    label: "lifegame pipeline",
-                    commandBuffer: commandBuffer,
-                    details: [
-                        lifegameRenderPass.debugFrameStatus(),
-                        viewRenderPass.debugFrameStatus()
-                    ]
-                ))
-                frameComplited()
+            commandBuffer.addCompletedHandler { _ in
             }
             commandBuffer.commit()
         }

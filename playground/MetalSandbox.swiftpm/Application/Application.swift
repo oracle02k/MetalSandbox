@@ -11,11 +11,19 @@ final class Application {
     }
 
     private let gpu: GpuContext
+    private let gpuCounterSampler: GpuCounterSampler
+    private let frameStatsReporter: FrameStatsReporter
     private var viewportSize: CGSize
     private var activePipeline: FramePipeline?
-
-    init( gpu: GpuContext ) {
+    
+    init(
+        gpu: GpuContext,
+        frameStatsReporter: FrameStatsReporter,
+        gpuCounterSampler: GpuCounterSampler
+    ) {
         self.gpu = gpu
+        self.frameStatsReporter = frameStatsReporter
+        self.gpuCounterSampler = gpuCounterSampler
         self.activePipeline = nil
         viewportSize = .init(width: 320, height: 320)
     }
@@ -23,7 +31,7 @@ final class Application {
     func build() {
         gpu.build()
         _ = gpu.checkCounterSample()
-        
+        gpuCounterSampler.build()
         changePipeline(pipeline: .TriangleRender)
     }
 
@@ -32,7 +40,7 @@ final class Application {
             activePipeline = switch pipeline {
             case .TriangleRender: {
                 let pipeline = DIContainer.resolve(TrianglePipeline.self)
-                pipeline.build()
+                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             case .IndirectRender: {
@@ -70,17 +78,8 @@ final class Application {
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-        Debug.frameClear()
-        
-        let frameLogger = FrameStatisticsLogger()
         synchronized(self){
-            activePipeline?.update(drawTo: metalLayer, logTo:frameLogger) { [self] in
-                frameLogger.setFrameStatus(frameStatus)
-                frameLogger.measureCpuAndMemory()
-                frameLogger.measureMetal(gpu.device)
-                frameLogger.debugLog()
-                Debug.flush()
-            }
+            activePipeline?.update(frameStatus: frameStatus, drawTo: metalLayer)
         }
     }
 }

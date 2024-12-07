@@ -5,6 +5,8 @@ class TrianglePipeline: FramePipeline {
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
     private lazy var offscreenTexture: MTLTexture = uninitialized()
+    private var gpuCounterSampleGroup: GpuCounterSampleGroup? = nil
+    private var frameStatsReporter: FrameStatsReporter? = nil
 
     init(gpu: GpuContext, triangleRenderPass: TriangleRenderPass, viewRenderPass: ViewRenderPass) {
         self.gpu = gpu
@@ -12,8 +14,14 @@ class TrianglePipeline: FramePipeline {
         self.viewRenderPass = viewRenderPass
     }
 
-    func build() {
-        triangleRenderPass.build()
+    func build(
+        with frameStatsReporter:FrameStatsReporter? = nil,
+        and gpuCounterSampler: GpuCounterSampler? = nil
+    ) {
+        self.frameStatsReporter = frameStatsReporter
+        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "triangle pipeline")
+        triangleRenderPass.build(with: gpuCounterSampleGroup)
+        //viewRenderPass.build(with: gpuCounterSampleGroup)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }
@@ -31,9 +39,8 @@ class TrianglePipeline: FramePipeline {
     }
 
     func update(
-        drawTo metalLayer: CAMetalLayer,
-        logTo frameLogger: FrameStatisticsLogger?,
-        _ frameComplited:@escaping ()->Void
+        frameStatus: FrameStatus,
+        drawTo metalLayer: CAMetalLayer
     ) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
         colorTarget.texture = offscreenTexture
@@ -45,15 +52,9 @@ class TrianglePipeline: FramePipeline {
             triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
-                frameLogger?.addCommandBufferLog(.init(
-                    label: "triangle pipeline",
-                    commandBuffer: commandBuffer,
-                    details: [
-                        triangleRenderPass.debugFrameStatus(),
-                        viewRenderPass.debugFrameStatus()
-                    ]
-                ))
-                frameComplited()
+                frameStatsReporter?.report(frameStatus, gpu.device, [
+                    .init("triangle pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
+                ])
             }
             commandBuffer.commit()
         }

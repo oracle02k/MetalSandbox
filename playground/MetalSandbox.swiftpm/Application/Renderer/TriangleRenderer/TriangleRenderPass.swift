@@ -23,7 +23,7 @@ class TriangleRenderPass {
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
+    //private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
 
     init (with gpu: GpuContext, functions: Functions) {
@@ -32,7 +32,7 @@ class TriangleRenderPass {
         self.screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
-    func build() {
+    func build(with gpuCountreSampleGroup:GpuCounterSampleGroup? = nil) {
         functions.build(fileName: "triangle.cpp")
 
         renderPipelineState = {
@@ -55,11 +55,8 @@ class TriangleRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor,
-            index: RenderTargetIndices.Color.rawValue
-        )
-
+        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "triangle render pass")
+    
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1))
         vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1))
@@ -80,9 +77,5 @@ class TriangleRenderPass {
         encoder.setVertexBuffer(vertices.rawBuffer, offset: 0, index: VertexInputIndex.Vertices1.rawValue)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
-    }
-    
-    func debugFrameStatus() -> String {
-        return gpu.debugCountreSampleLog(label: "tirangle render pass", from: counterSampleBuffer)
     }
 }
