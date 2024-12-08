@@ -11,7 +11,7 @@ class DIContainer {
         container.register(GpuContext.self) { r in
             GpuContext(resolver: r.resolve(MetalDeviceResolver.self)!)
         }.inObjectScope(.container)
-        
+
         // GpuCounterSampler
         container.register(GpuCounterSampler.self) { r in
             GpuCounterSampler(counterSampleContainer: r.resolve(GpuCounterSampleContainer.self)!)
@@ -25,20 +25,20 @@ class DIContainer {
         container.register(GpuCounterSampleItemRepository.self) { _ in
             GpuCounterSampleItemRepository()
         }.inObjectScope(.container)
-        
+
         // FrameStatsReporter
         container.register(FrameStatsReporter.self) { r in
             FrameStatsReporter(repository: r.resolve(FrameStatsReportRepository.self)!)
         }.inObjectScope(.container)
-        container.register(FrameStatsReportRepository.self) { r in
+        container.register(FrameStatsReportRepository.self) { _ in
             FrameStatsReportRepository()
         }.inObjectScope(.container)
-        
-        //StatsModel
+
+        // StatsModel
         container.register(StatsModel.self) { r in
-            StatsModel(repository: r.resolve(FrameStatsReportRepository.self)!)    
+            StatsModel(repository: r.resolve(FrameStatsReportRepository.self)!)
         }
-        
+
         // Application
         container.register(Application.self) { r in
             Application(
@@ -55,7 +55,7 @@ class DIContainer {
         container.register(AppDebuggerBindVM.self) { r in
             AppDebuggerBindVM(r.resolve(DebugVM.self)!)
         }.inObjectScope(.container)
-        
+
         // Renderer Common
         container.register(FrameBuffer.self) { _ in FrameBuffer() }
         container.register(IndexedMesh.Factory.self) { r in
@@ -145,7 +145,7 @@ class DIContainer {
         container.register(RasterOrderGroupRenderPass.Functions.self) { r in
             RasterOrderGroupRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        
+
         // LifegamePipeline
         container.register(LifegamePipeline.self) { r in
             LifegamePipeline(

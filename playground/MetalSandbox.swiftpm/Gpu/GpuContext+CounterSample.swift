@@ -87,10 +87,10 @@ extension GpuContext {
         sampleAttachment.endOfVertexSampleIndex = 1
         sampleAttachment.startOfFragmentSampleIndex = 2
         sampleAttachment.endOfFragmentSampleIndex = 3
-        
+
         return counterSampleBuffer
     }
-    
+
     func countreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) -> (Float, Float)? {
         guard let counterSampleBuffer = counterSampleBuffer else {
             return nil
@@ -106,11 +106,11 @@ extension GpuContext {
             let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
             let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
             let fragmentInterval = Float(sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
-            
+
             return (vertexInterval, fragmentInterval)
         }
     }
-    
+
     func debugCountreSampleLog(label: String, from counterSampleBuffer: MTLCounterSampleBuffer?) -> String {
         var log = label
         if let times = countreSample(from: counterSampleBuffer) {
@@ -118,6 +118,6 @@ extension GpuContext {
         } else {
             log += " none"
         }
-       return log
+        return log
     }
 }

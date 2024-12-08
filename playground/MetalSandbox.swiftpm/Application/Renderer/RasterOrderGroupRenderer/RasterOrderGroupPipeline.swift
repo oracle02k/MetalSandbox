@@ -46,7 +46,7 @@ class RasterOrderGroupPipeline: FramePipeline {
     }
 
     func update(
-        frameStatus:FrameStatus,
+        frameStatus: FrameStatus,
         drawTo metalLayer: CAMetalLayer
     ) {
         let colorTarget = MTLRenderPassColorAttachmentDescriptor()
@@ -68,7 +68,7 @@ class RasterOrderGroupPipeline: FramePipeline {
                 using: commandBuffer
             )
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture2)
-            
+
             commandBuffer.addCompletedHandler { _ in
             }
             commandBuffer.commit()

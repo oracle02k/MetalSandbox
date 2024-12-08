@@ -5,8 +5,8 @@ class TrianglePipeline: FramePipeline {
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
     private lazy var offscreenTexture: MTLTexture = uninitialized()
-    private var gpuCounterSampleGroup: GpuCounterSampleGroup? = nil
-    private var frameStatsReporter: FrameStatsReporter? = nil
+    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
+    private var frameStatsReporter: FrameStatsReporter?
 
     init(gpu: GpuContext, triangleRenderPass: TriangleRenderPass, viewRenderPass: ViewRenderPass) {
         self.gpu = gpu
@@ -15,13 +15,13 @@ class TrianglePipeline: FramePipeline {
     }
 
     func build(
-        with frameStatsReporter:FrameStatsReporter? = nil,
+        with frameStatsReporter: FrameStatsReporter? = nil,
         and gpuCounterSampler: GpuCounterSampler? = nil
     ) {
         self.frameStatsReporter = frameStatsReporter
         gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "triangle pipeline")
         triangleRenderPass.build(with: gpuCounterSampleGroup)
-        //viewRenderPass.build(with: gpuCounterSampleGroup)
+        // viewRenderPass.build(with: gpuCounterSampleGroup)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }

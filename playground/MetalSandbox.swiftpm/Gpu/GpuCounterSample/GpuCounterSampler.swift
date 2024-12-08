@@ -1,19 +1,19 @@
 import MetalKit
 
-class GpuCounterSampler{
+class GpuCounterSampler {
     let counterSampleContainer: GpuCounterSampleContainer
-    
-    init (counterSampleContainer: GpuCounterSampleContainer){
+
+    init (counterSampleContainer: GpuCounterSampleContainer) {
         self.counterSampleContainer = counterSampleContainer
     }
-    
-    func build(){
+
+    func build() {
         counterSampleContainer.build(sampleBufferSize: 32)
     }
-    
-    func makeGroup(groupLabel: String) -> GpuCounterSampleGroup{
+
+    func makeGroup(groupLabel: String) -> GpuCounterSampleGroup {
         let group = GpuCounterSampleGroup(
-            label: groupLabel, 
+            label: groupLabel,
             container: counterSampleContainer
         )
         return group

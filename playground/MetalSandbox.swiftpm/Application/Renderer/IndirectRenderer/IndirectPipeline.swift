@@ -78,7 +78,7 @@ class IndirectPipeline: FramePipeline {
         gpu.doCommand { commandBuffer in
             indirectRenderPass.draw(toColor: colorTarget, toDepth: depthTarget, using: commandBuffer, indirect: true)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
-            
+
             commandBuffer.addCompletedHandler { [self] _ in
                 frameBuffer.releaseBufferIndex()
             }

@@ -15,7 +15,7 @@ final class Application {
     private let frameStatsReporter: FrameStatsReporter
     private var viewportSize: CGSize
     private var activePipeline: FramePipeline?
-    
+
     init(
         gpu: GpuContext,
         frameStatsReporter: FrameStatsReporter,
@@ -36,7 +36,7 @@ final class Application {
     }
 
     func changePipeline(pipeline: Pipeline) {
-        synchronized(self){
+        synchronized(self) {
             activePipeline = switch pipeline {
             case .TriangleRender: {
                 let pipeline = DIContainer.resolve(TrianglePipeline.self)
@@ -71,14 +71,14 @@ final class Application {
             }
         }
     }
-    
+
     func changeViewportSize(_ size: CGSize) {
         viewportSize = size
         activePipeline?.changeSize(viewportSize: size)
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-        synchronized(self){
+        synchronized(self) {
             activePipeline?.update(frameStatus: frameStatus, drawTo: metalLayer)
         }
     }

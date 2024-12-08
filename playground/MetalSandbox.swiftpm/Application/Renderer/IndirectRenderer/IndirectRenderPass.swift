@@ -341,7 +341,7 @@ class IndirectRenderPass {
 
         return meshVertices
     }
-    
+
     func debugFrameStatus() -> String {
         return gpu.debugCountreSampleLog(label: "indirect render pass", from: counterSampleBuffer)
     }

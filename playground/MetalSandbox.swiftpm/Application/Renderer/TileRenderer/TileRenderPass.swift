@@ -470,7 +470,7 @@ class TileRenderPass {
 
         encoder.endEncoding()
     }
-    
+
     func debugFrameStatus() -> String {
         return gpu.debugCountreSampleLog(label: "tile render pass", from: counterSampleBuffer)
     }

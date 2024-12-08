@@ -1,19 +1,19 @@
 import MetalKit
 
 class GpuRenderIntervalSample: GpuCounterSampleItem {
-    let consumeBufferIndex:Int = 4
+    let consumeBufferIndex: Int = 4
     let counterSampleBuffer: MTLCounterSampleBuffer
-    let startIndex:Int
-    let groupLabel:String
-    let sampleLabel:String
-    
+    let startIndex: Int
+    let groupLabel: String
+    let sampleLabel: String
+
     init(
         describe descriptor: MTLRenderPassSampleBufferAttachmentDescriptor,
         counterSampleBuffer: MTLCounterSampleBuffer,
-        startIndex:Int,
-        groupLabel:String,
-        sampleLabel:String
-    ){
+        startIndex: Int,
+        groupLabel: String,
+        sampleLabel: String
+    ) {
         self.startIndex = startIndex
         self.counterSampleBuffer = counterSampleBuffer
         self.groupLabel = groupLabel
@@ -24,13 +24,13 @@ class GpuRenderIntervalSample: GpuCounterSampleItem {
         descriptor.startOfFragmentSampleIndex = startIndex + 2
         descriptor.endOfFragmentSampleIndex = startIndex + 3
     }
-    
+
     func resolve() -> any GpuCounterSampleReport {
         let resolveRange = startIndex..<(startIndex + consumeBufferIndex)
         guard let sampleData = try? counterSampleBuffer.resolveCounterRange(resolveRange) else {
             return MissCounterSampleReport(label: sampleLabel)
         }
-        
+
         return sampleData.withUnsafeBytes { body in
             let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
             let vstart = sample[startIndex + 0].timestamp
@@ -39,10 +39,10 @@ class GpuRenderIntervalSample: GpuCounterSampleItem {
             let fend = sample[startIndex + 3].timestamp
             let vertexTime =  Float(vend - vstart)/Float(NSEC_PER_MSEC)
             let fragmentTime = Float(fend - fstart)/Float(NSEC_PER_MSEC)
-            
+
             return RenderIntervalReport(
                 label: sampleLabel,
-                vertexTime: vertexTime, 
+                vertexTime: vertexTime,
                 fragmentTime: fragmentTime
             )
         }

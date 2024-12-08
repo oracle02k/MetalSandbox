@@ -82,7 +82,7 @@ class TilePipeline: FramePipeline {
                 transparency: true
             )
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
-            
+
             commandBuffer.addCompletedHandler { [self] _ in
                 frameBuffer.releaseBufferIndex()
             }
