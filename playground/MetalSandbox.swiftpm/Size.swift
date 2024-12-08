@@ -9,7 +9,7 @@ func alignof<T>(_ type: T.Type) -> size_t {
 }
 
 /// Aligns a value to an address.
-func align (_ value: size_t, _ align: size_t) -> size_t {
+func sizeAlign (_ value: size_t, _ align: size_t) -> size_t {
     if align == 0 {
         return value
     } else if (value & (align-1)) == 0 {

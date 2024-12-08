@@ -9,7 +9,7 @@ class AlignedBuffer<T> {
 
     init(count: Int, align: Int? = nil) {
         self.align = align ?? alignof(T.self)
-        self.stride = AppModule.align(sizeof(T.self), self.align)
+        self.stride = sizeAlign(sizeof(T.self), self.align)
         self.count = count
     }
 

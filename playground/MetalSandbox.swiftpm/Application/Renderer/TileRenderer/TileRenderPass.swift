@@ -377,7 +377,7 @@ class TileRenderPass {
         renderEncoder.setDepthStencilState(lessEqualDepthStencilState)
 
         for actorIndex in 0..<opaqueActors.count {
-            let offsetValue = actorIndex * align(MemoryLayout<ActorParams>.size, BufferOffsetAlign)
+            let offsetValue = actorIndex * sizeAlign(MemoryLayout<ActorParams>.size, BufferOffsetAlign)
             renderEncoder.setVertexBufferOffset(offsetValue, index: BufferIndices.ActorParams.rawValue)
             renderEncoder.setFragmentBufferOffset(offsetValue, index: BufferIndices.ActorParams.rawValue)
             renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
@@ -397,7 +397,7 @@ class TileRenderPass {
         renderEncoder.setDepthStencilState(noWriteLessEqualDepthStencilState)
 
         for actorIndex in 0..<transparentActors.count {
-            let offsetValue = (actorIndex + opaqueActors.count) * align(MemoryLayout<ActorParams>.size, BufferOffsetAlign)
+            let offsetValue = (actorIndex + opaqueActors.count) * sizeAlign(MemoryLayout<ActorParams>.size, BufferOffsetAlign)
             renderEncoder.setVertexBufferOffset(offsetValue, index: BufferIndices.ActorParams.rawValue)
             renderEncoder.setFragmentBufferOffset(offsetValue, index: BufferIndices.ActorParams.rawValue)
             renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)

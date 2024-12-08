@@ -29,14 +29,14 @@ final class TestSize: TestCase {
     }
 
     func testAlign() {
-        NAssertEqual(16, actual: align(1, 16))
-        NAssertEqual(16, actual: align(2, 16))
-        NAssertEqual(16, actual: align(4, 16))
-        NAssertEqual(16, actual: align(8, 16))
-        NAssertEqual(16, actual: align(16, 16))
-        NAssertEqual(32, actual: align(24, 16))
-        NAssertEqual(32, actual: align(32, 16))
-        NAssertEqual(16, actual: align(sizeof(Padding.self), 16))
+        NAssertEqual(16, actual: sizeAlign(1, 16))
+        NAssertEqual(16, actual: sizeAlign(2, 16))
+        NAssertEqual(16, actual: sizeAlign(4, 16))
+        NAssertEqual(16, actual: sizeAlign(8, 16))
+        NAssertEqual(16, actual: sizeAlign(16, 16))
+        NAssertEqual(32, actual: sizeAlign(24, 16))
+        NAssertEqual(32, actual: sizeAlign(32, 16))
+        NAssertEqual(16, actual: sizeAlign(sizeof(Padding.self), 16))
     }
 
     func testSimd() {
