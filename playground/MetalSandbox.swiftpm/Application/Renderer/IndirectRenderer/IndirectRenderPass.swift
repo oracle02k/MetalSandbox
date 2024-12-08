@@ -65,7 +65,7 @@ class IndirectRenderPass {
     }
 
     func build(maxFramesInFlight: Int) {
-        functions.build(fileName: "indirect.cpp")
+        functions.build(fileName: "indirect.txt")
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"

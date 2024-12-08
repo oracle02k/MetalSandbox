@@ -46,8 +46,8 @@ class GpuContext {
     }
 
     private func buildFunction() -> MTLLibrary {
-        guard let path = Bundle.main.url(forResource: "shader", withExtension: "cpp") else {
-            appFatalError("faild to open shader.cpp")
+        guard let path = Bundle.main.url(forResource: "shader", withExtension: "txt") else {
+            appFatalError("faild to open shader.txt")
         }
 
         var library: MTLLibrary

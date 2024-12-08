@@ -95,7 +95,7 @@ class TileRenderPass {
     }
 
     func build(maxFramesInFlight: Int) {
-        functions.build(fileName: "tile.cpp")
+        functions.build(fileName: "tile.txt")
         loadResources(maxFramesInFlight: maxFramesInFlight)
         loadMetal()
     }

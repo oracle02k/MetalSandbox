@@ -34,7 +34,7 @@ class RasterOrderGroupRenderPass {
     }
 
     func build() {
-        functions.build(fileName: "raster_order_group.cpp")
+        functions.build(fileName: "raster_order_group.txt")
         rasterOrderGroup0 = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Raster Order Group 0 Pipeline"

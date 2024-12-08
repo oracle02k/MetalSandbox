@@ -12,7 +12,7 @@ class FunctionContainer<T: RawRepresentable & Hashable & CaseIterable> where T.R
     func build(fileName: String) {
         let splited = fileName.split(separator: ".").map {String($0)}
         guard let path = Bundle.main.url(forResource: splited[0], withExtension: splited[1]) else {
-            appFatalError("faild to open shader.cpp")
+            appFatalError("faild to open shader.txt")
         }
 
         do {

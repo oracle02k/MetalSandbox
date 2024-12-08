@@ -33,7 +33,7 @@ class TriangleRenderPass {
     }
 
     func build(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
-        functions.build(fileName: "triangle.cpp")
+        functions.build(fileName: "triangle.txt")
 
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()

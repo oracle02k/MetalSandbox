@@ -44,7 +44,7 @@ class LifegameRenderPass {
     }
 
     func build(width: Int, height: Int) {
-        functions.build(fileName: "lifegame.cpp")
+        functions.build(fileName: "lifegame.txt")
 
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
