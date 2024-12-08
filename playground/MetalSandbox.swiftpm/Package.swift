@@ -17,7 +17,7 @@ let package = Package(
             name: "MetalSandbox",
             targets: ["AppModule"],
             bundleIdentifier: "akira.nakano.test.com",
-            teamIdentifier: "P6Y37NCDAQ",
+            teamIdentifier: "R3L78WSKYF",
             displayVersion: "1.0",
             bundleVersion: "1",
             appIcon: .placeholder(icon: .boat),

@@ -51,6 +51,7 @@ class MetalView: UIView {
         )
 
         synchronized(metalLayer) {
+            metalLayer.device = DIContainer.resolve(MetalDeviceResolver.self).resolve()
             delegate.renderToMetalLayer(metalLayer: metalLayer, view: self, frameStatus: frameStatus)
         }
 

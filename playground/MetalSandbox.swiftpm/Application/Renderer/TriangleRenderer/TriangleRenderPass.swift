@@ -42,7 +42,7 @@ class TriangleRenderPass {
             descriptor.vertexFunction = functions.find(by: .VertexShader)
             descriptor.fragmentFunction = functions.find(by: .FragmentShader)
             descriptor.colorAttachments[RenderTargetIndices.Color.rawValue].pixelFormat = .bgra8Unorm
-            descriptor.depthAttachmentPixelFormat = .depth32Float
+            descriptor.depthAttachmentPixelFormat = .invalid//.depth32Float
             return gpu.makeRenderPipelineState(descriptor)
         }()
 
@@ -70,7 +70,7 @@ class TriangleRenderPass {
         }()
 
         encoder.setRenderPipelineState(renderPipelineState)
-        encoder.setDepthStencilState(depthStencilState)
+        //encoder.setDepthStencilState(depthStencilState)
         withUnsafeMutablePointer(to: &screenViewport) {
             encoder.setVertexBytes($0, length: MemoryLayout<Viewport>.stride, index: VertexInputIndex.Viewport.rawValue)
         }
