@@ -25,12 +25,12 @@ class IndirectPipeline: FramePipeline {
     func build(
         with frameStatsReporter: FrameStatsReporter? = nil,
         and gpuCounterSampler: GpuCounterSampler? = nil
-    ){
+    ) {
         frameBuffer.build()
         indirectRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
-        
+
         self.frameStatsReporter = frameStatsReporter
         gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "indirect pipeline")
     }

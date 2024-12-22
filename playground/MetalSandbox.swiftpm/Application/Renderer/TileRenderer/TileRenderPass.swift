@@ -311,7 +311,7 @@ class TileRenderPass {
             actorMesh = gpu.makeBuffer(data: quadVertices, options: .storageModeShared)
             actorMesh.label = "Quad Mesh"
         }
-        
+
         _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: forwardRenderPassDescriptor, label: "tile render pass")
     }
 

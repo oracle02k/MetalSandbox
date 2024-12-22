@@ -42,7 +42,7 @@ class LifegamePipeline: FramePipeline {
         viewRenderPass.build()
 
         changeSize(viewportSize: .init(width: 760, height: 760))
-        
+
         self.frameStatsReporter = frameStatsReporter
         gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "lifegame pipeline")
     }

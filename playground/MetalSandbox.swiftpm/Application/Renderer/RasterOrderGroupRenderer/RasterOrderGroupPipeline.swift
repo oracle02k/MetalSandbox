@@ -18,7 +18,7 @@ class RasterOrderGroupPipeline: FramePipeline {
         self.rasterOrderGroupRenderPass = rasterOrderGroupRenderPass
         self.viewRenderPass = viewRenderPass
     }
-    
+
     func build(
         with frameStatsReporter: FrameStatsReporter? = nil,
         and gpuCounterSampler: GpuCounterSampler? = nil
@@ -26,7 +26,7 @@ class RasterOrderGroupPipeline: FramePipeline {
         rasterOrderGroupRenderPass.build()
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 760, height: 760))
-        
+
         self.frameStatsReporter = frameStatsReporter
         gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "rog pipeline")
     }

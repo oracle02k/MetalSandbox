@@ -104,7 +104,7 @@ class LifegameRenderPass {
             }
             offset += UInt32(lifegame.gridWidth)
         }
-        
+
         renderPassDescriptor = MTLRenderPassDescriptor()
         _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "lifegame render pass")
     }
