@@ -45,27 +45,27 @@ final class Application {
             }()
             case .IndirectRender: {
                 let pipeline = DIContainer.resolve(IndirectPipeline.self)
-                pipeline.build()
+                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             case .TileRender: {
                 let pipeline = DIContainer.resolve(TilePipeline.self)
-                pipeline.build()
+                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             case .RogRender: {
                 let pipeline = DIContainer.resolve(RasterOrderGroupPipeline.self)
-                pipeline.build()
+                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             case .LifegameCPU: {
                 let pipeline = DIContainer.resolve(LifegamePipeline.self)
-                pipeline.build(width: 100, height: 100, useCompute: false)
+                pipeline.build(width: 100, height: 100, useCompute: false, with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             case .LifegameGPU: {
                 let pipeline = DIContainer.resolve(LifegamePipeline.self)
-                pipeline.build(width: 1000, height: 1000, useCompute: true)
+                pipeline.build(width: 1000, height: 1000, useCompute: true, with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             }

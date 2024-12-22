@@ -45,7 +45,6 @@ class IndirectRenderPass {
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
     private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private var vertices = [TypedBuffer<Vertex>]()
     private var frameStateBuffer = [TypedBuffer<FrameState>]()
     private lazy var objectParameters: TypedBuffer<ObjectPerameters> = uninitialized()
@@ -64,7 +63,7 @@ class IndirectRenderPass {
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
-    func build(maxFramesInFlight: Int) {
+    func build(maxFramesInFlight: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
         functions.build(fileName: "indirect.txt")
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
@@ -88,10 +87,7 @@ class IndirectRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        counterSampleBuffer = gpu.attachCounterSample(
-            to: renderPassDescriptor,
-            index: 0
-        )
+        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "indirect render pass")
 
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))
@@ -340,9 +336,5 @@ class IndirectRenderPass {
         }
 
         return meshVertices
-    }
-
-    func debugFrameStatus() -> String {
-        return gpu.debugCountreSampleLog(label: "indirect render pass", from: counterSampleBuffer)
     }
 }

@@ -7,6 +7,8 @@ class IndirectPipeline: FramePipeline {
     private let frameBuffer: FrameBuffer
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var depthTexture: MTLTexture = uninitialized()
+    private var frameStatsReporter: FrameStatsReporter?
+    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
 
     init(
         gpu: GpuContext,
@@ -20,11 +22,17 @@ class IndirectPipeline: FramePipeline {
         self.frameBuffer = frameBuffer
     }
 
-    func build() {
+    func build(
+        with frameStatsReporter: FrameStatsReporter? = nil,
+        and gpuCounterSampler: GpuCounterSampler? = nil
+    ){
         frameBuffer.build()
         indirectRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
+        
+        self.frameStatsReporter = frameStatsReporter
+        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "indirect pipeline")
     }
 
     func changeSize(viewportSize: CGSize) {
@@ -80,6 +88,9 @@ class IndirectPipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
 
             commandBuffer.addCompletedHandler { [self] _ in
+                frameStatsReporter?.report(frameStatus, gpu.device, [
+                    .init("indirect pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
+                ])
                 frameBuffer.releaseBufferIndex()
             }
             commandBuffer.commit()

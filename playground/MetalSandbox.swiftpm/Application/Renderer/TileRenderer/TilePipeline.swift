@@ -7,6 +7,8 @@ class TilePipeline: FramePipeline {
     private let frameBuffer: FrameBuffer
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var depthTexture: MTLTexture = uninitialized()
+    private var frameStatsReporter: FrameStatsReporter?
+    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
 
     init(
         gpu: GpuContext,
@@ -20,9 +22,14 @@ class TilePipeline: FramePipeline {
         self.frameBuffer = frameBuffer
     }
 
-    func build() {
+    func build(
+        with frameStatsReporter: FrameStatsReporter? = nil,
+        and gpuCounterSampler: GpuCounterSampler? = nil
+    ) {
+        self.frameStatsReporter = frameStatsReporter
+        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "tile pipeline")
         frameBuffer.build()
-        tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight)
+        tileRenderPass.build(maxFramesInFlight: frameBuffer.maxFramesInFlight, with: gpuCounterSampleGroup)
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }
@@ -84,6 +91,9 @@ class TilePipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
 
             commandBuffer.addCompletedHandler { [self] _ in
+                frameStatsReporter?.report(frameStatus, gpu.device, [
+                    .init("tile pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
+                ])
                 frameBuffer.releaseBufferIndex()
             }
             commandBuffer.commit()

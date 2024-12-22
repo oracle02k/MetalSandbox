@@ -68,7 +68,6 @@ class TileRenderPass {
     lazy var blendPipelineState: MTLRenderPipelineState = uninitialized()
 
     lazy var forwardRenderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
 
     var actorParamsBuffers = [TypedBuffer<ActorParams>]()
     var cameraParamsBuffers = [TypedBuffer<CameraParams>]()
@@ -94,10 +93,10 @@ class TileRenderPass {
         self.functions = functions
     }
 
-    func build(maxFramesInFlight: Int) {
+    func build(maxFramesInFlight: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
         functions.build(fileName: "tile.txt")
         loadResources(maxFramesInFlight: maxFramesInFlight)
-        loadMetal()
+        loadMetal(with: gpuCountreSampleGroup)
     }
 
     /// Initializes the app's starting values, and creates actors and constant buffers.
@@ -183,7 +182,7 @@ class TileRenderPass {
     }
 
     /// Creates the Metal render state objects.
-    func loadMetal() {
+    func loadMetal(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
         // Check that this GPU supports raster order groups.
         supportsOrderIndependentTransparency = gpu.device.supportsFamily(.apple4)
         Logger.log("Selected Device \(gpu.device.name)")
@@ -288,10 +287,6 @@ class TileRenderPass {
         }
 
         forwardRenderPassDescriptor = MTLRenderPassDescriptor()
-        counterSampleBuffer = gpu.attachCounterSample(
-            to: forwardRenderPassDescriptor,
-            index: RenderTargetIndices.Color.rawValue
-        )
 
         if supportsOrderIndependentTransparency {
             // Set the tile size for the fragment shader.
@@ -316,6 +311,8 @@ class TileRenderPass {
             actorMesh = gpu.makeBuffer(data: quadVertices, options: .storageModeShared)
             actorMesh.label = "Quad Mesh"
         }
+        
+        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: forwardRenderPassDescriptor, label: "tile render pass")
     }
 
     /// Delegate callback that responds to changes in the device's orientation or view size changes.
@@ -469,9 +466,5 @@ class TileRenderPass {
         }
 
         encoder.endEncoding()
-    }
-
-    func debugFrameStatus() -> String {
-        return gpu.debugCountreSampleLog(label: "tile render pass", from: counterSampleBuffer)
     }
 }

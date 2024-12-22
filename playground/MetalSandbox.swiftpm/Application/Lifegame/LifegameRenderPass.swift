@@ -43,7 +43,7 @@ class LifegameRenderPass {
         self.functions = functions
     }
 
-    func build(width: Int, height: Int) {
+    func build(width: Int, height: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
         functions.build(fileName: "lifegame.txt")
 
         renderPipelineState = {
@@ -53,7 +53,7 @@ class LifegameRenderPass {
             descriptor.vertexFunction = functions.find(by: .VertexShader)
             descriptor.fragmentFunction = functions.find(by: .FragmentShader)
             descriptor.colorAttachments[RenderTargetIndices.Color.rawValue].pixelFormat = .bgra8Unorm
-            descriptor.depthAttachmentPixelFormat = .depth32Float
+            descriptor.depthAttachmentPixelFormat = .invalid
             return gpu.makeRenderPipelineState(descriptor)
         }()
 
@@ -104,6 +104,9 @@ class LifegameRenderPass {
             }
             offset += UInt32(lifegame.gridWidth)
         }
+        
+        renderPassDescriptor = MTLRenderPassDescriptor()
+        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "lifegame render pass")
     }
 
     func update() -> MTLBuffer {
@@ -128,9 +131,5 @@ class LifegameRenderPass {
             indexBufferOffset: 0
         )
         encoder.endEncoding()
-    }
-
-    func debugFrameStatus() -> String {
-        return gpu.debugCountreSampleLog(label: "lifegame render pass", from: counterSampleBuffer)
     }
 }

@@ -6,6 +6,8 @@ class RasterOrderGroupPipeline: FramePipeline {
     private let viewRenderPass: ViewRenderPass
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var offscreenTexture2: MTLTexture = uninitialized()
+    private var frameStatsReporter: FrameStatsReporter?
+    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
 
     init(
         gpu: GpuContext,
@@ -16,11 +18,17 @@ class RasterOrderGroupPipeline: FramePipeline {
         self.rasterOrderGroupRenderPass = rasterOrderGroupRenderPass
         self.viewRenderPass = viewRenderPass
     }
-
-    func build() {
+    
+    func build(
+        with frameStatsReporter: FrameStatsReporter? = nil,
+        and gpuCounterSampler: GpuCounterSampler? = nil
+    ) {
         rasterOrderGroupRenderPass.build()
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 760, height: 760))
+        
+        self.frameStatsReporter = frameStatsReporter
+        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "rog pipeline")
     }
 
     func changeSize(viewportSize: CGSize) {
@@ -69,7 +77,10 @@ class RasterOrderGroupPipeline: FramePipeline {
             )
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture2)
 
-            commandBuffer.addCompletedHandler { _ in
+            commandBuffer.addCompletedHandler { [self] _ in
+                frameStatsReporter?.report(frameStatus, gpu.device, [
+                    .init("rog pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
+                ])
             }
             commandBuffer.commit()
         }
