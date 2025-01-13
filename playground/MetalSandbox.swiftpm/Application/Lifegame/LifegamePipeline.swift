@@ -5,7 +5,7 @@ class LifegamePipeline: FramePipeline {
     private let lifegameRenderPass: LifegameRenderPass
     private let lifegameComputePass: LifegameComputePass
     private let viewRenderPass: ViewRenderPass
-    private let lifegame: Lifegame
+    private let lifegame: LifegameProc
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var useCompute: Bool = uninitialized()
     private var frameStatsReporter: FrameStatsReporter?
@@ -15,7 +15,7 @@ class LifegamePipeline: FramePipeline {
          lifegameRenderPass: LifegameRenderPass,
          lifegameComputePass: LifegameComputePass,
          viewRenderPass: ViewRenderPass,
-         lifegame: Lifegame) {
+         lifegame: LifegameProc) {
         self.gpu = gpu
         self.lifegameRenderPass = lifegameRenderPass
         self.lifegameComputePass = lifegameComputePass

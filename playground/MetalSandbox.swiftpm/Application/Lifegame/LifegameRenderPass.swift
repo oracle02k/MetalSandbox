@@ -109,11 +109,6 @@ class LifegameRenderPass {
         _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "lifegame render pass")
     }
 
-    func update() -> MTLBuffer {
-        lifegame.update()
-        return gpu.makeBuffer(data: lifegame.field.map {UInt16($0)}, options: [])
-    }
-
     func draw(fieldBuffer: MTLBuffer, toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {
         let encoder = {
             renderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor

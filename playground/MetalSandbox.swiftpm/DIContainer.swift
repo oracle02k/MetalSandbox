@@ -153,7 +153,7 @@ class DIContainer {
                 lifegameRenderPass: r.resolve(LifegameRenderPass.self)!,
                 lifegameComputePass: r.resolve(LifegameComputePass.self)!,
                 viewRenderPass: r.resolve(ViewRenderPass.self)!,
-                lifegame: r.resolve(Lifegame.self)!
+                lifegame: r.resolve(LifegameProc.self)!
             )
         }
         container.register(LifegameRenderPass.self) { r in
@@ -174,7 +174,7 @@ class DIContainer {
         container.register(LifegameComputePass.Functions.self) { r in
             LifegameComputePass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        container.register(Lifegame.self) { _ in Lifegame() }
+        container.register(LifegameProc.self) { _ in LifegameProc() }
     }
 
     static func resolve<T>(_ type: T.Type = T.self) -> T {
