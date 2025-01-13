@@ -46,43 +46,43 @@ func getCPUUsage() -> Float {
 }
 
 /*
-func getCPUUsageORG() -> Float {
-    // カーネル処理の結果
-    var result: Int32
-    var threadList = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-    
-    var threadCount = UInt32(MemoryLayout<mach_task_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
-    var threadInfo = thread_basic_info()
+ func getCPUUsageORG() -> Float {
+ // カーネル処理の結果
+ var result: Int32
+ var threadList = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
 
-    // スレッド情報を取得
-    result = withUnsafeMutablePointer(to: &threadList) {
-        $0.withMemoryRebound(to: thread_act_array_t?.self, capacity: 1) {
-            task_threads(mach_task_self_, $0, &threadCount)
-        }
-    }
+ var threadCount = UInt32(MemoryLayout<mach_task_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
+ var threadInfo = thread_basic_info()
 
-    if result != KERN_SUCCESS { return 0 }
+ // スレッド情報を取得
+ result = withUnsafeMutablePointer(to: &threadList) {
+ $0.withMemoryRebound(to: thread_act_array_t?.self, capacity: 1) {
+ task_threads(mach_task_self_, $0, &threadCount)
+ }
+ }
 
-    // 各スレッドからCPU使用率を算出し合計を全体のCPU使用率とする
-    return (0 ..< Int(threadCount))
-        // スレッドのCPU使用率を取得
-        .compactMap { index -> Float? in
-            var threadInfoCount = UInt32(THREAD_INFO_MAX)
-            result = withUnsafeMutablePointer(to: &threadInfo) {
-                $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
-                    thread_info(threadList[index], UInt32(THREAD_BASIC_INFO), $0, &threadInfoCount)
-                }
-            }
-            // スレッド情報が取れない = 該当スレッドのCPU使用率を0とみなす(基本nilが返ることはない)
-            if result != KERN_SUCCESS { return nil }
-            let isIdle = threadInfo.flags == TH_FLAGS_IDLE
-            // CPU使用率がスケール調整済みのため`TH_USAGE_SCALE`で除算し戻す
-            return !isIdle ? (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE)) : nil
-        }
-        // 合計算出
-        .reduce(0, +)
-}
-*/
+ if result != KERN_SUCCESS { return 0 }
+
+ // 各スレッドからCPU使用率を算出し合計を全体のCPU使用率とする
+ return (0 ..< Int(threadCount))
+ // スレッドのCPU使用率を取得
+ .compactMap { index -> Float? in
+ var threadInfoCount = UInt32(THREAD_INFO_MAX)
+ result = withUnsafeMutablePointer(to: &threadInfo) {
+ $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+ thread_info(threadList[index], UInt32(THREAD_BASIC_INFO), $0, &threadInfoCount)
+ }
+ }
+ // スレッド情報が取れない = 該当スレッドのCPU使用率を0とみなす(基本nilが返ることはない)
+ if result != KERN_SUCCESS { return nil }
+ let isIdle = threadInfo.flags == TH_FLAGS_IDLE
+ // CPU使用率がスケール調整済みのため`TH_USAGE_SCALE`で除算し戻す
+ return !isIdle ? (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE)) : nil
+ }
+ // 合計算出
+ .reduce(0, +)
+ }
+ */
 // 引数にenumで任意の単位を指定できるのが好ましい e.g. unit = .auto (デフォルト引数)
 func getMemoryUsed() -> KByte? {
     // タスク情報を取得

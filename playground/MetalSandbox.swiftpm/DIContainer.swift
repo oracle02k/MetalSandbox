@@ -175,7 +175,7 @@ class DIContainer {
             LifegameComputePass.Functions(with: r.resolve(GpuContext.self)!)
         }
         container.register(LifegameProc.self) { _ in LifegameProc() }
-        
+
         // Check
         container.register(CheckPipeline.self) { r in
             CheckPipeline(
@@ -190,7 +190,7 @@ class DIContainer {
         container.register(CheckComputePass.Functions.self) { r in
             CheckComputePass.Functions(with: r.resolve(GpuContext.self)!)
         }
-        
+
     }
 
     static func resolve<T>(_ type: T.Type = T.self) -> T {

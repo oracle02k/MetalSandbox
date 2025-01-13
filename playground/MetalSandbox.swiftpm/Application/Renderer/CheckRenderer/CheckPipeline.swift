@@ -7,7 +7,7 @@ class CheckPipeline: FramePipeline {
     private var gpuCounterSampleGroup: GpuCounterSampleGroup?
     private var frameStatsReporter: FrameStatsReporter?
 
-    init(gpu: GpuContext, checkComputePass: CheckComputePass, viewRenderPass:ViewRenderPass) {
+    init(gpu: GpuContext, checkComputePass: CheckComputePass, viewRenderPass: ViewRenderPass) {
         self.gpu = gpu
         self.checkComputePass = checkComputePass
         self.viewRenderPass = viewRenderPass
@@ -19,7 +19,7 @@ class CheckPipeline: FramePipeline {
     ) {
         self.frameStatsReporter = frameStatsReporter
         gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "check pipeline")
-        
+
         checkComputePass.build()
         viewRenderPass.build(with: gpuCounterSampleGroup)
         changeSize(viewportSize: .init(width: 320, height: 320))

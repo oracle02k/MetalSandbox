@@ -24,7 +24,7 @@ struct Const {
         -1.0, -1.0, 0.0, 1.0,
         1.0, -1.0, 1.0, 1.0,
         -1.0, 1.0, 0.0, 0.0,
-        1.0, 1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 0.0
     ]
 }
 
@@ -57,10 +57,10 @@ class CheckRenderPass {
         self.indexedMeshFactory = indexedMeshFactory
         self.functions = functions
     }
-    
+
     func build() {
         functions.build(fileName: "raster_order_group.txt")
-        
+
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "RenderPipeline"
@@ -91,7 +91,7 @@ class CheckRenderPass {
         ]
         indexedMesh = makeQuad(vertices: vertices)
     }
-    
+
     func makeQuad(vertices: [Vertex]) -> IndexedMesh {
         let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
         vertextBufferDescriptor.content = vertices
@@ -106,7 +106,7 @@ class CheckRenderPass {
 
         return indexedMeshFactory.make(descriptor)
     }
-    
+
     func draw(
         toColor: MTLRenderPassColorAttachmentDescriptor,
         write: MTLTexture,

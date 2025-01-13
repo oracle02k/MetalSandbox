@@ -31,7 +31,7 @@ class CheckComputePass {
             descriptor.computeFunction = functions.find(by: .Convert)
             return gpu.makeComputePipelineState(descriptor)
         }()
-        
+
         // 入力テクスチャ
         do {
             let loader = MTKTextureLoader(device: gpu.device)
