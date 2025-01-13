@@ -6,11 +6,51 @@ public func synchronized(_ obj: AnyObject, closure: () -> Void) {
     objc_sync_exit(obj)
 }
 
-// CPU使用率を0-1で取得
 func getCPUUsage() -> Float {
+    var activeUsage: Float = 0
+    var result: Int32
+
+    // Allocate space for thread list
+    var threadList: thread_act_array_t?
+    var threadCount = mach_msg_type_number_t()
+
+    // Retrieve thread list and ensure memory is deallocated
+    result = task_threads(mach_task_self_, &threadList, &threadCount)
+    guard result == KERN_SUCCESS, let threadList = threadList else { return 0 }
+
+    defer {
+        vm_deallocate(mach_task_self_, vm_address_t(bitPattern: threadList), vm_size_t(Int(threadCount) * MemoryLayout<thread_t>.size))
+    }
+
+    // Calculate CPU usage for each thread
+    for index in 0..<Int(threadCount) {
+        var threadInfo = thread_basic_info()
+        var threadInfoCount = mach_msg_type_number_t(THREAD_INFO_MAX)
+
+        result = withUnsafeMutablePointer(to: &threadInfo) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                thread_info(threadList[index], thread_flavor_t(THREAD_BASIC_INFO), $0, &threadInfoCount)
+            }
+        }
+
+        // Skip this thread if information retrieval failed
+        guard result == KERN_SUCCESS else { continue }
+
+        let usage = (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE))
+        if (threadInfo.flags & TH_FLAGS_IDLE) != TH_FLAGS_IDLE {
+            activeUsage += usage
+        }
+    }
+
+    return activeUsage
+}
+
+/*
+func getCPUUsageORG() -> Float {
     // カーネル処理の結果
     var result: Int32
     var threadList = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+    
     var threadCount = UInt32(MemoryLayout<mach_task_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
     var threadInfo = thread_basic_info()
 
@@ -42,7 +82,7 @@ func getCPUUsage() -> Float {
         // 合計算出
         .reduce(0, +)
 }
-
+*/
 // 引数にenumで任意の単位を指定できるのが好ましい e.g. unit = .auto (デフォルト引数)
 func getMemoryUsed() -> KByte? {
     // タスク情報を取得
