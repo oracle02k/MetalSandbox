@@ -1,0 +1,84 @@
+#include <metal_stdlib>
+using namespace metal;
+
+//#include "ShaderTypes.h"
+
+/*
+typedef struct {
+    float2 position;
+    float2 texCoord;
+} Vertex;
+
+typedef struct {
+    float4 position [[position]];
+    float2 texCoord;
+} ColorInOut;
+
+constexpr sampler s = sampler(
+    coord::normalized,
+    address::clamp_to_zero,
+    filter::nearest
+);
+ */
+
+kernel void convert(
+    texture2d<half, access::read> input [[ texture(0) ]],
+    texture2d<half, access::write> output [[ texture(1) ]],
+    uint2 position [[thread_position_in_grid]],
+    uint2 group_pos [[threadgroup_position_in_grid]],
+    uint simd_group_index [[simdgroup_index_in_threadgroup]],  // iPhone6s, iPhone8plusでは取得不可
+    uint thread_index [[thread_index_in_simdgroup]] // iPhone6s, iPhone8plusでは取得不可
+) {
+    // non-uniform未対応のGPUの場合、処理対象外の領域についてもスレッドが呼び出されてしまうので、その場合には処理しないようにする。
+    // see: https://developer.apple.com/documentation/metal/calculating_threadgroup_and_grid_sizes#2922042
+    if (position.x >= input.get_width() || position.y >= input.get_height()) {
+        return;
+    }
+
+    half4 input_color = input.read(position);
+    half4 output_color;
+    
+    if (fmod(float(group_pos.x + group_pos.y), 2) == 0) { // Thread Group毎に色変換
+    // if (fmod(float(simd_group_index), 2) == 0) {    // SIMD-Group毎に色変換
+//    if (fmod(float(thread_index), 8) == 0) {    // SIMD-Group内のThread毎に色変換
+        output_color = input_color;
+    } else {
+        // 白黒を反転
+        output_color = input_color - 1.0;
+        output_color = abs(output_color);
+        output_color.a = 1.0;
+    }
+    
+    output.write(output_color, position);
+}
+
+/*
+vertex ColorInOut vertexShader(
+    const device Vertex *vertices [[ buffer(0) ]],
+    constant Uniforms &uniforms [[ buffer(1) ]],
+    unsigned int vid [[ vertex_id ]]) {
+    ColorInOut out;
+    const device Vertex& vert = vertices[vid];
+    
+    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
+
+    if (uniforms.aspectRatio > 1.0) {
+        out.position.x = vert.position.x;
+        out.position.y = vert.position.y / uniforms.aspectRatio;
+    } else  {
+        out.position.x = vert.position.x * uniforms.aspectRatio;
+        out.position.y = vert.position.y;
+    }
+    
+    out.texCoord = vert.texCoord;
+    return out;
+}
+
+fragment float4 fragmentShader(ColorInOut in [[ stage_in ]],
+                              texture2d<float> texture [[texture(0)]]) {
+    float4 colorSample = texture.sample(s, in.texCoord);
+    colorSample.w = 1.0;
+    return colorSample;
+}
+ */
+

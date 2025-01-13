@@ -175,6 +175,22 @@ class DIContainer {
             LifegameComputePass.Functions(with: r.resolve(GpuContext.self)!)
         }
         container.register(LifegameProc.self) { _ in LifegameProc() }
+        
+        // Check
+        container.register(CheckPipeline.self) { r in
+            CheckPipeline(
+                gpu: r.resolve(GpuContext.self)!,
+                checkComputePass: r.resolve(CheckComputePass.self)!,
+                viewRenderPass: r.resolve(ViewRenderPass.self)!
+            )
+        }
+        container.register(CheckComputePass.self) { r in
+            CheckComputePass(with: r.resolve(GpuContext.self)!, functions: r.resolve(CheckComputePass.Functions.self)!)
+        }
+        container.register(CheckComputePass.Functions.self) { r in
+            CheckComputePass.Functions(with: r.resolve(GpuContext.self)!)
+        }
+        
     }
 
     static func resolve<T>(_ type: T.Type = T.self) -> T {

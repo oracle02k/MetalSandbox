@@ -8,6 +8,7 @@ final class Application {
         case RogRender
         case LifegameCPU
         case LifegameGPU
+        case Check
     }
 
     private let gpu: GpuContext
@@ -66,6 +67,11 @@ final class Application {
             case .LifegameGPU: {
                 let pipeline = DIContainer.resolve(LifegamePipeline.self)
                 pipeline.build(width: 1000, height: 1000, useCompute: true, with: frameStatsReporter, and: gpuCounterSampler)
+                return pipeline
+            }()
+            case .Check: {
+                let pipeline = DIContainer.resolve(CheckPipeline.self)
+                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
                 return pipeline
             }()
             }
