@@ -19,6 +19,8 @@ struct StatsView: View {
     var body: some View {
         List {
             Section(header: Text("Stats.")) {
+                StatsRow(name: "FPS", value: model.fps)
+                StatsRow(name: "Delta", value: model.dt)
                 StatsRow(name: "CPU", value: model.cpuUsage)
                 StatsRow(name: "MEM", value: model.memoryUsed)
             }

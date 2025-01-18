@@ -40,7 +40,7 @@ class MetalView: UIView {
         }
 
         let delta = displayLink.targetTimestamp - previousTimeStamp
-        let actualFramesPerSecond = 1 / (displayLink.targetTimestamp - displayLink.timestamp)
+        let actualFramesPerSecond = 1 / delta
 
         let frameStatus = FrameStatus(
             delta: .init(deltaTime: delta),
