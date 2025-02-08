@@ -13,20 +13,21 @@ struct StatsRow: View {
 }
 
 struct StatsView: View {
-    let model = DIContainer.resolve(StatsModel.self)
+    let statsStore = DIContainer.resolve(StatsStore.self)
     let timer = Timer.publish(every: 1/30, on: .main, in: .common).autoconnect()
 
     var body: some View {
         List {
+            let stats = statsStore.stats
             Section(header: Text("Stats.")) {
-                StatsRow(name: "FPS", value: model.fps)
-                StatsRow(name: "Delta", value: model.dt)
-                StatsRow(name: "CPU", value: model.cpuUsage)
-                StatsRow(name: "MEM", value: model.memoryUsed)
+                StatsRow(name: "FPS", value: String(format: "%.2ffps", stats.fps))
+                StatsRow(name: "Delta", value: String(format: "%.2fms", stats.dt))
+                StatsRow(name: "CPU", value: String(format: "%.2f%%", stats.cpuUsage))
+                StatsRow(name: "MEM", value: String(format: "%dKB", stats.memoryUsed))
             }
         }
         .onReceive(timer, perform: { _ in
-            model.refresh()
+            statsStore.refresh()
         })
     }
 }

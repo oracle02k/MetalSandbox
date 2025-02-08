@@ -34,11 +34,11 @@ class DIContainer {
             FrameStatsReportRepository()
         }.inObjectScope(.container)
 
-        // StatsModel
-        container.register(StatsModel.self) { r in
-            StatsModel(repository: r.resolve(FrameStatsReportRepository.self)!)
+        // Stats
+        container.register(StatsStore.self) { r in
+            StatsStore(repository: r.resolve(FrameStatsReportRepository.self)!)
         }
-
+        
         // Application
         container.register(Application.self) { r in
             Application(
