@@ -4,24 +4,32 @@ class TrianglePipeline: FramePipeline {
     private let gpu: GpuContext
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
+    private let gpuCounterSampler: CounterSampler
     private lazy var offscreenTexture: MTLTexture = uninitialized()
-    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
     private var frameStatsReporter: FrameStatsReporter?
 
-    init(gpu: GpuContext, triangleRenderPass: TriangleRenderPass, viewRenderPass: ViewRenderPass) {
+    init(
+        gpu: GpuContext,
+        triangleRenderPass: TriangleRenderPass,
+        viewRenderPass: ViewRenderPass,
+        gpuCounterSampler: CounterSampler
+    ) {
         self.gpu = gpu
         self.triangleRenderPass = triangleRenderPass
         self.viewRenderPass = viewRenderPass
+        self.gpuCounterSampler = gpuCounterSampler
     }
 
     func build(
-        with frameStatsReporter: FrameStatsReporter? = nil,
-        and gpuCounterSampler: GpuCounterSampler? = nil
+        with frameStatsReporter: FrameStatsReporter? = nil
     ) {
         self.frameStatsReporter = frameStatsReporter
-        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "triangle pipeline")
-        triangleRenderPass.build(with: gpuCounterSampleGroup)
-        // viewRenderPass.build(with: gpuCounterSampleGroup)
+        let counterSampleBuffer = gpu.makeCounterSampleBuffer(.timestamp, 32)!
+        gpuCounterSampler.build(counterSampleBuffer: counterSampleBuffer)
+        
+        triangleRenderPass.build()
+        triangleRenderPass.attachCounterSampler(gpuCounterSampler)
+        
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }
@@ -53,8 +61,9 @@ class TrianglePipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(frameStatus, gpu.device, [
-                    .init("triangle pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
+                    .init("triangle pipeline", commandBuffer.gpuTime(), nil)
                 ])
+                gpuCounterSampler.resolve(frame: frameStatus.count)
             }
             commandBuffer.commit()
         }

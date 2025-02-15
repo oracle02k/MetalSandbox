@@ -25,6 +25,20 @@ class DIContainer {
         container.register(GpuCounterSampleItemRepository.self) { _ in
             GpuCounterSampleItemRepository()
         }.inObjectScope(.container)
+        
+        // CounterSampler
+        container.register(CounterSampler.self) { r in
+            CounterSampler(
+                counterSampleSummaryRepository: r.resolve(CounterSampleSummaryRepository.self)!,
+                counterSampleReportRepository: r.resolve(CounterSampleReportRepository.self)!
+            )
+        }.inObjectScope(.container)
+        container.register(CounterSampleSummaryRepository.self) { r in
+            CounterSampleSummaryRepository()
+        }.inObjectScope(.container)
+        container.register(CounterSampleReportRepository.self) { _ in
+            CounterSampleReportRepository()
+        }.inObjectScope(.container)
 
         // FrameStatsReporter
         container.register(FrameStatsReporter.self) { r in
@@ -36,7 +50,11 @@ class DIContainer {
 
         // Stats
         container.register(StatsStore.self) { r in
-            StatsStore(repository: r.resolve(FrameStatsReportRepository.self)!)
+            StatsStore(
+                frameStatsRepository: r.resolve(FrameStatsReportRepository.self)!, 
+                counterSampleSummaryRepository: r.resolve(CounterSampleSummaryRepository.self)!,
+                counterSampleReportRepository: r.resolve(CounterSampleReportRepository.self)!
+            )
         }
         
         // Application
@@ -76,7 +94,8 @@ class DIContainer {
             TrianglePipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 triangleRenderPass: r.resolve(TriangleRenderPass.self)!,
-                viewRenderPass: r.resolve(ViewRenderPass.self)!
+                viewRenderPass: r.resolve(ViewRenderPass.self)!,
+                gpuCounterSampler: r.resolve(CounterSampler.self)!
             )
         }
         container.register(TriangleRenderPass.self) { r in

@@ -33,7 +33,7 @@ final class Application {
         gpu.build()
         _ = gpu.checkCounterSample()
         gpuCounterSampler.build()
-        changePipeline(pipeline: .LifegameCPU)
+        changePipeline(pipeline: .TriangleRender)
     }
 
     func changePipeline(pipeline: Pipeline) {
@@ -41,7 +41,7 @@ final class Application {
             activePipeline = switch pipeline {
             case .TriangleRender: {
                 let pipeline = DIContainer.resolve(TrianglePipeline.self)
-                pipeline.build(with: frameStatsReporter, and: gpuCounterSampler)
+                pipeline.build(with: frameStatsReporter)
                 return pipeline
             }()
             case .IndirectRender: {

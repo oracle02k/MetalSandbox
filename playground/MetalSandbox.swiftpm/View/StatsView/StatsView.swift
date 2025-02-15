@@ -19,11 +19,23 @@ struct StatsView: View {
     var body: some View {
         List {
             let stats = statsStore.stats
-            Section(header: Text("Stats.")) {
+            Section(header: Text("Common")) {
                 StatsRow(name: "FPS", value: String(format: "%.2ffps", stats.fps))
                 StatsRow(name: "Delta", value: String(format: "%.2fms", stats.dt))
                 StatsRow(name: "CPU", value: String(format: "%.2f%%", stats.cpuUsage))
                 StatsRow(name: "MEM", value: String(format: "%dKB", stats.memoryUsed))
+            }
+            ForEach(stats.counterSampleReportGroups, id: \.name) { group in
+                Section(header: Text(group.name)) {
+                    ForEach(group.reports, id: \.type) { report in
+                        let name = switch report.type {
+                        case .VertexTime: "vs"
+                        case .FragmentTime: "fs"
+                        case .ComputeTime: "cs"
+                        }
+                        StatsRow(name: name, value: String(format:"%.2fms", report.interval))
+                    }
+                }
             }
         }
         .onReceive(timer, perform: { _ in

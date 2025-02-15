@@ -32,7 +32,7 @@ class TriangleRenderPass {
         self.screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
-    func build(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func build() {
         functions.build(fileName: "triangle.txt")
 
         renderPipelineState = {
@@ -55,12 +55,19 @@ class TriangleRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "triangle render pass")
-
+        
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1))
         vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1))
         vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
+    }
+    
+    func attachCounterSampler(_ counterSampler: CounterSampler){
+        guard let descriptor = renderPassDescriptor.sampleBufferAttachments[0] else {
+            return
+        }
+        
+        counterSampler.attachToRenderPass(descriptor: descriptor, name: "Triangle Render Pass")
     }
 
     func draw(toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {
