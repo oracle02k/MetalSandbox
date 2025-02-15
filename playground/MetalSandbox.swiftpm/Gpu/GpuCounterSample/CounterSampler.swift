@@ -74,44 +74,49 @@ class CounterSampler {
     }
     
     func attachToRenderPass(
-        descriptor: MTLRenderPassSampleBufferAttachmentDescriptor,
+        descriptor: MTLRenderPassDescriptor,
         name: String
     ) {
-        descriptor.sampleBuffer = counterSampleBuffer
-        descriptor.startOfVertexSampleIndex = sampleIndex + 0
-        descriptor.endOfVertexSampleIndex = sampleIndex + 1
-        descriptor.startOfFragmentSampleIndex = sampleIndex + 2
-        descriptor.endOfFragmentSampleIndex = sampleIndex + 3
-        
-        let summary = CounterSampleSummary(
-            id: counterSampleSummaryRepository.count(),
-            name: name, 
-            type: .RenderPass,
-            startIndex: sampleIndex,
-            consumeBufferIndex: 4
-        )
-        
-        counterSampleSummaryRepository.persist(summary)
-        sampleIndex += 4
+        guard let attachment = descriptor.sampleBufferAttachments[0] else {
+            return
+        }
+
+        let summary = fetchOrNewCounterSampleSummary(name:name, type:.RenderPass, consumeBufferIndex: 4)
+
+        attachment.sampleBuffer = counterSampleBuffer
+        attachment.startOfVertexSampleIndex = summary.startIndex
+        attachment.endOfVertexSampleIndex = summary.startIndex + 1
+        attachment.startOfFragmentSampleIndex = summary.startIndex + 2
+        attachment.endOfFragmentSampleIndex = summary.startIndex + 3
     }
     
     func attachToComputePass(
-        descriptor: MTLComputePassSampleBufferAttachmentDescriptor,
+        descriptor: MTLComputePassDescriptor,
         name: String
     ) {
-        descriptor.sampleBuffer = counterSampleBuffer
-        descriptor.startOfEncoderSampleIndex = sampleIndex + 0
-        descriptor.endOfEncoderSampleIndex = sampleIndex + 1
-        
-        let summary = CounterSampleSummary(
-            id: counterSampleSummaryRepository.count(),
-            name: name, 
-            type: .ComputePass,
-            startIndex: sampleIndex,
-            consumeBufferIndex: 2
-        )
-        
-        counterSampleSummaryRepository.persist(summary)
-        sampleIndex += 2
+        guard let attachment = descriptor.sampleBufferAttachments[0] else {
+            return
+        }
+
+        let summary = fetchOrNewCounterSampleSummary(name:name, type:.ComputePass, consumeBufferIndex: 2)
+
+        attachment.sampleBuffer = counterSampleBuffer
+        attachment.startOfEncoderSampleIndex = summary.startIndex
+        attachment.endOfEncoderSampleIndex = summary.startIndex + 1
+    }
+    
+    private func fetchOrNewCounterSampleSummary(name: String, type: CounterSampleType, consumeBufferIndex:Int) -> CounterSampleSummary {
+        return counterSampleSummaryRepository.first(name) ?? {
+            let summary = CounterSampleSummary(
+                id: counterSampleSummaryRepository.count(),
+                name: name,
+                type: type,
+                startIndex: sampleIndex,
+                consumeBufferIndex: consumeBufferIndex
+            )
+            counterSampleSummaryRepository.persist(summary)
+            sampleIndex += consumeBufferIndex
+            return summary
+        }()
     }
 }

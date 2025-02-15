@@ -24,8 +24,7 @@ class TrianglePipeline: FramePipeline {
         with frameStatsReporter: FrameStatsReporter? = nil
     ) {
         self.frameStatsReporter = frameStatsReporter
-        let counterSampleBuffer = gpu.makeCounterSampleBuffer(.timestamp, 32)!
-        gpuCounterSampler.build(counterSampleBuffer: counterSampleBuffer)
+        gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
         
         triangleRenderPass.build()
         triangleRenderPass.attachCounterSampler(gpuCounterSampler)

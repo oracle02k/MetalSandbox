@@ -7,6 +7,10 @@ class CounterSampleSummaryRepository {
         return summaries
     }
     
+    func first(_ name: String) -> CounterSampleSummary? {
+        summaries.first{ $0.name == name}
+    }
+    
     func persist(_ item: CounterSampleSummary) {
         summaries.append(item)
     }

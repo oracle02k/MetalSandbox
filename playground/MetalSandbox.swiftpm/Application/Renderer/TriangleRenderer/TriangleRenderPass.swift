@@ -22,9 +22,8 @@ class TriangleRenderPass {
     private let functions: Functions
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
     private lazy var depthStencilState: MTLDepthStencilState = uninitialized()
-    private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
-    // private lazy var counterSampleBuffer: MTLCounterSampleBuffer? = uninitialized()
     private lazy var vertices: TypedBuffer<Vertex> = uninitialized()
+    private var counterSampler: CounterSampler? = nil
 
     init (with gpu: GpuContext, functions: Functions) {
         self.gpu = gpu
@@ -53,8 +52,6 @@ class TriangleRenderPass {
             descriptor.isDepthWriteEnabled = true
             return gpu.makeDepthStancilState(descriptor)
         }()
-
-        renderPassDescriptor = MTLRenderPassDescriptor()
         
         vertices = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<Vertex>
         vertices[0] = .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1))
@@ -63,17 +60,15 @@ class TriangleRenderPass {
     }
     
     func attachCounterSampler(_ counterSampler: CounterSampler){
-        guard let descriptor = renderPassDescriptor.sampleBufferAttachments[0] else {
-            return
-        }
-        
-        counterSampler.attachToRenderPass(descriptor: descriptor, name: "Triangle Render Pass")
+        self.counterSampler = counterSampler
     }
 
     func draw(toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {
         let encoder = {
-            renderPassDescriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
-            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
+            let descriptor = MTLRenderPassDescriptor()
+            descriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = toColor
+            counterSampler?.attachToRenderPass(descriptor: descriptor, name: "Triangle Render Pass")
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: descriptor)
         }()
 
         encoder.setRenderPipelineState(renderPipelineState)
