@@ -9,8 +9,7 @@ class LifegamePipeline: FramePipeline {
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var useCompute: Bool = uninitialized()
     private var frameStatsReporter: FrameStatsReporter?
-    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
-
+    
     init(gpu: GpuContext,
          lifegameRenderPass: LifegameRenderPass,
          lifegameComputePass: LifegameComputePass,
@@ -24,8 +23,8 @@ class LifegamePipeline: FramePipeline {
     }
 
     func build(width: Int, height: Int, useCompute: Bool,
-               with frameStatsReporter: FrameStatsReporter? = nil,
-               and gpuCounterSampler: GpuCounterSampler? = nil) {
+               with frameStatsReporter: FrameStatsReporter? = nil
+    ) {
         self.useCompute = useCompute
 
         if useCompute {
@@ -42,9 +41,6 @@ class LifegamePipeline: FramePipeline {
         viewRenderPass.build()
 
         changeSize(viewportSize: .init(width: 760, height: 760))
-
-        self.frameStatsReporter = frameStatsReporter
-        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "lifegame pipeline")
     }
 
     func changeSize(viewportSize: CGSize) {
@@ -83,9 +79,7 @@ class LifegamePipeline: FramePipeline {
             lifegameRenderPass.draw(fieldBuffer: fieldBuffer, toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(frameStatus, gpu.device, [
-                    .init("lifegame pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
-                ])
+                frameStatsReporter?.report(frameStatus, gpu.device)
             }
             commandBuffer.commit()
         }

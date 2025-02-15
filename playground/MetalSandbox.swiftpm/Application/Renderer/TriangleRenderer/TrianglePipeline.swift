@@ -60,9 +60,7 @@ class TrianglePipeline: FramePipeline {
             triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(frameStatus, gpu.device, [
-                    .init("triangle pipeline", commandBuffer.gpuTime(), nil)
-                ])
+                frameStatsReporter?.report(frameStatus, gpu.device)
                 gpuCounterSampler.resolve(frame: frameStatus.count)
             }
             commandBuffer.commit()

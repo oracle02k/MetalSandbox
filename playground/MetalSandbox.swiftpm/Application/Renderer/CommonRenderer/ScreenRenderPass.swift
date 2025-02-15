@@ -18,7 +18,7 @@ class ScreenRenderPass {
         self.indexedMeshFactory = indexedMeshFactory
     }
 
-    func build(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func build() {
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Screen Render Pipeline"
@@ -30,7 +30,6 @@ class ScreenRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "screen render pass")
 
         indexedMesh = {
             let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()

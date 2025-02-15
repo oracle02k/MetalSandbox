@@ -4,7 +4,6 @@ class CheckPipeline: FramePipeline {
     private let gpu: GpuContext
     private let checkComputePass: CheckComputePass
     private let viewRenderPass: ViewRenderPass
-    private var gpuCounterSampleGroup: GpuCounterSampleGroup?
     private var frameStatsReporter: FrameStatsReporter?
 
     init(gpu: GpuContext, checkComputePass: CheckComputePass, viewRenderPass: ViewRenderPass) {
@@ -14,14 +13,12 @@ class CheckPipeline: FramePipeline {
     }
 
     func build(
-        with frameStatsReporter: FrameStatsReporter? = nil,
-        and gpuCounterSampler: GpuCounterSampler? = nil
+        with frameStatsReporter: FrameStatsReporter? = nil
     ) {
         self.frameStatsReporter = frameStatsReporter
-        gpuCounterSampleGroup = gpuCounterSampler?.makeGroup(groupLabel: "check pipeline")
 
         checkComputePass.build()
-        viewRenderPass.build(with: gpuCounterSampleGroup)
+        viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
     }
 
@@ -36,9 +33,7 @@ class CheckPipeline: FramePipeline {
             checkComputePass.convert(commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: checkComputePass.outputTexture)
             commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(frameStatus, gpu.device, [
-                    .init("check pipeline", commandBuffer.gpuTime(), gpuCounterSampleGroup?.resolve())
-                ])
+                frameStatsReporter?.report(frameStatus, gpu.device)
             }
             commandBuffer.commit()
         }

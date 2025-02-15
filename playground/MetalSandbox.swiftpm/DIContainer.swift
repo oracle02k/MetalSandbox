@@ -12,20 +12,6 @@ class DIContainer {
             GpuContext(resolver: r.resolve(MetalDeviceResolver.self)!)
         }.inObjectScope(.container)
 
-        // GpuCounterSampler
-        container.register(GpuCounterSampler.self) { r in
-            GpuCounterSampler(counterSampleContainer: r.resolve(GpuCounterSampleContainer.self)!)
-        }.inObjectScope(.container)
-        container.register(GpuCounterSampleContainer.self) { r in
-            GpuCounterSampleContainer(
-                gpu: r.resolve(GpuContext.self)!,
-                sampleItemRepository: r.resolve(GpuCounterSampleItemRepository.self)!
-            )
-        }.inObjectScope(.container)
-        container.register(GpuCounterSampleItemRepository.self) { _ in
-            GpuCounterSampleItemRepository()
-        }.inObjectScope(.container)
-        
         // CounterSampler
         container.register(CounterSampler.self) { r in
             CounterSampler(
@@ -61,8 +47,7 @@ class DIContainer {
         container.register(Application.self) { r in
             Application(
                 gpu: r.resolve(GpuContext.self)!,
-                frameStatsReporter: r.resolve(FrameStatsReporter.self)!,
-                gpuCounterSampler: r.resolve(GpuCounterSampler.self)!
+                frameStatsReporter: r.resolve(FrameStatsReporter.self)!
             )
         }.inObjectScope(.container)
 

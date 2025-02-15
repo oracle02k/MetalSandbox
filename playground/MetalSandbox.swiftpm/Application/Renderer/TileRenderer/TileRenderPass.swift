@@ -93,10 +93,10 @@ class TileRenderPass {
         self.functions = functions
     }
 
-    func build(maxFramesInFlight: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func build(maxFramesInFlight: Int) {
         functions.build(fileName: "tile.txt")
         loadResources(maxFramesInFlight: maxFramesInFlight)
-        loadMetal(with: gpuCountreSampleGroup)
+        loadMetal()
     }
 
     /// Initializes the app's starting values, and creates actors and constant buffers.
@@ -182,7 +182,7 @@ class TileRenderPass {
     }
 
     /// Creates the Metal render state objects.
-    func loadMetal(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func loadMetal() {
         // Check that this GPU supports raster order groups.
         supportsOrderIndependentTransparency = gpu.device.supportsFamily(.apple4)
         Logger.log("Selected Device \(gpu.device.name)")
@@ -311,8 +311,6 @@ class TileRenderPass {
             actorMesh = gpu.makeBuffer(data: quadVertices, options: .storageModeShared)
             actorMesh.label = "Quad Mesh"
         }
-
-        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: forwardRenderPassDescriptor, label: "tile render pass")
     }
 
     /// Delegate callback that responds to changes in the device's orientation or view size changes.

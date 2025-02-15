@@ -43,7 +43,7 @@ class LifegameRenderPass {
         self.functions = functions
     }
 
-    func build(width: Int, height: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func build(width: Int, height: Int) {
         functions.build(fileName: "lifegame.txt")
 
         renderPipelineState = {
@@ -106,7 +106,6 @@ class LifegameRenderPass {
         }
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "lifegame render pass")
     }
 
     func draw(fieldBuffer: MTLBuffer, toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {

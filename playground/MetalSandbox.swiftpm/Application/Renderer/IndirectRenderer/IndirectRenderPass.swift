@@ -63,7 +63,7 @@ class IndirectRenderPass {
         screenViewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
     }
 
-    func build(maxFramesInFlight: Int, with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
+    func build(maxFramesInFlight: Int) {
         functions.build(fileName: "indirect.txt")
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
@@ -87,7 +87,6 @@ class IndirectRenderPass {
         }()
 
         renderPassDescriptor = MTLRenderPassDescriptor()
-        _ = gpuCountreSampleGroup?.addSampleRenderInterval(of: renderPassDescriptor, label: "indirect render pass")
 
         for i in 0..<maxFramesInFlight {
             frameStateBuffer.append(gpu.makeTypedBuffer(options: .storageModeShared))

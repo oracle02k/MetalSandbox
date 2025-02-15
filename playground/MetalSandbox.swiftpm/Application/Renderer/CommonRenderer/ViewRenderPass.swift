@@ -7,8 +7,8 @@ class ViewRenderPass {
         self.screenRenderPass = screenRenderPass
     }
 
-    func build(with gpuCountreSampleGroup: GpuCounterSampleGroup? = nil) {
-        screenRenderPass.build(with: gpuCountreSampleGroup)
+    func build() {
+        screenRenderPass.build()
     }
 
     func draw(
