@@ -39,6 +39,7 @@ class TrianglePipeline: FramePipeline {
         if let counterSampler = option.gpuCounterSampler {
             counterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
             triangleRenderPass.attachCounterSampler(option.gpuCounterSampler)
+            viewRenderPass.attachCounterSampler(option.gpuCounterSampler)
         }
     }
     

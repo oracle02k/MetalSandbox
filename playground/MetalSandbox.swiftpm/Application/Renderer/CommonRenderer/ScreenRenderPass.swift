@@ -11,7 +11,7 @@ class ScreenRenderPass {
     private let indexedMeshFactory: IndexedMesh.Factory
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
-    private lazy var renderPassDescriptor: MTLRenderPassDescriptor = uninitialized()
+    private var counterSampler: CounterSampler? = nil
 
     init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
         self.gpu = gpu
@@ -28,8 +28,6 @@ class ScreenRenderPass {
             descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
             return gpu.makeRenderPipelineState(descriptor)
         }()
-
-        renderPassDescriptor = MTLRenderPassDescriptor()
 
         indexedMesh = {
             let vertextBufferDescriptor = VertexBufferDescriptor<Vertex>()
@@ -58,14 +56,20 @@ class ScreenRenderPass {
         source: MTLTexture
     ) {
         let encoder = {
-            renderPassDescriptor.colorAttachments[0] = toColor
-            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: renderPassDescriptor)
+            let descriptor = MTLRenderPassDescriptor()
+            descriptor.colorAttachments[0] = toColor
+            counterSampler?.attachToRenderPass(descriptor: descriptor, name: "Screen Render Pass")
+            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: descriptor)
         }()
-
+        
         //  encoder.setViewport(.init(originX: 0, originY: 0, width: Double(source.width), height: Double(source.height), znear: 0, zfar: 1))
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
+    }
+    
+    func attachCounterSampler(_ counterSampler: CounterSampler?){
+        self.counterSampler = counterSampler
     }
 }

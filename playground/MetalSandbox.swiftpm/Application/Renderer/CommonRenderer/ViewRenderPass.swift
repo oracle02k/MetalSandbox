@@ -31,7 +31,7 @@ class ViewRenderPass {
         commandBuffer.present(drawable)
     }
 
-    func debugFrameStatus() -> String {
-        return ""
+    func attachCounterSampler(_ counterSampler: CounterSampler?){
+        screenRenderPass.attachCounterSampler(counterSampler)
     }
 }

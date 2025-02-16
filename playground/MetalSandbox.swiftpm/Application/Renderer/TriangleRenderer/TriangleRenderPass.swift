@@ -58,10 +58,6 @@ class TriangleRenderPass {
         vertices[1] = .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1))
         vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
     }
-    
-    func attachCounterSampler(_ counterSampler: CounterSampler?){
-        self.counterSampler = counterSampler
-    }
 
     func draw(toColor: MTLRenderPassColorAttachmentDescriptor, using commandBuffer: MTLCommandBuffer) {
         let encoder = {
@@ -79,5 +75,9 @@ class TriangleRenderPass {
         encoder.setVertexBuffer(vertices.rawBuffer, offset: 0, index: VertexInputIndex.Vertices1.rawValue)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
+    }
+    
+    func attachCounterSampler(_ counterSampler: CounterSampler?){
+        self.counterSampler = counterSampler
     }
 }
