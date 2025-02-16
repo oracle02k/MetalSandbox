@@ -36,8 +36,12 @@ final class Application {
         synchronized(self) {
             activePipeline = switch pipeline {
             case .TriangleRender: {
+                let option = TrianglePipeline.Option(
+                    frameStatsReporter: frameStatsReporter, 
+                    gpuCounterSampler: DIContainer.resolve(CounterSampler.self)
+                )
                 let pipeline = DIContainer.resolve(TrianglePipeline.self)
-                pipeline.build(with: frameStatsReporter)
+                pipeline.build(with: option)
                 return pipeline
             }()
             case .IndirectRender: {

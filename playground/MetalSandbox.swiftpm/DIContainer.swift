@@ -79,8 +79,7 @@ class DIContainer {
             TrianglePipeline(
                 gpu: r.resolve(GpuContext.self)!,
                 triangleRenderPass: r.resolve(TriangleRenderPass.self)!,
-                viewRenderPass: r.resolve(ViewRenderPass.self)!,
-                gpuCounterSampler: r.resolve(CounterSampler.self)!
+                viewRenderPass: r.resolve(ViewRenderPass.self)!
             )
         }
         container.register(TriangleRenderPass.self) { r in

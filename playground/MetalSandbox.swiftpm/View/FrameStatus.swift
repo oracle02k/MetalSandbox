@@ -15,19 +15,19 @@ class FrameStatus {
     let preferredFps: Float
     let actualFps: Float
     let displayLinkDuration: CFTimeInterval
-    let count: UInt64
+    let frameCount: UInt64
 
     init(
         delta: FrameDelta,
         preferredFps: Float,
         actualFps: Float,
         displayLinkDuration: CFTimeInterval,
-        count: UInt64
+        frameCount: UInt64
     ) {
         self.delta = delta
         self.preferredFps = preferredFps
         self.actualFps = actualFps
         self.displayLinkDuration = displayLinkDuration
-        self.count = count
+        self.frameCount = frameCount
     }
 }

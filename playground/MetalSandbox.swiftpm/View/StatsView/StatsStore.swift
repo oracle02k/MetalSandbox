@@ -31,6 +31,8 @@ class StatsStore {
         let dt = reports.map { $0.frameStatus.delta.microSecond }.average()
         let cpu = reports.map { $0.cpuUsage }.average() * 100.0
         let memory = reports.map { $0.memory }.max()!
+        let gpu = reports.map{ $0.gpuTime }.average()
+        let vram = reports.map{$0.vram}.max()!
         
         let groups = counterSampleSummaryRepository.fetchAll().map { summary in
             let reports = counterSampleReportRepository
@@ -47,7 +49,15 @@ class StatsStore {
             return CounterSampleReportGroup(name: summary.name, reports: reports)
         }
         
-        stats = Stats(fps:fps, dt:dt, cpuUsage:cpu, memoryUsed:memory, counterSampleReportGroups: groups)
+        stats = Stats(
+            fps:fps,
+            dt:dt,
+            cpuUsage:cpu,
+            memoryUsed:memory,
+            gpuTime: gpu,
+            vram: vram,
+            counterSampleReportGroups: groups
+        )
         
         frameStatsRepository.deleteAll()
         counterSampleReportRepository.deleteAll()

@@ -1,38 +1,47 @@
 import MetalKit
 
 class TrianglePipeline: FramePipeline {
+    class Option {
+        let gpuCounterSampler: CounterSampler?
+        let frameStatsReporter: FrameStatsReporter?
+        
+        init(
+            frameStatsReporter: FrameStatsReporter? = nil,
+            gpuCounterSampler: CounterSampler? = nil
+        ){
+            self.frameStatsReporter = frameStatsReporter
+            self.gpuCounterSampler = gpuCounterSampler
+        }
+    }
+    
     private let gpu: GpuContext
     private let triangleRenderPass: TriangleRenderPass
     private let viewRenderPass: ViewRenderPass
-    private let gpuCounterSampler: CounterSampler
+    private var option = Option()
     private lazy var offscreenTexture: MTLTexture = uninitialized()
-    private var frameStatsReporter: FrameStatsReporter?
 
     init(
         gpu: GpuContext,
         triangleRenderPass: TriangleRenderPass,
-        viewRenderPass: ViewRenderPass,
-        gpuCounterSampler: CounterSampler
+        viewRenderPass: ViewRenderPass
     ) {
         self.gpu = gpu
         self.triangleRenderPass = triangleRenderPass
         self.viewRenderPass = viewRenderPass
-        self.gpuCounterSampler = gpuCounterSampler
     }
 
-    func build(
-        with frameStatsReporter: FrameStatsReporter? = nil
-    ) {
-        self.frameStatsReporter = frameStatsReporter
-        gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
-        
+    func build(with option:Option = Option()) {
+        self.option = option
         triangleRenderPass.build()
-        triangleRenderPass.attachCounterSampler(gpuCounterSampler)
-        
         viewRenderPass.build()
         changeSize(viewportSize: .init(width: 320, height: 320))
+        
+        if let counterSampler = option.gpuCounterSampler {
+            counterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
+            triangleRenderPass.attachCounterSampler(option.gpuCounterSampler)
+        }
     }
-
+    
     func changeSize(viewportSize: CGSize) {
         offscreenTexture = {
             let descriptor = MTLTextureDescriptor()
@@ -59,8 +68,12 @@ class TrianglePipeline: FramePipeline {
             triangleRenderPass.draw(toColor: colorTarget, using: commandBuffer)
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(frameStatus, gpu.device)
-                gpuCounterSampler.resolve(frame: frameStatus.count)
+                option.frameStatsReporter?.report(
+                    frameStatus: frameStatus, 
+                    device: gpu.device, 
+                    gpuTime:commandBuffer.gpuTime()
+                )
+                option.gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
             commandBuffer.commit()
         }

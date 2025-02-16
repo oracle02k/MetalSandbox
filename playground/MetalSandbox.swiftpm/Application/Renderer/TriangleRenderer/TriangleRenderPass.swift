@@ -59,7 +59,7 @@ class TriangleRenderPass {
         vertices[2] = .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
     }
     
-    func attachCounterSampler(_ counterSampler: CounterSampler){
+    func attachCounterSampler(_ counterSampler: CounterSampler?){
         self.counterSampler = counterSampler
     }
 

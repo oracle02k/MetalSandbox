@@ -16,6 +16,8 @@ class Stats {
     let dt: MilliSecond
     let cpuUsage: Float
     let memoryUsed: KByte
+    let gpuTime: MilliSecond
+    let vram: KByte
     let counterSampleReportGroups: [CounterSampleReportGroup]
     
     init(){
@@ -23,6 +25,8 @@ class Stats {
         self.dt = .zero
         self.cpuUsage = .zero
         self.memoryUsed = .zero
+        self.gpuTime = .zero
+        self.vram = .zero
         self.counterSampleReportGroups = .init()
     }
     
@@ -31,12 +35,16 @@ class Stats {
         dt:MilliSecond,
         cpuUsage: Float,
         memoryUsed:KByte,
+        gpuTime:MilliSecond,
+        vram:KByte,
         counterSampleReportGroups: [CounterSampleReportGroup]
     ){
         self.fps = fps
         self.dt = dt
         self.cpuUsage = cpuUsage
         self.memoryUsed = memoryUsed
+        self.gpuTime = gpuTime
+        self.vram = vram
         self.counterSampleReportGroups = counterSampleReportGroups
     }
 }

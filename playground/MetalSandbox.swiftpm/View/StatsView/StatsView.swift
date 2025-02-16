@@ -14,7 +14,7 @@ struct StatsRow: View {
 
 struct StatsView: View {
     let statsStore = DIContainer.resolve(StatsStore.self)
-    let timer = Timer.publish(every: 1/30, on: .main, in: .common).autoconnect()
+    let timer = Timer.publish(every: 1/10, on: .main, in: .common).autoconnect()
 
     var body: some View {
         List {
@@ -24,6 +24,8 @@ struct StatsView: View {
                 StatsRow(name: "Delta", value: String(format: "%.2fms", stats.dt))
                 StatsRow(name: "CPU", value: String(format: "%.2f%%", stats.cpuUsage))
                 StatsRow(name: "MEM", value: String(format: "%dKB", stats.memoryUsed))
+                StatsRow(name: "GPU", value: String(format: "%0.2fms", stats.gpuTime))
+                StatsRow(name: "VRAM", value: String(format: "%dKB", stats.vram))
             }
             ForEach(stats.counterSampleReportGroups, id: \.name) { group in
                 Section(header: Text(group.name)) {

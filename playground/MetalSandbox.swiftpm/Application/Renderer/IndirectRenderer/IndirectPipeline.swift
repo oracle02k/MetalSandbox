@@ -85,7 +85,11 @@ class IndirectPipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
 
             commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(frameStatus, gpu.device)
+                frameStatsReporter?.report(
+                    frameStatus: frameStatus, 
+                    device: gpu.device, 
+                    gpuTime:commandBuffer.gpuTime()
+                )
                 frameBuffer.releaseBufferIndex()
             }
             commandBuffer.commit()

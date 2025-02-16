@@ -47,7 +47,7 @@ class MetalView: UIView {
             preferredFps: Config.preferredFps,
             actualFps: Float(actualFramesPerSecond),
             displayLinkDuration: displayLink.duration,
-            count: UInt64(frameCount)
+            frameCount: UInt64(frameCount)
         )
 
         synchronized(metalLayer) {
