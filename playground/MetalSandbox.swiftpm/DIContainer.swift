@@ -46,17 +46,8 @@ class DIContainer {
         // Application
         container.register(Application.self) { r in
             Application(
-                gpu: r.resolve(GpuContext.self)!,
-                frameStatsReporter: r.resolve(FrameStatsReporter.self)!
+                gpu: r.resolve(GpuContext.self)!
             )
-        }.inObjectScope(.container)
-
-        // Debug
-        container.register(DebugVM.self) { _ in
-            DebugVM()
-        }.inObjectScope(.container)
-        container.register(AppDebuggerBindVM.self) { r in
-            AppDebuggerBindVM(r.resolve(DebugVM.self)!)
         }.inObjectScope(.container)
 
         // Renderer Common

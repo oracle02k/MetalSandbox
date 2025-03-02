@@ -70,7 +70,7 @@ class IndirectPipeline: FramePipeline {
         depthTarget.storeAction = .dontCare
 
         let frameIndex = frameBuffer.waitForNextBufferIndex()
-        Debug.frameLog("frame: \(frameBuffer.frameNumber)")
+        print("frame: \(frameBuffer.frameNumber)")
 
         indirectRenderPass.update()
 

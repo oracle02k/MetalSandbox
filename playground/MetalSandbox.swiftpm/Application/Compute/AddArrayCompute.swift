@@ -47,9 +47,6 @@ class AddArrayCompute {
         let threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1)
         encoder.dispatchThreads(gridSize, threadsPerThreadgroup: threadgroupSize)
 
-        Debug.frameLog("ElementNum: \(elementNum)")
-        Debug.frameLog("GrideSize: \(gridSize)")
-        Debug.frameLog("ThreadGroupSize: \(threadgroupSize)")
     }
 
     func generateRandomFloatData(count: Int) -> MTLBuffer {
@@ -69,9 +66,9 @@ class AddArrayCompute {
         for i in 0..<elementNum {
             let cpuResult = aBuffer[i] + bBuffer[i]
             if result[i] != cpuResult {
-                Debug.frameLog("Compute ERROR: index=\(i) gpu=\(result[i]) vs cpu=\(cpuResult)")
+                print("Compute ERROR: index=\(i) gpu=\(result[i]) vs cpu=\(cpuResult)")
             }
         }
-        Debug.frameLog("Compute results as expected\n")
+        print("Compute results as expected\n")
     }
 }

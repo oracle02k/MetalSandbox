@@ -415,7 +415,7 @@ class TileRenderPass {
 
     /// Draws the opaque and transparent meshes with an explicit image block in a fragment function that implements order-independent transparency.
     func drawWithOrderIndependentTransparency(_ renderEncoder: MTLRenderCommandEncoder, currentBufferIndex: Int) {
-        Debug.frameLog("drawTrans")
+        print("drawTrans")
 
         // Initialize the image block's memory before rendering.
         renderEncoder.pushDebugGroup("Init Image Block")
@@ -437,7 +437,7 @@ class TileRenderPass {
 
     /// Draws the opaque and transparent meshes with a pipeline's alpha blending.
     func drawUnorderedAlphaBlending(_ renderEncoder: MTLRenderCommandEncoder, currentBufferIndex: Int) {
-        Debug.frameLog("drawBlend")
+        print("drawBlend")
         bindCommonActorBuffers(renderEncoder: renderEncoder, currentBufferIndex: currentBufferIndex)
         drawOpaqueObjects(renderEncoder: renderEncoder, renderPipelineState: opaquePipeline)
         drawTransparentObjects(renderEncoder: renderEncoder, renderPipelineState: opaquePipeline)
