@@ -38,7 +38,7 @@ class MetalView: UIView {
         guard let metalLayer = layer as? CAMetalLayer else {
             appFatalError("metal layer error.")
         }
-
+        
         let delta = displayLink.targetTimestamp - previousTimeStamp
         let actualFramesPerSecond = 1 / delta
 
