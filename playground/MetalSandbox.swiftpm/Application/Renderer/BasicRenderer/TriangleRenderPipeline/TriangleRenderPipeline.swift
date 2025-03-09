@@ -1,15 +1,19 @@
 import Metal
 
-final class TriangleRenderPipeline: RenderPipeline{
+final class TriangleRenderPipeline: RenderPipeline {
+    typealias RenderPassConfigurator = BasicRenderPassConfigurator
+    typealias Functions = RenderPassConfigurator.Functions
     typealias Dispatcher = TriangleRenderCommandDispatcher
+    
+    let colorIndex = RenderPassConfigurator.RenderTargets.Color.rawValue
     lazy var pipelineState: MTLRenderPipelineState = uninitialized()
     
-    func build(gpu:GpuContext, functions:BasicRenderPass.Functions, colorPixelFormat:MTLPixelFormat){
+    func build(gpu:GpuContext, functions: Functions, colorPixelFormat:MTLPixelFormat) {
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = String(describing: self)
-        descriptor.vertexFunction = functions.find(by: .VertexShader)
+        descriptor.label = "\(Self.self)"
+        descriptor.vertexFunction =  functions.find(by: .VertexShader)
         descriptor.fragmentFunction = functions.find(by: .FragmentShader)
-        descriptor.colorAttachments[BasicRenderPass.RenderTargetIndices.Color.rawValue].pixelFormat = colorPixelFormat
+        descriptor.colorAttachments[colorIndex].pixelFormat = colorPixelFormat
         descriptor.depthAttachmentPixelFormat = .invalid// .depth32Float
         pipelineState = gpu.makeRenderPipelineState(descriptor)
     }

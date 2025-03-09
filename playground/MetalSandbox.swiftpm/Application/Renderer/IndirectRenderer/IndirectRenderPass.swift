@@ -1,9 +1,10 @@
 import MetalKit
 
 class IndirectRenderPass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static let FileName = "indirect.txt"
         case VertexShaderWithInstance = "indirect::vertex_shader_with_instance"
         case VertexShader = "indirect::vertex_shader"
         case FragmentShader = "indirect::fragment_shader"
@@ -64,7 +65,7 @@ class IndirectRenderPass {
     }
 
     func build(maxFramesInFlight: Int) {
-        functions.build(fileName: "indirect.txt")
+        functions.build()
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.label = "Simple 2D Render Pipeline"

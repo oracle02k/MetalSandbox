@@ -1,9 +1,10 @@
 import MetalKit
 
 class CheckComputePass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static var FileName = "check.txt"
         case Convert = "convert"
     }
 
@@ -24,7 +25,7 @@ class CheckComputePass {
     }
 
     func build() {
-        functions.build(fileName: "check.txt")
+        functions.build()
 
         computePipelineState = {
             let descriptor = MTLComputePipelineDescriptor()

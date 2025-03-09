@@ -3,13 +3,20 @@ import MetalKit
 final class Application {
     static let ColorPixelFormat: MTLPixelFormat = .bgra8Unorm
     let gpu: GpuContext
-    let basicRenderPass:BasicRenderPass
     let gpuCounterSampler: CounterSampler? = DIContainer.resolve(CounterSampler.self)
     let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
     
+    let basicRenderPassFunctions: BasicRenderPassConfigurator.Functions
+    let basicRenderPipelineFactory: BasicRenderPassConfigurator.RenderPipelineFactory
+    lazy var basicRenderCommandEncoderFactory: BasicRenderPassConfigurator.CommandEncoderFactory = uninitialized()
+    lazy var basicRenderPassPipelines: BasicRenderPassConfigurator.RenderPipelines = uninitialized()
+    
+    
     init(gpu: GpuContext) {
         self.gpu = gpu
-        self.basicRenderPass = BasicRenderPass(with: gpu, functions: BasicRenderPass.Functions(with: gpu))
+        
+        basicRenderPassFunctions = .init(with: gpu)
+        basicRenderPipelineFactory = .init()
     }
     
     func changeViewportSize(_ size: CGSize) {
@@ -18,11 +25,14 @@ final class Application {
     func build() {
         gpu.build()
         _ = gpu.checkCounterSample()
-        basicRenderPass.build(colorPixelFormat: Self.ColorPixelFormat )
+        
+        basicRenderPassFunctions.build()
+        basicRenderPassPipelines = basicRenderPipelineFactory.build(with: gpu, functions: basicRenderPassFunctions)
+        basicRenderCommandEncoderFactory = .init(using: basicRenderPassPipelines)
         
         if let gpuCounterSampler = gpuCounterSampler {
-            gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
-            basicRenderPass.attachCounterSampler(gpuCounterSampler)
+    //        gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
+    //        basicRenderPass.attachCounterSampler(gpuCounterSampler)
         }
     }
     
@@ -32,11 +42,12 @@ final class Application {
             appFatalError("drawable error.")
         }
         
-        let colorTarget = MTLRenderPassColorAttachmentDescriptor()
-        colorTarget.texture = drawable.texture
-        colorTarget.loadAction = .clear
-        colorTarget.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
-        colorTarget.storeAction = .store
+        let colorIndex = BasicRenderPassConfigurator.RenderTargets.Color.rawValue
+        let descriptor = MTLRenderPassDescriptor()
+        descriptor.colorAttachments[colorIndex].texture = drawable.texture
+        descriptor.colorAttachments[colorIndex].loadAction = .clear
+        descriptor.colorAttachments[colorIndex].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        descriptor.colorAttachments[colorIndex].storeAction = .store
         
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
@@ -45,10 +56,10 @@ final class Application {
                     device: gpu.device, 
                     gpuTime:commandBuffer.gpuTime()
                 )
-                gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
+               // gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
             
-            let encoder = basicRenderPass.makeEncoder(colorDescriptor: colorTarget, using: commandBuffer)
+            let encoder = basicRenderCommandEncoderFactory.makeEncoder(from: descriptor, using: commandBuffer)
             encoder.use(TriangleRenderPipeline.self){ dispatcher in
                 dispatcher.setViewport(.init(leftTop: .init(0, 0), rightBottom: .init(320, 320)))
                 dispatcher.makeVerticies(gpu: gpu)
@@ -61,7 +72,6 @@ final class Application {
         }
     }
 }
-
 /*
  final class Application {
  enum Pipeline: String, CaseIterable {

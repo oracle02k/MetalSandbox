@@ -1,53 +1,47 @@
 import Metal
 
-class BasicRenderPass {
-    enum RenderTargetIndices: Int {
+enum BasicRenderPassConfigurator: RenderPassConfigurationProvider {
+    typealias Functions = FunctionContainer<BasicRenderPassFunctionTable>
+    typealias RenderPipelines = RenderPipelineContainer<Self>
+    typealias RenderPipelineFactory = BasicRenderPipelineFactory
+    typealias DescriptorSpec = BasicRenderPassDescriptorSpec
+    typealias CommandEncoderFactory = RenderCommandEncoderFactory<Self>
+    
+    enum RenderTargets: Int {
         case Color = 0
     }
-
-    let FunctionFileName = "triangle.txt"    
-    enum FunctionNames: String, CaseIterable {
-        case VertexShader = "triangle::vertex_shader"
-        case FragmentShader = "triangle::fragment_shader"
-    }
-
-    typealias Functions = FunctionContainer<FunctionNames>
     
-    private let functions: Functions
-    private let gpu: GpuContext
-    
-    private let triangleRenderPipeline = TriangleRenderPipeline()
-    private let renderPipelineContainer = RenderPipelineContainer()
-    private var counterSampler: CounterSampler? = nil
-    
-    init (with gpu: GpuContext, functions: Functions) {
-        self.gpu = gpu
-        self.functions = functions
-    }
+    static let Name = "BasicRenderPass"
+    static let ColorFormat:MTLPixelFormat = .bgra8Unorm
+}
 
-    func build(colorPixelFormat: MTLPixelFormat) {
-        functions.build(fileName: FunctionFileName)
+enum BasicRenderPassFunctionTable: String, FunctionTableProvider {
+    static let FileName = "triangle.txt"
+    case VertexShader = "triangle::vertex_shader"
+    case FragmentShader = "triangle::fragment_shader"
+}
+
+class BasicRenderPipelineFactory: RenderPipelineFactorizeProvider {
+    typealias RenderPassConfigurator = BasicRenderPassConfigurator
+
+    func build(with gpu: GpuContext, functions: RenderPassConfigurator.Functions) -> RenderPassConfigurator.RenderPipelines {
+        let container = RenderPassConfigurator.RenderPipelines()
         
-        let pipeline = TriangleRenderPipeline()
-        pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: colorPixelFormat)
-        renderPipelineContainer.register(pipeline)
-    }
-    
-    func makeEncoder(
-        colorDescriptor: MTLRenderPassColorAttachmentDescriptor,
-        using commandBuffer: MTLCommandBuffer
-    ) -> RenderCommandEncoder {
-        let encoder = {
-            let descriptor = MTLRenderPassDescriptor()
-            descriptor.colorAttachments[RenderTargetIndices.Color.rawValue] = colorDescriptor
-            counterSampler?.attachToRenderPass(descriptor: descriptor, name: "basic render pass")
-            return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: descriptor)
-        }()
+        container.register({
+            let pipeline = TriangleRenderPipeline()
+            pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: RenderPassConfigurator.ColorFormat)
+            return pipeline
+        }())
         
-        return RenderCommandEncoder(encoder: encoder, renderPipelineContainer: renderPipelineContainer)
+        return container
     }
+}
+
+struct BasicRenderPassDescriptorSpec: RenderPassDescriptorSpecProvider {
+    typealias Configurator =  BasicRenderPassConfigurator
     
-    func attachCounterSampler(_ counterSampler: CounterSampler?){
-        self.counterSampler = counterSampler
+    func isSatisfiedBy(_ descriptor: MTLRenderPassDescriptor) -> Bool {
+        let colorTexture = descriptor.colorAttachments[Configurator.RenderTargets.Color.rawValue].texture
+        return colorTexture?.pixelFormat == Configurator.ColorFormat
     }
 }

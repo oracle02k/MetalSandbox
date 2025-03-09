@@ -1,12 +1,11 @@
-
-class RenderPipelineContainer {
+class RenderPipelineContainer<T:RenderPassConfigurationProvider> {
     var pipelines: [ObjectIdentifier: any RenderPipeline] = [:]
     
-    func register<T: RenderPipeline>(_ instance: T) {
-        pipelines[ObjectIdentifier(T.self)] = instance
+    func register<U: RenderPipeline>(_ instance: U) where U.RenderPassConfigurator == T{
+        pipelines[ObjectIdentifier(U.self)] = instance
     }
     
-    func resolve<T: RenderPipeline>(_ type: T.Type) -> T {
-        return pipelines[ObjectIdentifier(T.self)] as! T
+    func resolve<U: RenderPipeline>(_ type: U.Type) -> U where U.RenderPassConfigurator == T{
+        return pipelines[ObjectIdentifier(U.self)] as! U
     }
 }

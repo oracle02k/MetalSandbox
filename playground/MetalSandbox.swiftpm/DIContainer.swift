@@ -65,24 +65,6 @@ class DIContainer {
             ViewRenderPass(with: r.resolve(ScreenRenderPass.self)!)
         }
 
-        // TriangleRenderPipeline
-        container.register(TrianglePipeline.self) { r in
-            TrianglePipeline(
-                gpu: r.resolve(GpuContext.self)!,
-                triangleRenderPass: r.resolve(TriangleRenderPass.self)!,
-                viewRenderPass: r.resolve(ViewRenderPass.self)!
-            )
-        }
-        container.register(TriangleRenderPass.self) { r in
-            TriangleRenderPass(
-                with: r.resolve(GpuContext.self)!,
-                functions: r.resolve(TriangleRenderPass.Functions.self)!
-            )
-        }
-        container.register(TriangleRenderPass.Functions.self) { r in
-            TriangleRenderPass.Functions(with: r.resolve(GpuContext.self)!)
-        }
-
         // IndirectPipeline
         container.register(IndirectPipeline.self) { r in
             IndirectPipeline(

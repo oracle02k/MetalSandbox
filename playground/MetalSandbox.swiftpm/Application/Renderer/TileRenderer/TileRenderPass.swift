@@ -7,9 +7,10 @@
 import MetalKit
 
 class TileRenderPass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static let FileName = "tile.txt"
         case FowardVertex = "tile::forward_vertex"
         case OpaqueFragment = "tile::process_opaque_fragment"
         case TransparentFragment = "tile::process_transparent_fragment"
@@ -94,7 +95,7 @@ class TileRenderPass {
     }
 
     func build(maxFramesInFlight: Int) {
-        functions.build(fileName: "tile.txt")
+        functions.build()
         loadResources(maxFramesInFlight: maxFramesInFlight)
         loadMetal()
     }

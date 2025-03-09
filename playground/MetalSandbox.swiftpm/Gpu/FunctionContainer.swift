@@ -1,16 +1,25 @@
 import MetalKit
 
-class FunctionContainer<T: RawRepresentable & Hashable & CaseIterable> where T.RawValue == String {
+protocol FunctionTableProvider:RawRepresentable & Hashable & CaseIterable where RawValue == String {
+    static var FileName:String { get }
+}
+
+protocol FunctionContainerProvider {
+    associatedtype FunctionTable: FunctionTableProvider
+}
+
+class FunctionContainer<T: FunctionTableProvider> : FunctionContainerProvider {
+    typealias FunctionTable = T
     private let gpu: GpuContext
-    private var container = [T: MTLFunction]()
+    private var container = [FunctionTable: MTLFunction]()
     private lazy var library: MTLLibrary = uninitialized()
 
     init(with gpu: GpuContext) {
         self.gpu = gpu
     }
 
-    func build(fileName: String) {
-        let splited = fileName.split(separator: ".").map {String($0)}
+    func build() {
+        let splited = FunctionTable.FileName.split(separator: ".").map {String($0)}
         guard let path = Bundle.main.url(forResource: splited[0], withExtension: splited[1]) else {
             appFatalError("faild to open shader.txt")
         }
@@ -32,7 +41,7 @@ class FunctionContainer<T: RawRepresentable & Hashable & CaseIterable> where T.R
         Logger.log(library.description)
     }
 
-    func find(by name: T) -> MTLFunction {
+    func find(by name: FunctionTable) -> MTLFunction {
         guard let function = container[name] else {
             appFatalError("failed to find function: \(name)")
         }

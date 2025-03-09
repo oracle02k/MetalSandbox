@@ -1,7 +1,7 @@
 import MetalKit
 
 class LifegameRenderPass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
     enum RenderTargetIndices: Int {
         case Color = 0
@@ -13,7 +13,8 @@ class LifegameRenderPass {
         case NewField = 2
     }
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static var FileName: String = "lifegame.txt"
         case VertexShader = "lifegame::vertex_shader"
         case FragmentShader = "lifegame::fragment_shader"
         case LifegameUpdate = "lifegame::update"
@@ -44,7 +45,7 @@ class LifegameRenderPass {
     }
 
     func build(width: Int, height: Int) {
-        functions.build(fileName: "lifegame.txt")
+        functions.build()
 
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()

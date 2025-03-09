@@ -29,9 +29,10 @@ struct Const {
 }
 
 class CheckRenderPass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static let FileName = "rastor_order_group.txt"
         case TexcoordVertexShader = "raster_order_group::texcoord_vertex_shader"
         case Rog0Fragment = "raster_order_group::rog_0_fragment"
         case Rog1Fragment = "raster_order_group::rog_1_fragment"
@@ -59,7 +60,7 @@ class CheckRenderPass {
     }
 
     func build() {
-        functions.build(fileName: "raster_order_group.txt")
+        functions.build()
 
         renderPipelineState = {
             let descriptor = MTLRenderPipelineDescriptor()

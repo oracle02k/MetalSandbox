@@ -1,7 +1,7 @@
 import MetalKit
 
 class LifegameComputePass {
-    typealias Functions = FunctionContainer<FunctionNames>
+    typealias Functions = FunctionContainer<FunctionTable>
 
     enum RenderTargetIndices: Int {
         case Color = 0
@@ -13,7 +13,8 @@ class LifegameComputePass {
         case NewField = 2
     }
 
-    enum FunctionNames: String, CaseIterable {
+    enum FunctionTable: String, FunctionTableProvider {
+        static var FileName: String = "lifegame.txt"
         case LifegameUpdate = "lifegame::update"
         case LifegameReset = "lifegame::reset"
     }
@@ -38,7 +39,7 @@ class LifegameComputePass {
     }
 
     func build(width: Int, height: Int) {
-        functions.build(fileName: "lifegame.txt")
+        functions.build()
 
         computeUpdatePipelineState = {
             let descriptor = MTLComputePipelineDescriptor()
