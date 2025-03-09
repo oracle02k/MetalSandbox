@@ -1,4 +1,5 @@
 import Metal
+import simd
 
 final class TriangleRenderPipeline: RenderPipeline {
     typealias RenderPassConfigurator = BasicRenderPassConfigurator
@@ -15,6 +16,7 @@ final class TriangleRenderPipeline: RenderPipeline {
         descriptor.fragmentFunction = functions.find(by: .FragmentShader)
         descriptor.colorAttachments[colorIndex].pixelFormat = colorPixelFormat
         descriptor.depthAttachmentPixelFormat = .invalid// .depth32Float
+        descriptor.vertexDescriptor = Dispatcher.Vertex.makeVertexDescriptor()
         pipelineState = gpu.makeRenderPipelineState(descriptor)
     }
     
