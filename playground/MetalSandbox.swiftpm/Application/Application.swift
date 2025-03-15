@@ -31,8 +31,7 @@ final class Application {
         basicRenderCommandEncoderFactory = .init(using: basicRenderPassPipelines)
         
         if let gpuCounterSampler = gpuCounterSampler {
-    //        gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
-    //        basicRenderPass.attachCounterSampler(gpuCounterSampler)
+            gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
         }
     }
     
@@ -56,10 +55,12 @@ final class Application {
                     device: gpu.device, 
                     gpuTime:commandBuffer.gpuTime()
                 )
-               // gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
+                gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
             
-            let encoder = basicRenderCommandEncoderFactory.makeEncoder(from: descriptor, using: commandBuffer)
+            let encoder = basicRenderCommandEncoderFactory.makeEncoder(
+                from: descriptor, using: commandBuffer, counterSampler: gpuCounterSampler
+            )
             encoder.use(TriangleRenderPipeline.self){ dispatcher in
                 dispatcher.setViewport(.init(leftTop: .init(0, 0), rightBottom: .init(320, 320)))
                 dispatcher.makeVerticies(gpu: gpu)

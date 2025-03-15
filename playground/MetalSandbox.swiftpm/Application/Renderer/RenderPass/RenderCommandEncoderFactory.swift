@@ -3,7 +3,6 @@ import Metal
 class RenderCommandEncoderFactory<T:RenderPassConfigurationProvider> {
     typealias DescriptorSpec = T.DescriptorSpec
     private let renderPipelines: T.RenderPipelines
-    private var counterSampler: CounterSampler?
     
     init(using renderPipelines: T.RenderPipelines) {
         self.renderPipelines = renderPipelines
@@ -12,6 +11,7 @@ class RenderCommandEncoderFactory<T:RenderPassConfigurationProvider> {
     func makeEncoder(
         from descriptor: MTLRenderPassDescriptor,
         using commandBuffer: MTLCommandBuffer,
+        counterSampler: CounterSampler? = nil,
         label: String = T.Name
     ) -> RenderCommandEncoder<T> {
         guard DescriptorSpec().isSatisfiedBy(descriptor) else {
@@ -22,9 +22,5 @@ class RenderCommandEncoderFactory<T:RenderPassConfigurationProvider> {
         let metalEncoder = commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: descriptor)
         
         return RenderCommandEncoder(encoder: metalEncoder, renderPipelines: renderPipelines)
-    }
-    
-    func attachCounterSampler(_ counterSampler: CounterSampler?){
-        self.counterSampler = counterSampler
     }
 }
