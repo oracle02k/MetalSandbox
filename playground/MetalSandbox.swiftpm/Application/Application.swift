@@ -26,7 +26,7 @@ final class Application {
         gpu.build()
         _ = gpu.checkCounterSample()
         
-        basicRenderPassFunctions.build()
+        basicRenderPassFunctions.buildShaderFolder()
         basicRenderPassPipelines = basicRenderPipelineFactory.build(with: gpu, functions: basicRenderPassFunctions)
         basicRenderCommandEncoderFactory = .init(using: basicRenderPassPipelines)
         

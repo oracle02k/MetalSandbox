@@ -1,0 +1,15 @@
+#include <metal_stdlib>
+using namespace metal;
+
+enum {
+    BufferIndex_Vertices1 = 0,
+    BufferIndex_Vertices2,
+    BufferIndex_Vertices3,
+    BufferIndex_Vertices4,
+    BufferIndex_Vertices5,
+    BufferIndex_Vertices6,
+    BufferIndex_Vertices7,
+    BufferIndex_Vertices8,
+    
+    BufferIndex_Viewport,
+};

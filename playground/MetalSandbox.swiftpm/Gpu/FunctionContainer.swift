@@ -40,6 +40,27 @@ class FunctionContainer<T: FunctionTableProvider> : FunctionContainerProvider {
 
         Logger.log(library.description)
     }
+    
+    func buildShaderFolder() {
+        guard let shaderSource = concatenateTextFilesFromResources() else{
+            appFatalError("faild to make shader source.")
+        }
+        
+        do {
+            library = try gpu.device.makeLibrary(source: shaderSource, options: nil)
+        } catch {
+            appFatalError("faild to make library.", error: error)
+        }
+        
+        T.allCases.forEach {
+            guard let function = library.makeFunction(name: $0.rawValue) else {
+                appFatalError("failed to make function: \($0)")
+            }
+            container[$0] = function
+        }
+        
+        Logger.log(library.description)
+    }
 
     func find(by name: FunctionTable) -> MTLFunction {
         guard let function = container[name] else {
