@@ -5,14 +5,14 @@ struct Viewport {
     float2 rightBottom;
 };
 
-struct VertexOut {
-    float4 position [[ position ]];
-    float4 color;
-};
-
 struct VertexIn {
   float3 position [[ attribute(0) ]];  // 修正: packed_float4 → float4
   float4 color [[ attribute(1) ]];     // 修正: packed_float4 → float4
+};
+
+struct VertexOut {
+    float4 position [[ position ]];
+    float4 color;
 };
 
 vertex VertexOut vertex_shader(

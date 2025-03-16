@@ -19,6 +19,8 @@ enum BasicRenderPassFunctionTable: String, FunctionTableProvider {
     static let FileName = "triangle.txt"
     case VertexShader = "triangle::vertex_shader"
     case FragmentShader = "triangle::fragment_shader"
+    case PassthroughtTextureVS = "passthrought_texture::vs"
+    case PassthroughtTextureFS = "passthrought_texture::fs"
 }
 
 class BasicRenderPipelineFactory: RenderPipelineFactorizeProvider {
@@ -29,6 +31,12 @@ class BasicRenderPipelineFactory: RenderPipelineFactorizeProvider {
         
         container.register({
             let pipeline = TriangleRenderPipeline()
+            pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: RenderPassConfigurator.ColorFormat)
+            return pipeline
+        }())
+        
+        container.register({
+            let pipeline = PassthroughtTextureRenderPipeline()
             pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: RenderPassConfigurator.ColorFormat)
             return pipeline
         }())

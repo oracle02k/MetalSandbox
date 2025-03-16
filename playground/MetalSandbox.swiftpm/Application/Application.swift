@@ -10,7 +10,9 @@ final class Application {
     let basicRenderPipelineFactory: BasicRenderPassConfigurator.RenderPipelineFactory
     lazy var basicRenderCommandEncoderFactory: BasicRenderPassConfigurator.CommandEncoderFactory = uninitialized()
     lazy var basicRenderPassPipelines: BasicRenderPassConfigurator.RenderPipelines = uninitialized()
+    lazy var offscreen: MTLTexture = uninitialized()
     
+    let passthroughtTexture = PassthroughtTexture()
     
     init(gpu: GpuContext) {
         self.gpu = gpu
@@ -33,6 +35,19 @@ final class Application {
         if let gpuCounterSampler = gpuCounterSampler {
             gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
         }
+
+        offscreen = {
+            let descriptor = MTLTextureDescriptor()
+            descriptor.textureType = .type2D
+            descriptor.width = 320
+            descriptor.height = 320
+            descriptor.pixelFormat = BasicRenderPassConfigurator.ColorFormat
+            descriptor.usage = [.renderTarget, .shaderRead]
+            return gpu.makeTexture(descriptor)
+        }()
+        
+        passthroughtTexture.build(gpu: gpu)
+        passthroughtTexture.bindSource(offscreen)
     }
     
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
@@ -43,7 +58,7 @@ final class Application {
         
         let colorIndex = BasicRenderPassConfigurator.RenderTargets.Color.rawValue
         let descriptor = MTLRenderPassDescriptor()
-        descriptor.colorAttachments[colorIndex].texture = drawable.texture
+        descriptor.colorAttachments[colorIndex].texture = offscreen//drawable.texture
         descriptor.colorAttachments[colorIndex].loadAction = .clear
         descriptor.colorAttachments[colorIndex].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         descriptor.colorAttachments[colorIndex].storeAction = .store
@@ -58,18 +73,45 @@ final class Application {
                 gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
             
-            let encoder = basicRenderCommandEncoderFactory.makeEncoder(
-                from: descriptor, using: commandBuffer, counterSampler: gpuCounterSampler
-            )
-            encoder.use(TriangleRenderPipeline.self){ dispatcher in
-                dispatcher.setViewport(.init(leftTop: .init(0, 0), rightBottom: .init(320, 320)))
-                dispatcher.makeVerticies(gpu: gpu)
-                dispatcher.dispatch()
+            do{
+                let encoder = basicRenderCommandEncoderFactory.makeEncoder(
+                    from: descriptor, 
+                    using: commandBuffer, 
+                    counterSampler: gpuCounterSampler,
+                    label: "applicationRenderPass"
+                )
+                applicationRenderPass(encoder)
+                encoder.endEncoding()
             }
             
-            encoder.endEncoding()
+            do{
+                descriptor.colorAttachments[colorIndex].texture = drawable.texture
+                let encoder = basicRenderCommandEncoderFactory.makeEncoder(
+                    from: descriptor, 
+                    using: commandBuffer, 
+                    counterSampler: gpuCounterSampler,
+                    label: "drawableRenderPass"
+                )
+                drawableRenderPass(encoder)
+                encoder.endEncoding()
+            }
+            
             commandBuffer.present(drawable)
             commandBuffer.commit()
+        }
+    }
+    
+    private func applicationRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>){
+        encoder.use(TriangleRenderPipeline.self){ dispatcher in
+            dispatcher.setViewport(.init(leftTop: .init(0, 0), rightBottom: .init(320, 320)))
+            dispatcher.makeVerticies(gpu: gpu)
+            dispatcher.dispatch()
+        }
+    }
+    
+    private func drawableRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>){
+        encoder.use(PassthroughtTextureRenderPipeline.self){ dispatcher in
+            dispatcher.dispatch(passthroughtTexture)
         }
     }
 }

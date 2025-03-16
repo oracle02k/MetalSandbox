@@ -1,9 +1,9 @@
 import Metal
 
-final class TriangleRenderPipeline: RenderPipeline {
+final class PassthroughtTextureRenderPipeline: RenderPipeline {
     typealias RenderPassConfigurator = BasicRenderPassConfigurator
     typealias Functions = RenderPassConfigurator.Functions
-    typealias Dispatcher = TriangleRenderCommandDispatcher
+    typealias Dispatcher = PassthroughtTextureRenderCommandDispatcher
     
     let colorIndex = RenderPassConfigurator.RenderTargets.Color.rawValue
     lazy var pipelineState: MTLRenderPipelineState = uninitialized()
@@ -11,8 +11,8 @@ final class TriangleRenderPipeline: RenderPipeline {
     func build(gpu:GpuContext, functions: Functions, colorPixelFormat:MTLPixelFormat) {
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.label = "\(Self.self)"
-        descriptor.vertexFunction =  functions.find(by: .VertexShader)
-        descriptor.fragmentFunction = functions.find(by: .FragmentShader)
+        descriptor.vertexFunction =  functions.find(by: .PassthroughtTextureVS)
+        descriptor.fragmentFunction = functions.find(by: .PassthroughtTextureFS)
         descriptor.colorAttachments[colorIndex].pixelFormat = colorPixelFormat
         descriptor.depthAttachmentPixelFormat = .invalid// .depth32Float
         descriptor.vertexDescriptor = Dispatcher.Vertex.makeVertexDescriptor()
