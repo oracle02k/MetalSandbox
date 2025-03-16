@@ -35,10 +35,10 @@ final class PassthroughtTextureRenderCommandDispatcher: RenderCommandDispatcher 
         self.encoder = encoder
     }
 
-    func dispatch(_ entity: PassthroughtTexture) {
-        encoder.setVertexBuffer(entity.positions.rawBuffer, offset: 0, index: BufferIndex.Vertices1.rawValue)
-        encoder.setVertexBuffer(entity.texCoords.rawBuffer, offset: 0, index: BufferIndex.Vertices2.rawValue)
-        encoder.setFragmentTexture(entity.source, index: 0)
+    func dispatch(_ renderable: PassthroughtTextureRenderable) {
+        encoder.setVertexBuffer(renderable.positions.rawBuffer, offset: 0, index: BufferIndex.Vertices1.rawValue)
+        encoder.setVertexBuffer(renderable.texCoords.rawBuffer, offset: 0, index: BufferIndex.Vertices2.rawValue)
+        encoder.setFragmentTexture(renderable.source, index: 0)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
     }
 }

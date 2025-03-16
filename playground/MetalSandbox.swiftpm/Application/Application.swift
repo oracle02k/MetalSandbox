@@ -12,7 +12,8 @@ final class Application {
     lazy var basicRenderPassPipelines: BasicRenderPassConfigurator.RenderPipelines = uninitialized()
     lazy var offscreen: MTLTexture = uninitialized()
     
-    let passthroughtTexture = PassthroughtTexture()
+    let passthroughtTexture = PassthroughtTextureRenderable()
+    let triangleRenderable = TriangleRenderable()
     
     init(gpu: GpuContext) {
         self.gpu = gpu
@@ -45,6 +46,8 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
+        
+        triangleRenderable.build(gpu: gpu, triangleCount: 1)
         
         passthroughtTexture.build(gpu: gpu)
         passthroughtTexture.bindSource(offscreen)
@@ -103,9 +106,10 @@ final class Application {
     
     private func applicationRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>){
         encoder.use(TriangleRenderPipeline.self){ dispatcher in
-            dispatcher.setViewport(.init(leftTop: .init(0, 0), rightBottom: .init(320, 320)))
-            dispatcher.makeVerticies(gpu: gpu)
-            dispatcher.dispatch()
+            dispatcher.viewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
+            for _ in 0..<1 {
+                dispatcher.dispatch(triangleRenderable)
+            }
         }
     }
     

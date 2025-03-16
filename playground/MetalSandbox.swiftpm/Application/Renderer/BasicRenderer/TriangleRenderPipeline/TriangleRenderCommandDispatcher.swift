@@ -31,35 +31,17 @@ final class TriangleRenderCommandDispatcher: RenderCommandDispatcher {
     
     let encoder: MTLRenderCommandEncoder
     var viewport = Viewport(leftTop: .init(0, 0), rightBottom: .init(320, 320))
-    lazy var positions: TypedBuffer<simd_float3> = uninitialized()
-    lazy var colors: TypedBuffer<simd_float4> = uninitialized()
-    
+
     init(encoder: MTLRenderCommandEncoder) {
         self.encoder = encoder
     }
     
-    func makeVerticies(gpu: GpuContext){
-        positions = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<simd_float3>
-        positions[0] = .init(160, 0, 0.0)
-        positions[1] = .init(0, 320, 0.0)
-        positions[2] = .init(320, 320, 0.0)
-        
-        colors = gpu.makeTypedBuffer(elementCount: 3, options: []) as TypedBuffer<simd_float4>
-        colors[0] = .init(1, 0, 0, 1)
-        colors[1] = .init(0, 1, 0, 1)
-        colors[2] = .init(0, 0, 1, 1)
-    }
-    
-    func setViewport(_ viewport:Viewport){
-        self.viewport = viewport
-    }
-    
-    func dispatch() {
+    func dispatch(_ renderable: TriangleRenderable) {
         withUnsafePointer(to: viewport) {
             encoder.setVertexBytes($0, length: MemoryLayout<Viewport>.stride, index: BufferIndex.Viewport.rawValue)
         }
-        encoder.setVertexBuffer(positions.rawBuffer, offset: 0, index: BufferIndex.Vertices1.rawValue)
-        encoder.setVertexBuffer(colors.rawBuffer, offset: 0, index: BufferIndex.Vertices2.rawValue)
-        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        encoder.setVertexBuffer(renderable.positions.rawBuffer, offset: 0, index: BufferIndex.Vertices1.rawValue)
+        encoder.setVertexBuffer(renderable.colors.rawBuffer, offset: 0, index: BufferIndex.Vertices2.rawValue)
+        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3 * renderable.triangleCount)
     }
 }

@@ -1,7 +1,7 @@
 import Metal
 import simd
 
-class PassthroughtTexture{
+class PassthroughtTextureRenderable{
     lazy var positions: TypedBuffer<simd_float3> = uninitialized()
     lazy var texCoords: TypedBuffer<simd_float2> = uninitialized()
     lazy var source: MTLTexture = uninitialized()
