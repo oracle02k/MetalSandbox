@@ -8,8 +8,8 @@ class TriangleRenderable {
     
     func build(gpu: GpuContext, triangleCount: Int){
         self.triangleCount = triangleCount
-        positions = gpu.makeTypedBuffer(elementCount: 3 * triangleCount, options: []) as TypedBuffer<simd_float3>
-        colors = gpu.makeTypedBuffer(elementCount: 3 * triangleCount, options: []) as TypedBuffer<simd_float4>
+        positions = gpu.makeTypedBuffer(type:simd_float3.self, elementCount: 3 * triangleCount, options: [])
+        colors = gpu.makeTypedBuffer(type:simd_float4.self, elementCount: 3 * triangleCount, options: [])
         
         for i in 0..<triangleCount {
             positions[0 + i * 3] = .init(160, 0, 0.0)
