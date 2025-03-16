@@ -31,7 +31,7 @@ class ViewRenderPass {
         commandBuffer.present(drawable)
     }
 
-    func attachCounterSampler(_ counterSampler: CounterSampler?){
+    func attachCounterSampler(_ counterSampler: CounterSampler?) {
         screenRenderPass.attachCounterSampler(counterSampler)
     }
 }

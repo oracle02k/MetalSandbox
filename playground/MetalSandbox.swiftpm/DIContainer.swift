@@ -19,7 +19,7 @@ class DIContainer {
                 counterSampleReportRepository: r.resolve(CounterSampleReportRepository.self)!
             )
         }.inObjectScope(.container)
-        container.register(CounterSampleSummaryRepository.self) { r in
+        container.register(CounterSampleSummaryRepository.self) { _ in
             CounterSampleSummaryRepository()
         }.inObjectScope(.container)
         container.register(CounterSampleReportRepository.self) { _ in
@@ -37,12 +37,12 @@ class DIContainer {
         // Stats
         container.register(StatsStore.self) { r in
             StatsStore(
-                frameStatsRepository: r.resolve(FrameStatsReportRepository.self)!, 
+                frameStatsRepository: r.resolve(FrameStatsReportRepository.self)!,
                 counterSampleSummaryRepository: r.resolve(CounterSampleSummaryRepository.self)!,
                 counterSampleReportRepository: r.resolve(CounterSampleReportRepository.self)!
             )
         }
-        
+
         // Application
         container.register(Application.self) { r in
             Application(

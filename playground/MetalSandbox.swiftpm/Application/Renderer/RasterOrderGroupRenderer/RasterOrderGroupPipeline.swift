@@ -76,9 +76,9 @@ class RasterOrderGroupPipeline: FramePipeline {
 
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
-                    frameStatus: frameStatus, 
-                    device: gpu.device, 
-                    gpuTime:commandBuffer.gpuTime()
+                    frameStatus: frameStatus,
+                    device: gpu.device,
+                    gpuTime: commandBuffer.gpuTime()
                 )
             }
             commandBuffer.commit()

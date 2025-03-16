@@ -4,11 +4,11 @@ final class PassthroughtTextureRenderPipeline: RenderPipeline {
     typealias RenderPassConfigurator = BasicRenderPassConfigurator
     typealias Functions = RenderPassConfigurator.Functions
     typealias Dispatcher = PassthroughtTextureRenderCommandDispatcher
-    
+
     let colorIndex = RenderPassConfigurator.RenderTargets.Color.rawValue
     lazy var pipelineState: MTLRenderPipelineState = uninitialized()
-    
-    func build(gpu:GpuContext, functions: Functions, colorPixelFormat:MTLPixelFormat) {
+
+    func build(gpu: GpuContext, functions: Functions, colorPixelFormat: MTLPixelFormat) {
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.label = "\(Self.self)"
         descriptor.vertexFunction =  functions.find(by: .PassthroughtTextureVS)
@@ -18,8 +18,8 @@ final class PassthroughtTextureRenderPipeline: RenderPipeline {
         descriptor.vertexDescriptor = Dispatcher.Vertex.makeVertexDescriptor()
         pipelineState = gpu.makeRenderPipelineState(descriptor)
     }
-    
-    func bind(to encoder: MTLRenderCommandEncoder){
+
+    func bind(to encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(pipelineState)
     }
 }

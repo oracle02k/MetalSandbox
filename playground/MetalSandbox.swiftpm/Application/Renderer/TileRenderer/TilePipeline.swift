@@ -89,9 +89,9 @@ class TilePipeline: FramePipeline {
 
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
-                    frameStatus: frameStatus, 
-                    device: gpu.device, 
-                    gpuTime:commandBuffer.gpuTime()
+                    frameStatus: frameStatus,
+                    device: gpu.device,
+                    gpuTime: commandBuffer.gpuTime()
                 )
                 frameBuffer.releaseBufferIndex()
             }

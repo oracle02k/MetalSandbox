@@ -6,13 +6,13 @@ enum BasicRenderPassConfigurator: RenderPassConfigurationProvider {
     typealias RenderPipelineFactory = BasicRenderPipelineFactory
     typealias DescriptorSpec = BasicRenderPassDescriptorSpec
     typealias CommandEncoderFactory = RenderCommandEncoderFactory<Self>
-    
+
     enum RenderTargets: Int {
         case Color = 0
     }
-    
+
     static let Name = "BasicRenderPass"
-    static let ColorFormat:MTLPixelFormat = .bgra8Unorm
+    static let ColorFormat: MTLPixelFormat = .bgra8Unorm
 }
 
 enum BasicRenderPassFunctionTable: String, FunctionTableProvider {
@@ -28,26 +28,26 @@ class BasicRenderPipelineFactory: RenderPipelineFactorizeProvider {
 
     func build(with gpu: GpuContext, functions: RenderPassConfigurator.Functions) -> RenderPassConfigurator.RenderPipelines {
         let container = RenderPassConfigurator.RenderPipelines()
-        
+
         container.register({
             let pipeline = TriangleRenderPipeline()
             pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: RenderPassConfigurator.ColorFormat)
             return pipeline
         }())
-        
+
         container.register({
             let pipeline = PassthroughtTextureRenderPipeline()
             pipeline.build(gpu: gpu, functions: functions, colorPixelFormat: RenderPassConfigurator.ColorFormat)
             return pipeline
         }())
-        
+
         return container
     }
 }
 
 struct BasicRenderPassDescriptorSpec: RenderPassDescriptorSpecProvider {
     typealias Configurator =  BasicRenderPassConfigurator
-    
+
     func isSatisfiedBy(_ descriptor: MTLRenderPassDescriptor) -> Bool {
         let colorTexture = descriptor.colorAttachments[Configurator.RenderTargets.Color.rawValue].texture
         return colorTexture?.pixelFormat == Configurator.ColorFormat

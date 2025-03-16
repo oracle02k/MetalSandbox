@@ -1,5 +1,5 @@
 import Metal
 
-protocol RenderCommandDispatcher{
+protocol RenderCommandDispatcher {
     init(encoder: MTLRenderCommandEncoder)
 }

@@ -34,9 +34,9 @@ class CheckPipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: checkComputePass.outputTexture)
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
-                    frameStatus: frameStatus, 
-                    device: gpu.device, 
-                    gpuTime:commandBuffer.gpuTime()
+                    frameStatus: frameStatus,
+                    device: gpu.device,
+                    gpuTime: commandBuffer.gpuTime()
                 )
             }
             commandBuffer.commit()

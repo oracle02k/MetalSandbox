@@ -4,8 +4,8 @@ class CounterSampleReportGroup: Identifiable {
     let id = UUID()
     let name: String
     let reports: [CounterSampleReport]
-    
-    init(name:String, reports:[CounterSampleReport]){
+
+    init(name: String, reports: [CounterSampleReport]) {
         self.name = name
         self.reports = reports
     }
@@ -19,8 +19,8 @@ class Stats {
     let gpuTime: MilliSecond
     let vram: KByte
     let counterSampleReportGroups: [CounterSampleReportGroup]
-    
-    init(){
+
+    init() {
         self.fps = .init()
         self.dt = .zero
         self.cpuUsage = .zero
@@ -29,16 +29,16 @@ class Stats {
         self.vram = .zero
         self.counterSampleReportGroups = .init()
     }
-    
+
     init(
         fps: Float,
-        dt:MilliSecond,
+        dt: MilliSecond,
         cpuUsage: Float,
-        memoryUsed:KByte,
-        gpuTime:MilliSecond,
-        vram:KByte,
+        memoryUsed: KByte,
+        gpuTime: MilliSecond,
+        vram: KByte,
         counterSampleReportGroups: [CounterSampleReportGroup]
-    ){
+    ) {
         self.fps = fps
         self.dt = dt
         self.cpuUsage = cpuUsage

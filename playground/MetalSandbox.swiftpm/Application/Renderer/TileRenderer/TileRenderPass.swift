@@ -172,11 +172,11 @@ class TileRenderPass {
         for i in 0..<maxFramesInFlight {
             // let actorParamsBuffer = gpu.makeBuffer(length: Align(sizeof(ActorParams.self),BufferOffsetAlign),
             // options: .storageModeShared)
-            let actorParamsBuffer:TypedBuffer<ActorParams> = gpu.makeTypedBuffer(elementCount: MaxActor, align: BufferOffsetAlign, options: .storageModeShared)
+            let actorParamsBuffer: TypedBuffer<ActorParams> = gpu.makeTypedBuffer(elementCount: MaxActor, align: BufferOffsetAlign, options: .storageModeShared)
             actorParamsBuffer.rawBuffer.label = "actor params[\(i)]"
             actorParamsBuffers.append(actorParamsBuffer)
 
-            let cameraParamsBuffer:TypedBuffer<CameraParams> = gpu.makeTypedBuffer(options: .storageModeShared)
+            let cameraParamsBuffer: TypedBuffer<CameraParams> = gpu.makeTypedBuffer(options: .storageModeShared)
             cameraParamsBuffer.rawBuffer.label = "camera params[\(i)]"
             cameraParamsBuffers.append(cameraParamsBuffer)
         }

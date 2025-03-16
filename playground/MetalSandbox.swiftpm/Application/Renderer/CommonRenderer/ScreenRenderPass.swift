@@ -11,7 +11,7 @@ class ScreenRenderPass {
     private let indexedMeshFactory: IndexedMesh.Factory
     private lazy var indexedMesh: IndexedMesh = uninitialized()
     private lazy var renderPipelineState: MTLRenderPipelineState = uninitialized()
-    private var counterSampler: CounterSampler? = nil
+    private var counterSampler: CounterSampler?
 
     init(with gpu: GpuContext, indexedMeshFactory: IndexedMesh.Factory) {
         self.gpu = gpu
@@ -61,15 +61,15 @@ class ScreenRenderPass {
             counterSampler?.attachToRenderPass(descriptor: descriptor, name: "Screen Render Pass")
             return commandBuffer.makeRenderCommandEncoderWithSafe(descriptor: descriptor)
         }()
-        
+
         //  encoder.setViewport(.init(originX: 0, originY: 0, width: Double(source.width), height: Double(source.height), znear: 0, zfar: 1))
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
     }
-    
-    func attachCounterSampler(_ counterSampler: CounterSampler?){
+
+    func attachCounterSampler(_ counterSampler: CounterSampler?) {
         self.counterSampler = counterSampler
     }
 }

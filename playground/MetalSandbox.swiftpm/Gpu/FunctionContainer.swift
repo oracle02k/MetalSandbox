@@ -1,14 +1,14 @@
 import MetalKit
 
-protocol FunctionTableProvider:RawRepresentable & Hashable & CaseIterable where RawValue == String {
-    static var FileName:String { get }
+protocol FunctionTableProvider: RawRepresentable & Hashable & CaseIterable where RawValue == String {
+    static var FileName: String { get }
 }
 
 protocol FunctionContainerProvider {
     associatedtype FunctionTable: FunctionTableProvider
 }
 
-class FunctionContainer<T: FunctionTableProvider> : FunctionContainerProvider {
+class FunctionContainer<T: FunctionTableProvider>: FunctionContainerProvider {
     typealias FunctionTable = T
     private let gpu: GpuContext
     private var container = [FunctionTable: MTLFunction]()
@@ -40,25 +40,25 @@ class FunctionContainer<T: FunctionTableProvider> : FunctionContainerProvider {
 
         Logger.log(library.description)
     }
-    
+
     func buildShaderFolder() {
-        guard let shaderSource = concatenateTextFilesFromResources() else{
+        guard let shaderSource = concatenateTextFilesFromResources() else {
             appFatalError("faild to make shader source.")
         }
-        
+
         do {
             library = try gpu.device.makeLibrary(source: shaderSource, options: nil)
         } catch {
             appFatalError("faild to make library.", error: error)
         }
-        
+
         T.allCases.forEach {
             guard let function = library.makeFunction(name: $0.rawValue) else {
                 appFatalError("failed to make function: \($0)")
             }
             container[$0] = function
         }
-        
+
         Logger.log(library.description)
     }
 

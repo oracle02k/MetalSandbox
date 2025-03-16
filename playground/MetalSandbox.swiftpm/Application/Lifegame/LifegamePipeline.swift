@@ -9,7 +9,7 @@ class LifegamePipeline: FramePipeline {
     private lazy var offscreenTexture: MTLTexture = uninitialized()
     private lazy var useCompute: Bool = uninitialized()
     private var frameStatsReporter: FrameStatsReporter?
-    
+
     init(gpu: GpuContext,
          lifegameRenderPass: LifegameRenderPass,
          lifegameComputePass: LifegameComputePass,
@@ -80,9 +80,9 @@ class LifegamePipeline: FramePipeline {
             viewRenderPass.draw(to: metalLayer, using: commandBuffer, source: offscreenTexture)
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
-                    frameStatus: frameStatus, 
-                    device: gpu.device, 
-                    gpuTime:commandBuffer.gpuTime()
+                    frameStatus: frameStatus,
+                    device: gpu.device,
+                    gpuTime: commandBuffer.gpuTime()
                 )
             }
             commandBuffer.commit()

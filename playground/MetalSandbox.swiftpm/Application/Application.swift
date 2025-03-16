@@ -5,34 +5,34 @@ final class Application {
     let gpu: GpuContext
     let gpuCounterSampler: CounterSampler? = DIContainer.resolve(CounterSampler.self)
     let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
-    
+
     let basicRenderPassFunctions: BasicRenderPassConfigurator.Functions
     let basicRenderPipelineFactory: BasicRenderPassConfigurator.RenderPipelineFactory
     lazy var basicRenderCommandEncoderFactory: BasicRenderPassConfigurator.CommandEncoderFactory = uninitialized()
     lazy var basicRenderPassPipelines: BasicRenderPassConfigurator.RenderPipelines = uninitialized()
     lazy var offscreen: MTLTexture = uninitialized()
-    
+
     let passthroughtTexture = PassthroughtTextureRenderable()
     let triangleRenderable = TriangleRenderable()
-    
+
     init(gpu: GpuContext) {
         self.gpu = gpu
-        
+
         basicRenderPassFunctions = .init(with: gpu)
         basicRenderPipelineFactory = .init()
     }
-    
+
     func changeViewportSize(_ size: CGSize) {
     }
-    
+
     func build() {
         gpu.build()
         _ = gpu.checkCounterSample()
-        
+
         basicRenderPassFunctions.buildShaderFolder()
         basicRenderPassPipelines = basicRenderPipelineFactory.build(with: gpu, functions: basicRenderPassFunctions)
         basicRenderCommandEncoderFactory = .init(using: basicRenderPassPipelines)
-        
+
         if let gpuCounterSampler = gpuCounterSampler {
             gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
         }
@@ -46,75 +46,75 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-        
+
         triangleRenderable.build(gpu: gpu, triangleCount: 1)
-        
+
         passthroughtTexture.build(gpu: gpu)
         passthroughtTexture.bindSource(offscreen)
     }
-    
+
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
         }
-        
+
         let colorIndex = BasicRenderPassConfigurator.RenderTargets.Color.rawValue
         let descriptor = MTLRenderPassDescriptor()
-        descriptor.colorAttachments[colorIndex].texture = offscreen//drawable.texture
+        descriptor.colorAttachments[colorIndex].texture = offscreen// drawable.texture
         descriptor.colorAttachments[colorIndex].loadAction = .clear
         descriptor.colorAttachments[colorIndex].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         descriptor.colorAttachments[colorIndex].storeAction = .store
-        
+
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
-                    frameStatus: frameStatus, 
-                    device: gpu.device, 
-                    gpuTime:commandBuffer.gpuTime()
+                    frameStatus: frameStatus,
+                    device: gpu.device,
+                    gpuTime: commandBuffer.gpuTime()
                 )
                 gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
-            
-            do{
+
+            do {
                 let encoder = basicRenderCommandEncoderFactory.makeEncoder(
-                    from: descriptor, 
-                    using: commandBuffer, 
+                    from: descriptor,
+                    using: commandBuffer,
                     counterSampler: gpuCounterSampler,
                     label: "applicationRenderPass"
                 )
                 applicationRenderPass(encoder)
                 encoder.endEncoding()
             }
-            
-            do{
+
+            do {
                 descriptor.colorAttachments[colorIndex].texture = drawable.texture
                 let encoder = basicRenderCommandEncoderFactory.makeEncoder(
-                    from: descriptor, 
-                    using: commandBuffer, 
+                    from: descriptor,
+                    using: commandBuffer,
                     counterSampler: gpuCounterSampler,
                     label: "drawableRenderPass"
                 )
                 drawableRenderPass(encoder)
                 encoder.endEncoding()
             }
-            
+
             commandBuffer.present(drawable)
             commandBuffer.commit()
         }
     }
-    
-    private func applicationRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>){
-        encoder.use(TriangleRenderPipeline.self){ dispatcher in
+
+    private func applicationRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>) {
+        encoder.use(TriangleRenderPipeline.self) { dispatcher in
             dispatcher.viewport = .init(leftTop: .init(0, 0), rightBottom: .init(320, 320))
             for _ in 0..<1 {
                 dispatcher.dispatch(triangleRenderable)
             }
         }
     }
-    
-    private func drawableRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>){
-        encoder.use(PassthroughtTextureRenderPipeline.self){ dispatcher in
+
+    private func drawableRenderPass(_ encoder: RenderCommandEncoder<BasicRenderPassConfigurator>) {
+        encoder.use(PassthroughtTextureRenderPipeline.self) { dispatcher in
             dispatcher.dispatch(passthroughtTexture)
         }
     }
@@ -130,12 +130,12 @@ final class Application {
  case LifegameGPU
  case Check
  }
- 
+
  private let gpu: GpuContext
  private let frameStatsReporter: FrameStatsReporter
  private var viewportSize: CGSize
  private var activePipeline: FramePipeline?
- 
+
  init(
  gpu: GpuContext,
  frameStatsReporter: FrameStatsReporter
@@ -145,19 +145,19 @@ final class Application {
  self.activePipeline = nil
  viewportSize = .init(width: 320, height: 320)
  }
- 
+
  func build() {
  gpu.build()
  _ = gpu.checkCounterSample()
  changePipeline(pipeline: .TriangleRender)
  }
- 
+
  func changePipeline(pipeline: Pipeline) {
  synchronized(self) {
  activePipeline = switch pipeline {
  case .TriangleRender: {
  let option = TrianglePipeline.Option(
- frameStatsReporter: frameStatsReporter, 
+ frameStatsReporter: frameStatsReporter,
  gpuCounterSampler: DIContainer.resolve(CounterSampler.self)
  )
  let pipeline = DIContainer.resolve(TrianglePipeline.self)
@@ -197,12 +197,12 @@ final class Application {
  }
  }
  }
- 
+
  func changeViewportSize(_ size: CGSize) {
  viewportSize = size
  activePipeline?.changeSize(viewportSize: size)
  }
- 
+
  func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
  synchronized(self) {
  activePipeline?.update(frameStatus: frameStatus, drawTo: metalLayer)
