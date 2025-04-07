@@ -1,4 +1,6 @@
 #include <metal_stdlib>
+#include <simd/simd.h>
+
 using namespace metal;
 
 enum {
@@ -10,6 +12,6 @@ enum {
     BufferIndex_Vertices6,
     BufferIndex_Vertices7,
     BufferIndex_Vertices8,
-    
+
     BufferIndex_Viewport,
 };

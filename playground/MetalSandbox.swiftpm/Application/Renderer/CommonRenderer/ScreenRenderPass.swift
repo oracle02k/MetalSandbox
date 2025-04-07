@@ -64,7 +64,6 @@ class ScreenRenderPass {
 
         //  encoder.setViewport(.init(originX: 0, originY: 0, width: Double(source.width), height: Double(source.height), znear: 0, zfar: 1))
         encoder.setRenderPipelineState(renderPipelineState)
-        encoder.setFragmentTexture(source, index: 0)
         encoder.drawIndexedMesh(indexedMesh)
         encoder.endEncoding()
     }

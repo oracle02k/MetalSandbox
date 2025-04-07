@@ -1,0 +1,23 @@
+namespace invalid {
+
+struct VertexIn {
+    float3 position [[attribute(0)]];
+};
+
+struct VertexOut {
+    float4 position [[position]];
+    float4 color;
+};
+
+vertex VertexOut vs(VertexIn v [[stage_in]]) {
+    VertexOut vOut;
+    vOut.position = float4(v.position.xyz, 1.0f);
+    vOut.color = float4(1.0f, 0.0f, 1.0f, 1.0f);
+    return vOut;
+}
+
+fragment float4 fs(VertexOut vIn [[stage_in]]) {
+    return vIn.color; 
+}
+
+}  // namespace invalid

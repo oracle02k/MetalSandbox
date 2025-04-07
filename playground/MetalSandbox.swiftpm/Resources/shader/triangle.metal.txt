@@ -1,4 +1,4 @@
-namespace triangle{
+namespace triangle {
 
 struct Viewport {
     float2 leftTop;
@@ -6,21 +6,19 @@ struct Viewport {
 };
 
 struct VertexIn {
-  float3 position [[ attribute(0) ]];  // 修正: packed_float4 → float4
-  float4 color [[ attribute(1) ]];     // 修正: packed_float4 → float4
+    float3 position [[attribute(0)]];  // 修正: packed_float4 → float4
+    float4 color [[attribute(1)]];     // 修正: packed_float4 → float4
 };
 
 struct VertexOut {
-    float4 position [[ position ]];
+    float4 position [[position]];
     float4 color;
 };
 
-vertex VertexOut vertex_shader(
-  VertexIn v[[stage_in]],
-  const device Viewport *viewport [[ buffer(BufferIndex_Viewport) ]]
-) {
+vertex VertexOut
+vertex_shader(VertexIn v [[stage_in]], const device Viewport *viewport [[buffer(BufferIndex_Viewport)]]) {
     float2 viewportSize = viewport->rightBottom - viewport->leftTop;
-    
+
     float2 pixelSpacePos = v.position.xy;
     float2 ndcPos = 2 * (pixelSpacePos - viewport->leftTop) / viewportSize - 1.0;
     ndcPos.y *= -1;
@@ -28,12 +26,10 @@ vertex VertexOut vertex_shader(
     VertexOut vOut;
     vOut.position = float4(ndcPos, v.position.z, 1.0f);
     vOut.color = v.color;
-    
+
     return vOut;
 }
 
-fragment float4 fragment_shader(VertexOut vIn [[ stage_in ]]) {
-    return vIn.color;
-}
+fragment float4 fragment_shader(VertexOut vIn [[stage_in]]) { return vIn.color; }
 
-}
+}  // namespace triangle

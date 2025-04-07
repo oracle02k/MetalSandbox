@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 120
+UseTab: Never
+BreakBeforeBraces: Attach
+AlignAfterOpenBracket: BlockIndent
+AlignOperands: true
+AllowAllParametersOfDeclarationOnNextLine: true

@@ -45,44 +45,6 @@ func getCPUUsage() -> Float {
     return activeUsage
 }
 
-/*
- func getCPUUsageORG() -> Float {
- // カーネル処理の結果
- var result: Int32
- var threadList = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-
- var threadCount = UInt32(MemoryLayout<mach_task_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
- var threadInfo = thread_basic_info()
-
- // スレッド情報を取得
- result = withUnsafeMutablePointer(to: &threadList) {
- $0.withMemoryRebound(to: thread_act_array_t?.self, capacity: 1) {
- task_threads(mach_task_self_, $0, &threadCount)
- }
- }
-
- if result != KERN_SUCCESS { return 0 }
-
- // 各スレッドからCPU使用率を算出し合計を全体のCPU使用率とする
- return (0 ..< Int(threadCount))
- // スレッドのCPU使用率を取得
- .compactMap { index -> Float? in
- var threadInfoCount = UInt32(THREAD_INFO_MAX)
- result = withUnsafeMutablePointer(to: &threadInfo) {
- $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
- thread_info(threadList[index], UInt32(THREAD_BASIC_INFO), $0, &threadInfoCount)
- }
- }
- // スレッド情報が取れない = 該当スレッドのCPU使用率を0とみなす(基本nilが返ることはない)
- if result != KERN_SUCCESS { return nil }
- let isIdle = threadInfo.flags == TH_FLAGS_IDLE
- // CPU使用率がスケール調整済みのため`TH_USAGE_SCALE`で除算し戻す
- return !isIdle ? (Float(threadInfo.cpu_usage) / Float(TH_USAGE_SCALE)) : nil
- }
- // 合計算出
- .reduce(0, +)
- }
- */
 // 引数にenumで任意の単位を指定できるのが好ましい e.g. unit = .auto (デフォルト引数)
 func getMemoryUsed() -> KByte? {
     // タスク情報を取得
@@ -99,4 +61,70 @@ func getMemoryUsed() -> KByte? {
     }
     // MB表記に変換して返却
     return result == KERN_SUCCESS ? info.resident_size / 1024 : nil
+}
+
+/// 任意の型 `T` をスタック管理するジェネリクスラッパー
+class PropertyStack<T> {
+    private var stack: [T] = []
+    
+    /// スタックの現在のトップを取得（デフォルト値あり）
+    var current: T { stack.last! }
+    
+    /// 新しい値をスタックに追加
+    func push(_ value: T) {
+        stack.append(value)
+    }
+    
+    /// 直前の状態に戻す（空にならないようにする）
+    func pop() {
+        if stack.count > 1 {
+            stack.removeLast()
+        }
+    }
+}
+
+@propertyWrapper
+struct Cached<Value> {
+    private var storage: Value?
+    private let compute: () -> Value
+    
+    init(wrappedValue: @autoclosure @escaping () -> Value) {
+        self.compute = wrappedValue
+    }
+    
+    var wrappedValue: Value {
+        mutating get {
+            if let value = storage {
+                return value
+            }
+            let value = compute()
+            storage = value
+            return value
+        }
+    }
+    
+    mutating func reset() {
+        storage = nil
+    }
+}
+
+func measure<T>(_ label: String = "", block: () -> T) -> T {
+    let start = DispatchTime.now()
+    let result = block()
+    let end = DispatchTime.now()
+    let nano = Double(end.uptimeNanoseconds - start.uptimeNanoseconds)
+    
+    let display: String
+    if nano >= 1_000_000_000 {
+        display = String(format: "%.3f 秒", nano / 1_000_000_000)
+    } else if nano >= 1_000_000 {
+        display = String(format: "%.3f ms", nano / 1_000_000)
+    } else if nano >= 1_000 {
+        display = String(format: "%.3f µs", nano / 1_000)
+    } else {
+        display = String(format: "%.0f ns", nano)
+    }
+    
+    print("\(label)処理時間: \(display)")
+    return result
 }
