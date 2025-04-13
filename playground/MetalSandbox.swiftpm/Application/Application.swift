@@ -6,36 +6,42 @@ final class Application {
     let gpuCounterSampler: CounterSampler? = DIContainer.resolve(CounterSampler.self)
     let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
     let functions: ShaderFunctions
-    let renderPipelineStateBuilder: RenderPipelineStateBuilder
+    let renderStateResolver: RenderStateResolver
     let frameAllocator:GpuFrameAllocator
     let renderPass: RenderPass
     let drawableRenderPass: RenderPass
+    
+    let tileRenderer: TileRenderer
         
     lazy var offscreen: MTLTexture = uninitialized()
+    lazy var depthTexture: MTLTexture = uninitialized()
 
     init(gpu: GpuContext) {
         self.gpu = gpu
         
         functions = .init(with: gpu)
-        renderPipelineStateBuilder = .init(gpu: gpu)
+        renderStateResolver = .init(gpu: gpu)
         frameAllocator = .init(gpu:gpu)
         
         renderPass = .init(
             frameAllocator: frameAllocator,
             renderCommandRepository: RenderCommandRepository(),
-            renderPipelineStateBuilder: renderPipelineStateBuilder,
+            renderStateResolver: renderStateResolver,
             functions: functions
         )
         
         drawableRenderPass = .init(
             frameAllocator: frameAllocator,
             renderCommandRepository: RenderCommandRepository(),
-            renderPipelineStateBuilder: renderPipelineStateBuilder,
+            renderStateResolver: renderStateResolver,
             functions: functions
         )
+        
+        tileRenderer = .init()
     }
 
     func changeViewportSize(_ size: CGSize) {
+        tileRenderer.changeSize(size: size)
     }
 
     func build() {
@@ -58,19 +64,50 @@ final class Application {
             return gpu.makeTexture(descriptor)
         }()
         
+        depthTexture = {
+            let descriptor = MTLTextureDescriptor()
+            descriptor.textureType = .type2D
+            descriptor.width = 320
+            descriptor.height = 320
+            descriptor.pixelFormat = .depth32Float
+            descriptor.sampleCount = 1
+            descriptor.usage = [.renderTarget, .shaderRead]
+            // descriptor.storageMode = .memoryless
+            return gpu.makeTexture(descriptor)
+        }()
+        
         frameAllocator.build(size: 1024 * 1024)
+        
+        do{
+            let pixelFormats = AttachmentPixelFormts()
+            pixelFormats.colors[0] = .bgra8Unorm
+            pixelFormats.depth = .depth32Float
+            renderPass.build(pixelFormats: pixelFormats)
+        }
+        
+        do{
+            let pixelFormats = AttachmentPixelFormts()
+            pixelFormats.colors[0] = .bgra8Unorm
+            drawableRenderPass.build(pixelFormats: pixelFormats)
+        }
+        
+        tileRenderer.build()
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
+        
+        tileRenderer.updateState()
+        
         frameAllocator.nextFrame()
         renderPass.clear()
         drawableRenderPass.clear()
         
         renderPass.usingRenderCommandBuilder{ builder in
-            builder.withRenderPipelineDescriptor{ d in
+            builder.withRenderPipelineState{ d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
             
+            /*
             for _ in 0..<1000 {
                 let meshRenderer = TriangleRenderer(renderCommandBuilder: builder)
                 meshRenderer.draw(vertices: [
@@ -79,16 +116,19 @@ final class Application {
                     .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
                 ])
             }
+             */
+            tileRenderer.draw(builder)
         }
         
         drawableRenderPass.usingRenderCommandBuilder{ builder in
-            builder.withRenderPipelineDescriptor{ d in
+            builder.withRenderPipelineState{ d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
             
             let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
             passthroughtRenderer.draw(offscreen)
         }
+         
         
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
@@ -101,6 +141,18 @@ final class Application {
         descriptor.colorAttachments[colorIndex].loadAction = .clear
         descriptor.colorAttachments[colorIndex].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         descriptor.colorAttachments[colorIndex].storeAction = .store
+        descriptor.depthAttachment.texture = depthTexture
+        
+        /*
+        if supportsOrderIndependentTransparency {
+            // Set the tile size for the fragment shader.
+            forwardRenderPassDescriptor.tileWidth  = optimalTileSize.width
+            forwardRenderPassDescriptor.tileHeight = optimalTileSize.height
+
+            // Set the image block's memory size.
+            forwardRenderPassDescriptor.imageblockSampleLength = transparencyPipeline.imageblockSampleLength
+        }
+         */
 
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
@@ -119,6 +171,7 @@ final class Application {
             
             do {
                 descriptor.colorAttachments[colorIndex].texture = drawable.texture
+                descriptor.depthAttachment.texture = nil
                 gpuCounterSampler?.attachToRenderPass(descriptor: descriptor, name: "drawableRenderPass")
                 drawableRenderPass.dispatch(to: commandBuffer, using: descriptor)
             }

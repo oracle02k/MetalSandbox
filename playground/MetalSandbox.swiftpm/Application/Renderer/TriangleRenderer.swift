@@ -41,15 +41,15 @@ class TriangleRenderer{
         let colors = vertices.map { $0.color }
         let viewport = Viewport(leftTop: .init(0, 0), rightBottom: .init(320, 320))
         
-        renderCommandBuilder.local{ builder in
-            builder.withRenderPipelineDescriptor{ d in
+        renderCommandBuilder.withStateScope{ builder in
+            builder.withRenderPipelineState{ d in
                 d.vertexDescriptor = vertexDescriptor
                 d.vertexFunction = builder.findFunction(by: .VertexShader)
                 d.fragmentFunction = builder.findFunction(by: .FragmentShader)
             }
-            builder.setVertexBuffer(value: viewport, index: BufferIndex.Viewport)
-            builder.setVertexBuffer(value: positions, index: BufferIndex.Vertices1)
-            builder.setVertexBuffer(value: colors, index: BufferIndex.Vertices2)
+            builder.setVertexBuffer(viewport, index: BufferIndex.Viewport)
+            builder.setVertexBuffer(positions, index: BufferIndex.Vertices1)
+            builder.setVertexBuffer(colors, index: BufferIndex.Vertices2)
             builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
         }
     }

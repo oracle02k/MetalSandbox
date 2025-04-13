@@ -12,6 +12,14 @@ struct SetRenderPipelineState : RenderCommand {
     }
 }
 
+struct SetDepthStencilState : RenderCommand {
+    let depthStencilState: MTLDepthStencilState
+    
+    func execute(_ dispatcher: RenderCommandDispatcher){
+        dispatcher.encoder.setDepthStencilState(depthStencilState)
+    }
+}
+
 struct SetVertexBuffer : RenderCommand {
     let buffer: MTLBuffer
     let offset: Int
@@ -19,6 +27,16 @@ struct SetVertexBuffer : RenderCommand {
     
     func execute(_ dispatcher: RenderCommandDispatcher){
         dispatcher.encoder.setVertexBuffer(buffer, offset: offset, index: index)
+    }
+}
+
+struct SetFragmentBuffer : RenderCommand {
+    let buffer: MTLBuffer
+    let offset: Int
+    let index: Int
+    
+    func execute(_ dispatcher: RenderCommandDispatcher){
+        dispatcher.encoder.setFragmentBuffer(buffer, offset: offset, index: index)
     }
 }
 
@@ -32,11 +50,42 @@ struct DrawPrimitives  : RenderCommand {
     }
 }
 
+struct DispatchThreadsPerTile  : RenderCommand {
+    let threadsPerTile: MTLSize
+    
+    func execute(_ dispatcher: RenderCommandDispatcher){
+        dispatcher.encoder.dispatchThreadsPerTile(threadsPerTile)
+    }
+}
+
 struct SetFragmentTexture: RenderCommand {
     let texture: MTLTexture
     let index: Int
     
     func execute(_ dispatcher: RenderCommandDispatcher) {
         dispatcher.encoder.setFragmentTexture(texture, index: index)
+    }
+}
+
+struct PushDebugGroup: RenderCommand {
+    let label: String
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.pushDebugGroup(label)
+    }
+}
+
+
+struct PopDebugGroup: RenderCommand {
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.popDebugGroup()
+    }
+}
+
+struct SetCullMode: RenderCommand {
+    let mode: MTLCullMode
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.setCullMode(mode)
     }
 }

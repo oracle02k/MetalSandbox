@@ -59,7 +59,7 @@ class GpuFrameAllocator {
     private var bufferSize: Int = 0
     private var currentBufferIndex: Int = 0
     private var currentOffset: Int = 0
-    
+    private var allocatedCount = 0
     init(gpu: GpuContext) {
         self.gpu = gpu
     }
@@ -87,6 +87,7 @@ class GpuFrameAllocator {
         
         let allocation = GpuFrameAllocation(buffer: currentBuffer, offset: alignedOffset, size: size)
         currentOffset = alignedOffset + size
+        allocatedCount += 1
         
         return allocation
     }
@@ -95,5 +96,6 @@ class GpuFrameAllocator {
     func nextFrame() {
         currentBufferIndex = (currentBufferIndex + 1) % bufferCount
         currentOffset = 0
+        allocatedCount = 0
     }
 }

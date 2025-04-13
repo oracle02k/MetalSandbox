@@ -84,25 +84,6 @@ class DIContainer {
             IndirectRenderPass.Functions(with: r.resolve(GpuContext.self)!)
         }
 
-        // TilePipeline
-        container.register(TilePipeline.self) { r in
-            TilePipeline(
-                gpu: r.resolve(GpuContext.self)!,
-                tileRenderPass: r.resolve(TileRenderPass.self)!,
-                viewRenderPass: r.resolve(ViewRenderPass.self)!,
-                frameBuffer: r.resolve(FrameBuffer.self)!
-            )
-        }
-        container.register(TileRenderPass.self) { r in
-            TileRenderPass(
-                with: r.resolve(GpuContext.self)!,
-                functions: r.resolve(TileRenderPass.Functions.self)!
-            )
-        }
-        container.register(TileRenderPass.Functions.self) { r in
-            TileRenderPass.Functions(with: r.resolve(GpuContext.self)!)
-        }
-
         // RasterOrderGroupPipeline
         container.register(RasterOrderGroupPipeline.self) { r in
             RasterOrderGroupPipeline(

@@ -19,12 +19,12 @@ class PassthroughtRenderer{
     ]
     
     let texCoords: [simd_float2] = [
-        .init(0, 1),
-        .init(0, 0),
-        .init(1, 1),
-        .init(1, 1),
-        .init(0, 0),
-        .init(1, 0),
+        .init(0, 0), // 左上
+        .init(0, 1), // 左下
+        .init(1, 0), // 右上
+        .init(1, 0), // 右上
+        .init(0, 1), // 左下
+        .init(1, 1), // 右下
     ]
     
     @Cached private var vertexDescriptor = {
@@ -50,14 +50,14 @@ class PassthroughtRenderer{
     }()
     
     func draw(_ texture: MTLTexture) {
-        renderCommandBuilder.local{ builder in
-            builder.withRenderPipelineDescriptor{ d in
+        renderCommandBuilder.withStateScope{ builder in
+            builder.withRenderPipelineState{ d in
                 d.vertexDescriptor = vertexDescriptor
                 d.vertexFunction = builder.findFunction(by: .PassthroughtTextureVS)
                 d.fragmentFunction = builder.findFunction(by: .PassthroughtTextureFS)
             }
-            builder.setVertexBuffer(value: positions, index: BufferIndex.Vertices1)
-            builder.setVertexBuffer(value: texCoords, index: BufferIndex.Vertices2)
+            builder.setVertexBuffer(positions, index: BufferIndex.Vertices1)
+            builder.setVertexBuffer(texCoords, index: BufferIndex.Vertices2)
             builder.setFragmentTexture(texture, index: 0)
             builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
         }
