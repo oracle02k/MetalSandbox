@@ -66,15 +66,15 @@ func getMemoryUsed() -> KByte? {
 /// 任意の型 `T` をスタック管理するジェネリクスラッパー
 class PropertyStack<T> {
     private var stack: [T] = []
-    
+
     /// スタックの現在のトップを取得（デフォルト値あり）
     var current: T { stack.last! }
-    
+
     /// 新しい値をスタックに追加
     func push(_ value: T) {
         stack.append(value)
     }
-    
+
     /// 直前の状態に戻す（空にならないようにする）
     func pop() {
         if stack.count > 1 {
@@ -87,11 +87,11 @@ class PropertyStack<T> {
 struct Cached<Value> {
     private var storage: Value?
     private let compute: () -> Value
-    
+
     init(wrappedValue: @autoclosure @escaping () -> Value) {
         self.compute = wrappedValue
     }
-    
+
     var wrappedValue: Value {
         mutating get {
             if let value = storage {
@@ -102,7 +102,7 @@ struct Cached<Value> {
             return value
         }
     }
-    
+
     mutating func reset() {
         storage = nil
     }
@@ -113,7 +113,7 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
     let result = block()
     let end = DispatchTime.now()
     let nano = Double(end.uptimeNanoseconds - start.uptimeNanoseconds)
-    
+
     let display: String
     if nano >= 1_000_000_000 {
         display = String(format: "%.3f 秒", nano / 1_000_000_000)
@@ -124,7 +124,7 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
     } else {
         display = String(format: "%.0f ns", nano)
     }
-    
+
     print("\(label)処理時間: \(display)")
     return result
 }

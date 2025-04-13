@@ -2,16 +2,16 @@ import Metal
 
 class RenderCommandRepository {
     private(set) var commandBuffer = [RenderCommand]()
-    
-    func append<T:RenderCommand>(_ command:T){
+
+    func append<T: RenderCommand>(_ command: T) {
         commandBuffer.append(command)
     }
-    
-    func clear(){
+
+    func clear() {
         commandBuffer = [RenderCommand]()
     }
-    
-    func currentBuffer() -> [RenderCommand]{
+
+    func currentBuffer() -> [RenderCommand] {
         return commandBuffer
     }
 }
