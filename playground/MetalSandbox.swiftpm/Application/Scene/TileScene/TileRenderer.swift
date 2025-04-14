@@ -11,11 +11,11 @@ class TileRenderer {
     // of `imageblockSampleLength`. More layers means you must decrease the fragment shader's tile size.
     // This chooses the values to which the renderer sets `tileHeight` and `tileWidth`.
     // let optimalTileSize = MTLSizeMake(8, 8, 1)
-    
+
     struct Vertex {
         var position: vector_float4
     }
-    
+
     let quadVertices: [Vertex] = [
         .init(position: .init(1, 0, -1, 0)),
         .init(position: .init(-1, 0, -1, 0)),
@@ -24,7 +24,7 @@ class TileRenderer {
         .init(position: .init(-1, 0, 1, 0)),
         .init(position: .init(1, 0, 1, 0))
     ]
-    
+
     func draw(
         _ renderCommandBuilder: RenderCommandBuilder,
         opaqueActorParams: [TileActorParams],
@@ -41,12 +41,12 @@ class TileRenderer {
                 }
                 builder.dispatchThreadsPerTile()
             }
-            
+
             builder.withDebugGroup("Common Buffer Binding") {
                 builder.setVertexBuffer(quadVertices, index: 1)
                 builder.setVertexBuffer(cameraParams, index: 3)
             }
-            
+
             builder.withDebugGroup("Opaque Actor Rendering") {
                 builder.withRenderPipelineState { d in
                     d.label = "Unordered alpha blending pipeline"
@@ -61,7 +61,7 @@ class TileRenderer {
                     d.colorAttachments[0].rgbBlendOperation = .add
                     d.colorAttachments[0].writeMask = .all
                 }
-                
+
                 builder.withDepthStencilState { d in
                     d.label = "DepthCompareLessEqualAndNoWrite"
                     d.isDepthWriteEnabled = false
@@ -69,7 +69,7 @@ class TileRenderer {
                     d.backFaceStencil = nil
                     d.frontFaceStencil = nil
                 }
-                
+
                 builder.setCullMode(.none)
                 for actor in opaqueActorParams {
                     builder.setVertexBuffer(actor, index: 2)
@@ -77,20 +77,20 @@ class TileRenderer {
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }
-            
+
             builder.withDebugGroup("Transparent Actor Rendering") {
                 builder.withRenderPipelineState { d in
                     d.label = "Transparent Fragment Store Op"
                     d.vertexFunction = builder.findFunction(by: .TileForwardVS)
                     d.fragmentFunction = builder.findFunction(by: .TileProcessTransparentFS)
                     d.colorAttachments[0].isBlendingEnabled = false
-                    
+
                     // Disable the color write mask.
                     // This fragment shader only writes color data into the image block.
                     // It doesn't produce an output for the color attachment.
                     d.colorAttachments[0].writeMask = []
                 }
-                
+
                 builder.setCullMode(.none)
                 for actor in transparentActorParams {
                     builder.setVertexBuffer(actor, index: 2)
@@ -98,7 +98,7 @@ class TileRenderer {
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }
-            
+
             builder.withDebugGroup("Blend Fragments") {
                 builder.withRenderPipelineState { d in
                     d.label = "Transparent Fragment Blending"
@@ -106,7 +106,7 @@ class TileRenderer {
                     d.fragmentFunction = builder.findFunction(by: .TileBlendFS)
                     d.vertexDescriptor = nil
                 }
-                
+
                 builder.withDepthStencilState { d in
                     d.label = "DepthCompareAlwaysAndNoWrite"
                     d.isDepthWriteEnabled = false
@@ -114,7 +114,7 @@ class TileRenderer {
                     d.backFaceStencil = nil
                     d.frontFaceStencil = nil
                 }
-                
+
                 builder.setCullMode(.none)
                 builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
             }

@@ -5,12 +5,7 @@ struct TileActorParams {
     var color: vector_float4
 }
 
-struct TileCameraParams{
+struct TileCameraParams {
     var cameraPos: vector_float3
     var viewProjectionMatrix: matrix_float4x4
-    
-    init(cameraPos: vector_float3, viewProjectionMatrix: matrix_float4x4) {
-        self.cameraPos = cameraPos
-        self.viewProjectionMatrix = viewProjectionMatrix
-    }
 }

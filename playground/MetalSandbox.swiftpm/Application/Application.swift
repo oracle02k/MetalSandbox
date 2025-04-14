@@ -93,9 +93,9 @@ final class Application {
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-        
+
         tileScene.update()
-        
+
         frameAllocator.nextFrame()
         renderPass.clear()
         drawableRenderPass.clear()
