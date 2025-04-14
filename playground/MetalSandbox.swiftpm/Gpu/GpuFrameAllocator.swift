@@ -57,6 +57,8 @@ class GpuFrameAllocator {
     private var currentBufferIndex: Int = 0
     private var currentOffset: Int = 0
     private var allocatedCount = 0
+    private var allocated = [GpuFrameAllocation]()
+    
     init(gpu: GpuContext) {
         self.gpu = gpu
     }
@@ -74,7 +76,7 @@ class GpuFrameAllocator {
     }
 
     /// `size` バイトのメモリを確保し、バッファとオフセットを返す
-    func allocate(size: Int, alignment: Int = MemoryLayout<Float>.alignment) -> GpuFrameAllocation? {
+    func allocate(size: Int, alignment: Int = 16/*MemoryLayout<Float>.alignment*/) -> GpuFrameAllocation? {
         let alignedOffset = (currentOffset + alignment - 1) & ~(alignment - 1)
 
         // バッファサイズを超えたら確保できない
@@ -85,6 +87,8 @@ class GpuFrameAllocator {
         let allocation = GpuFrameAllocation(buffer: currentBuffer, offset: alignedOffset, size: size)
         currentOffset = alignedOffset + size
         allocatedCount += 1
+        
+        allocated.append(allocation)
 
         return allocation
     }
@@ -94,5 +98,6 @@ class GpuFrameAllocator {
         currentBufferIndex = (currentBufferIndex + 1) % bufferCount
         currentOffset = 0
         allocatedCount = 0
+        allocated.removeAll()
     }
 }

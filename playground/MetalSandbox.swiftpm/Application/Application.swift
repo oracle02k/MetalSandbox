@@ -11,7 +11,7 @@ final class Application {
     let renderPass: RenderPass
     let drawableRenderPass: RenderPass
 
-    let tileRenderer: TileRenderer
+    let tileScene = TileScene()
 
     lazy var offscreen: MTLTexture = uninitialized()
     lazy var depthTexture: MTLTexture = uninitialized()
@@ -36,12 +36,10 @@ final class Application {
             renderStateResolver: renderStateResolver,
             functions: functions
         )
-
-        tileRenderer = .init()
     }
 
     func changeViewportSize(_ size: CGSize) {
-        tileRenderer.changeSize(size: size)
+        tileScene.changeSize(size: size)
     }
 
     func build() {
@@ -91,13 +89,13 @@ final class Application {
             drawableRenderPass.build(pixelFormats: pixelFormats)
         }
 
-        tileRenderer.build()
+        tileScene.build()
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-
-        tileRenderer.updateState()
-
+        
+        tileScene.update()
+        
         frameAllocator.nextFrame()
         renderPass.clear()
         drawableRenderPass.clear()
@@ -117,7 +115,7 @@ final class Application {
              ])
              }
              */
-            tileRenderer.draw(builder)
+            tileScene.draw(builder)
         }
 
         drawableRenderPass.usingRenderCommandBuilder { builder in
