@@ -1,8 +1,7 @@
 import Metal
 
 /// メモリアロケーション情報
-//struct GpuTransientHeapBlock {}
-class GpuFrameAllocation {
+class GpuTransientHeapBlock {
     let buffer: MTLBuffer
     let offset: Int
     let size: Int
@@ -65,7 +64,7 @@ class GpuFrameAllocation {
 }
 
 /// フレームごとの一時的なデータを管理する Metal 向けアロケータ
-class GpuFrameAllocator {
+class GpuTransientAllocator {
     private let gpu: GpuContext
     private let bufferCount: Int = 3  // トリプルバッファリング
     private var buffers = [MTLBuffer]()
@@ -73,7 +72,7 @@ class GpuFrameAllocator {
     private var currentBufferIndex: Int = 0
     private var currentOffset: Int = 0
     private var allocatedCount = 0
-    private var allocated = [GpuFrameAllocation]()
+    private var allocated = [GpuTransientHeapBlock]()
 
     init(gpu: GpuContext) {
         self.gpu = gpu
@@ -92,7 +91,7 @@ class GpuFrameAllocator {
     }
 
     /// `size` バイトのメモリを確保し、バッファとオフセットを返す
-    func allocate(size: Int, alignment: Int = 16/*MemoryLayout<Float>.alignment*/) -> GpuFrameAllocation? {
+    func allocate(size: Int, alignment: Int = 16/*MemoryLayout<Float>.alignment*/) -> GpuTransientHeapBlock? {
         let alignedOffset = (currentOffset + alignment - 1) & ~(alignment - 1)
 
         // バッファサイズを超えたら確保できない
@@ -100,7 +99,7 @@ class GpuFrameAllocator {
             return nil
         }
 
-        let allocation = GpuFrameAllocation(buffer: currentBuffer, offset: alignedOffset, size: size)
+        let allocation = GpuTransientHeapBlock(buffer: currentBuffer, offset: alignedOffset, size: size)
         currentOffset = alignedOffset + size
         allocatedCount += 1
 

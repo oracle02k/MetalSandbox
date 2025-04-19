@@ -14,20 +14,20 @@ class RenderDescriptors {
 
 class RenderCommandBuilder {
     class BufferBinding{
-        let heapBlock: GpuFrameAllocation
+        let heapBlock: GpuTransientHeapBlock
         var logicalOffset: Int
         var buffer: MTLBuffer { heapBlock.buffer }
         var offset: Int { heapBlock.offset + logicalOffset }
         var size: Int { heapBlock.size }
         
-        init(_ heapBlock: GpuFrameAllocation, logicalOffset:Int){
+        init(_ heapBlock: GpuTransientHeapBlock, logicalOffset:Int){
             self.heapBlock = heapBlock
             self.logicalOffset = logicalOffset
         }
     }
     
     private let pixelFormats: AttachmentPixelFormts
-    private let frameAllocator: GpuFrameAllocator
+    private let frameAllocator: GpuTransientAllocator
     private let renderCommandRepository: RenderCommandRepository
     private let functions: ShaderFunctions
     private let renderStateResolver: RenderStateResolver
@@ -45,7 +45,7 @@ class RenderCommandBuilder {
 
     init(
         pixelFormats: AttachmentPixelFormts,
-        frameAllocator: GpuFrameAllocator,
+        frameAllocator: GpuTransientAllocator,
         renderCommandRepository: RenderCommandRepository,
         functions: ShaderFunctions,
         renderStateResolver: RenderStateResolver,
@@ -66,7 +66,7 @@ class RenderCommandBuilder {
         descriptors.pop()
     }
     
-    func bindVertexBuffer(_ heapBlock:GpuFrameAllocation, logicalOffset: Int = 0, index:Int) {
+    func bindVertexBuffer(_ heapBlock:GpuTransientHeapBlock, logicalOffset: Int = 0, index:Int) {
         if let current = boundToVertexBuffers[index] {
             let sameHeapBlock = current.heapBlock === heapBlock
             let sameBuffer = current.buffer === heapBlock.buffer
@@ -100,11 +100,11 @@ class RenderCommandBuilder {
         ))
     }
     
-    func bindVertexBuffer<U: RawRepresentable>(_ heapBlock:GpuFrameAllocation, index: U) where U.RawValue == Int {
+    func bindVertexBuffer<U: RawRepresentable>(_ heapBlock:GpuTransientHeapBlock, index: U) where U.RawValue == Int {
         bindVertexBuffer(heapBlock, index: index.rawValue)
     }
     
-    func bindFragmentBuffer(_ heapBlock:GpuFrameAllocation, logicalOffset: Int = 0, index:Int) {
+    func bindFragmentBuffer(_ heapBlock:GpuTransientHeapBlock, logicalOffset: Int = 0, index:Int) {
         if let current = boundToFragmentBuffers[index] {
             let sameHeapBlock = current.heapBlock === heapBlock
             let sameBuffer = current.buffer === heapBlock.buffer
@@ -137,7 +137,7 @@ class RenderCommandBuilder {
         ))
     }
     
-    func bindFragmentBuffer<U: RawRepresentable>(_ heapBlock:GpuFrameAllocation, index: U) where U.RawValue == Int {
+    func bindFragmentBuffer<U: RawRepresentable>(_ heapBlock:GpuTransientHeapBlock, index: U) where U.RawValue == Int {
         bindFragmentBuffer(heapBlock, index: index.rawValue)
     }
 
@@ -327,7 +327,7 @@ class RenderCommandBuilder {
         renderCommandRepository.append(SetCullMode(mode: mode))
     }
     
-    func allocFrameHeapBlock<T>(_ type:T.Type, length:Int = 1) -> GpuFrameAllocation {
+    func allocFrameHeapBlock<T>(_ type:T.Type, length:Int = 1) -> GpuTransientHeapBlock {
         return frameAllocator.allocate(size: MemoryLayout<T>.stride * length)!
     }
 }

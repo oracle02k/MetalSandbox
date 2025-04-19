@@ -7,7 +7,7 @@ final class Application {
     let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
     let functions: ShaderFunctions
     let renderStateResolver: RenderStateResolver
-    let frameAllocator: GpuFrameAllocator
+    let frameAllocator: GpuTransientAllocator
     let renderPass: RenderPass
     let drawableRenderPass: RenderPass
 

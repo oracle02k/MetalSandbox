@@ -19,7 +19,7 @@ enum ShaderFunctionTable: String, FunctionTableProvider {
 typealias ShaderFunctions = FunctionContainer<ShaderFunctionTable>
 
 class RenderPass {
-    let frameAllocator: GpuFrameAllocator
+    let frameAllocator: GpuTransientAllocator
     let renderCommandRepository: RenderCommandRepository
     let renderStateResolver: RenderStateResolver
     let functions: ShaderFunctions
@@ -28,7 +28,7 @@ class RenderPass {
     private(set) lazy var pixelFormats: AttachmentPixelFormts = uninitialized()
 
     init(
-        frameAllocator: GpuFrameAllocator,
+        frameAllocator: GpuTransientAllocator,
         renderCommandRepository: RenderCommandRepository,
         renderStateResolver: RenderStateResolver,
         functions: ShaderFunctions
