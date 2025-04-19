@@ -1,34 +1,5 @@
 import Metal
 
-class FixedArray<T> {
-    private var storage: [T]
-
-    init(_ values: [T]) {
-        self.storage = values
-    }
-
-    init(repeating value: T, count: Int) {
-        self.storage = Array(repeating: value, count: count)
-    }
-
-    var count: Int { storage.count }
-
-    subscript(index: Int) -> T {
-        get {
-            guard 0 <= index && index < storage.count else {
-                appFatalError("Index out of range")
-            }
-            return storage[index]
-        }
-        set {
-            guard 0 <= index && index < storage.count else {
-                appFatalError("Index out of range")
-            }
-            return storage[index] = newValue
-        }
-    }
-}
-
 class AttachmentPixelFormts {
     let colors: FixedArray<MTLPixelFormat> = .init(repeating: .invalid, count: 8)
     var depth: MTLPixelFormat = .invalid
@@ -42,6 +13,19 @@ class RenderDescriptors {
 }
 
 class RenderCommandBuilder {
+    class BufferBinding{
+        let heapBlock: GpuFrameAllocation
+        var logicalOffset: Int
+        var buffer: MTLBuffer { heapBlock.buffer }
+        var offset: Int { heapBlock.offset + logicalOffset }
+        var size: Int { heapBlock.size }
+        
+        init(_ heapBlock: GpuFrameAllocation, logicalOffset:Int){
+            self.heapBlock = heapBlock
+            self.logicalOffset = logicalOffset
+        }
+    }
+    
     private let pixelFormats: AttachmentPixelFormts
     private let frameAllocator: GpuFrameAllocator
     private let renderCommandRepository: RenderCommandRepository
@@ -51,6 +35,11 @@ class RenderCommandBuilder {
     private var renderPipelineDescriptor = MTLRenderPipelineDescriptor()
     private var depthStencilDescriptor = MTLDepthStencilDescriptor()
     private var tilePipelineDescriptor = MTLTileRenderPipelineDescriptor()
+    private var boundToVertexBuffers: FixedArray<BufferBinding?> = .init(repeating: nil, count: 8)
+    private var boundToFragmentBuffers: FixedArray<BufferBinding?> = .init(repeating: nil, count: 8)
+    private var renderPipelineState: MTLRenderPipelineState?
+    private var tilePipelineState: MTLRenderPipelineState?
+    private var depthStencilState: MTLDepthStencilState?
 
     let descriptors = PropertyStack<RenderDescriptors>()
 
@@ -76,16 +65,87 @@ class RenderCommandBuilder {
         body(self)
         descriptors.pop()
     }
+    
+    func bindVertexBuffer(_ heapBlock:GpuFrameAllocation, logicalOffset: Int = 0, index:Int) {
+        if let current = boundToVertexBuffers[index] {
+            let sameHeapBlock = current.heapBlock === heapBlock
+            let sameBuffer = current.buffer === heapBlock.buffer
+            let sameOffset = current.logicalOffset == logicalOffset
+            
+            
+            if sameHeapBlock && sameOffset {
+                return
+            }
+            
+            if sameBuffer {
+                let newBinding = BufferBinding(heapBlock, logicalOffset: logicalOffset)
+                boundToVertexBuffers[index] = newBinding
+                renderCommandRepository.append(SetVertexBufferOffset(offset: newBinding.offset, index: index))
+                return
+            }
+            
+            if sameHeapBlock{
+                current.logicalOffset = logicalOffset
+                renderCommandRepository.append(SetVertexBufferOffset(offset: current.offset, index: index))
+                return
+            }
+        }
+        
+        let newBinding = BufferBinding(heapBlock, logicalOffset: logicalOffset)
+        boundToVertexBuffers[index] = newBinding
+        renderCommandRepository.append(SetVertexBuffer(
+            buffer: newBinding.buffer,
+            offset: newBinding.offset,
+            index: index
+        ))
+    }
+    
+    func bindVertexBuffer<U: RawRepresentable>(_ heapBlock:GpuFrameAllocation, index: U) where U.RawValue == Int {
+        bindVertexBuffer(heapBlock, index: index.rawValue)
+    }
+    
+    func bindFragmentBuffer(_ heapBlock:GpuFrameAllocation, logicalOffset: Int = 0, index:Int) {
+        if let current = boundToFragmentBuffers[index] {
+            let sameHeapBlock = current.heapBlock === heapBlock
+            let sameBuffer = current.buffer === heapBlock.buffer
+            let sameOffset = current.logicalOffset == logicalOffset
+            
+            if sameHeapBlock && sameOffset {
+                return
+            }
+            
+            if sameBuffer {
+                let newBinding = BufferBinding(heapBlock, logicalOffset: logicalOffset)
+                boundToFragmentBuffers[index] = newBinding
+                renderCommandRepository.append(SetFragmentBufferOffset(offset: newBinding.offset, index: index))
+                return
+            }
+            
+            if sameHeapBlock{
+                current.logicalOffset = logicalOffset
+                renderCommandRepository.append(SetFragmentBufferOffset(offset: current.offset, index: index))
+                return
+            }
+        }
+        
+        let newBinding = BufferBinding(heapBlock, logicalOffset: logicalOffset)
+        boundToFragmentBuffers[index] = newBinding
+        renderCommandRepository.append(SetFragmentBuffer(
+            buffer: newBinding.buffer,
+            offset: newBinding.offset,
+            index: index
+        ))
+    }
+    
+    func bindFragmentBuffer<U: RawRepresentable>(_ heapBlock:GpuFrameAllocation, index: U) where U.RawValue == Int {
+        bindFragmentBuffer(heapBlock, index: index.rawValue)
+    }
 
     func setVertexBuffer<T>(_ value: T, index: Int) {
         let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
         allocation.write(value: value)
-
-        renderCommandRepository.append(SetVertexBuffer(
-            buffer: allocation.buffer,
-            offset: allocation.offset,
-            index: index
-        ))
+        
+        bindVertexBuffer(allocation, index: index)
     }
 
     func setVertexBuffer<T, U: RawRepresentable>(_ value: T, index: U) where U.RawValue == Int {
@@ -96,11 +156,7 @@ class RenderCommandBuilder {
         let allocation = frameAllocator.allocate(size: value.byteLength)!
         allocation.write(from: value)
 
-        renderCommandRepository.append(SetVertexBuffer(
-            buffer: allocation.buffer,
-            offset: allocation.offset,
-            index: index
-        ))
+        bindVertexBuffer(allocation, index: index)
     }
 
     func setVertexBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
@@ -111,11 +167,7 @@ class RenderCommandBuilder {
         let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
         allocation.write(value: value)
 
-        renderCommandRepository.append(SetFragmentBuffer(
-            buffer: allocation.buffer,
-            offset: allocation.offset,
-            index: index
-        ))
+        bindFragmentBuffer(allocation, index: index)
     }
 
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: T, index: U) where U.RawValue == Int {
@@ -126,23 +178,57 @@ class RenderCommandBuilder {
         let allocation = frameAllocator.allocate(size: value.byteLength)!
         allocation.write(from: value)
 
-        renderCommandRepository.append(SetFragmentBuffer(
-            buffer: allocation.buffer,
-            offset: allocation.offset,
-            index: index
-        ))
+        bindFragmentBuffer(allocation, index: index)
     }
 
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
         setFragmentBuffer(value, index: index.rawValue)
     }
-
-    func bindVertexBuffer<U: RawRepresentable>(buffer: MTLBuffer, index: U) where U.RawValue == Int {
-        renderCommandRepository.append(SetVertexBuffer(
-            buffer: buffer,
-            offset: 0,
-            index: index.rawValue
-        ))
+    
+    func setVertexBufferOffset(_ logicalOffset:Int, index: Int) {
+        guard let bound = boundToVertexBuffers[index] else {
+            appFatalError("No buffer bound at index:\(index)")
+        }
+        
+        guard logicalOffset < bound.size else {
+            appFatalError("Invalid offset. Requested offset:\(logicalOffset) exceeds buffer size:\(bound.size).")
+        }
+        
+        guard bound.logicalOffset != logicalOffset else {
+            return
+        }
+                
+        bound.logicalOffset = logicalOffset
+        renderCommandRepository.append(
+            SetVertexBufferOffset(offset: bound.offset, index: index)
+        )
+    }
+    
+    func setVertexBufferOffset<U: RawRepresentable>(_ offset:Int,  index: U) where U.RawValue == Int {
+        setVertexBufferOffset(offset, index: index.rawValue)
+    }
+    
+    func setFragmentBufferOffset(_ logicalOffset:Int, index: Int) {
+        guard let bound = boundToFragmentBuffers[index] else {
+            appFatalError("No buffer bound at index:\(index)")
+        }
+        
+        guard logicalOffset < bound.size else {
+            appFatalError("Invalid offset. Requested offset:\(logicalOffset) exceeds buffer size:\(bound.size).")
+        }
+        
+        guard bound.logicalOffset != logicalOffset else {
+            return
+        }
+                
+        bound.logicalOffset = logicalOffset
+        renderCommandRepository.append(
+            SetFragmentBufferOffset(offset: bound.offset, index: index)
+        )
+    }
+    
+    func setFragmentBufferOffset<U: RawRepresentable>(_ offset:Int,  index: U) where U.RawValue == Int {
+        setFragmentBufferOffset(offset, index: index.rawValue)
     }
 
     func drawPrimitives(type: MTLPrimitiveType, vertexStart: Int, vertexCount: Int) {
@@ -153,15 +239,8 @@ class RenderCommandBuilder {
         current.renderPipelineDescriptor.depthAttachmentPixelFormat = pixelFormats.depth
         current.renderPipelineDescriptor.stencilAttachmentPixelFormat = pixelFormats.stencil
 
-        let pso = renderStateResolver.resolvePipelineState(descriptors.current.renderPipelineDescriptor)
-        renderCommandRepository.append(
-            SetRenderPipelineState(renderPipelineState: pso)
-        )
-
-        let state = renderStateResolver.resolveDepthStencilState(descriptors.current.depthStencilDescriptor)
-        renderCommandRepository.append(
-            SetDepthStencilState(depthStencilState: state)
-        )
+        updateRenderPipelineStateIfNeeded()
+        updateDepthStencilStateIfNeeded()
 
         renderCommandRepository.append(
             DrawPrimitives(type: type, vertexStart: vertexStart, vertexCount: vertexCount)
@@ -174,21 +253,43 @@ class RenderCommandBuilder {
             current.tilePipelineDescriptor.colorAttachments[i].pixelFormat = pixelFormats.colors[i]
         }
 
-        let pso = renderStateResolver.resolveTilePipelineState(descriptors.current.tilePipelineDescriptor)
-        renderCommandRepository.append(
-            SetRenderPipelineState(renderPipelineState: pso)
-        )
-
-        let state = renderStateResolver.resolveDepthStencilState(descriptors.current.depthStencilDescriptor)
-        renderCommandRepository.append(
-            SetDepthStencilState(depthStencilState: state)
-        )
-
+        updateTilePipelineStateIfNeeded()
+        updateDepthStencilStateIfNeeded()
+        
         renderCommandRepository.append(
             DispatchThreadsPerTile(threadsPerTile: tileShaderParams.tileSize)
         )
-
-        tileShaderParams.setMaxImageBlockSampleLength(tryValue: pso.imageblockSampleLength)
+    }
+    
+    private func updateRenderPipelineStateIfNeeded() {
+        let newState = renderStateResolver.resolvePipelineState(descriptors.current.renderPipelineDescriptor)
+        guard newState !== renderPipelineState else { 
+            return 
+        }
+        
+        renderPipelineState = newState
+        renderCommandRepository.append(SetRenderPipelineState(renderPipelineState: newState))
+    }
+    
+    private func updateTilePipelineStateIfNeeded() {
+        let newState = renderStateResolver.resolveTilePipelineState(descriptors.current.tilePipelineDescriptor)
+        guard newState !== tilePipelineState else { 
+            return 
+        }
+        
+        tilePipelineState = newState
+        renderCommandRepository.append(SetRenderPipelineState(renderPipelineState: newState))
+        tileShaderParams.setMaxImageBlockSampleLength(tryValue: newState.imageblockSampleLength)
+    }
+    
+    private func updateDepthStencilStateIfNeeded() {
+        let newState = renderStateResolver.resolveDepthStencilState(descriptors.current.depthStencilDescriptor)
+        guard newState !== depthStencilState else { 
+            return 
+        }
+        
+        depthStencilState = newState
+        renderCommandRepository.append(SetDepthStencilState(depthStencilState: newState))
     }
 
     func setFragmentTexture(_ texture: MTLTexture, index: Int) {
@@ -224,5 +325,9 @@ class RenderCommandBuilder {
 
     func setCullMode(_ mode: MTLCullMode) {
         renderCommandRepository.append(SetCullMode(mode: mode))
+    }
+    
+    func allocFrameHeapBlock<T>(_ type:T.Type, length:Int = 1) -> GpuFrameAllocation {
+        return frameAllocator.allocate(size: MemoryLayout<T>.stride * length)!
     }
 }

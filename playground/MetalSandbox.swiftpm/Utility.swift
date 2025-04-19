@@ -128,3 +128,33 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
     print("\(label)処理時間: \(display)")
     return result
 }
+
+class FixedArray<T> {
+    private var storage: [T]
+    
+    init(_ values: [T]) {
+        self.storage = values
+    }
+    
+    init(repeating value: T, count: Int) {
+        self.storage = Array(repeating: value, count: count)
+    }
+    
+    var count: Int { storage.count }
+    
+    subscript(index: Int) -> T {
+        get {
+            guard 0 <= index && index < storage.count else {
+                appFatalError("Index out of range")
+            }
+            return storage[index]
+        }
+        set {
+            guard 0 <= index && index < storage.count else {
+                appFatalError("Index out of range")
+            }
+            return storage[index] = newValue
+        }
+    }
+}
+

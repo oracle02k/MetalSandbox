@@ -59,9 +59,9 @@ class AddArrayCompute {
     }
 
     func verifyResult() {
-        let aBuffer: [Float] = bufferA.bindArray(length: elementNum)
-        let bBuffer: [Float] = bufferB.bindArray(length: elementNum)
-        let result: [Float] = bufferResult.bindArray(length: elementNum)
+        let aBuffer: [Float] = bufferA.bindArray(Float.self, length: elementNum)
+        let bBuffer: [Float] = bufferB.bindArray(Float.self, length: elementNum)
+        let result: [Float] = bufferResult.bindArray(Float.self, length: elementNum)
 
         for i in 0..<elementNum {
             let cpuResult = aBuffer[i] + bBuffer[i]

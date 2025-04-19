@@ -92,14 +92,12 @@ class TileScene {
     }
 
     func draw(_ renderCommandBuilder: RenderCommandBuilder) {
-        let opaqueActorParams = opaqueActors.map { $0.toActorParams()}
-        let transparentActors = transparentActors.map { $0.toActorParams()}
         let cameraParams = makeCameraParams()
 
         renderer.draw(
             renderCommandBuilder,
-            opaqueActorParams: opaqueActorParams,
-            transparentActorParams: transparentActors,
+            opaqueActors: opaqueActors,
+            transparentActors: transparentActors,
             cameraParams: cameraParams
         )
     }

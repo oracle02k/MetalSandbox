@@ -40,6 +40,25 @@ struct SetFragmentBuffer: RenderCommand {
     }
 }
 
+struct SetVertexBufferOffset: RenderCommand {
+    let offset: Int
+    let index: Int
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.setVertexBufferOffset(offset, index: index)
+    }
+}
+
+struct SetFragmentBufferOffset: RenderCommand {
+    let offset: Int
+    let index: Int
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.setFragmentBufferOffset(offset, index: index)
+    }
+}
+
+
 struct DrawPrimitives: RenderCommand {
     let type: MTLPrimitiveType
     let vertexStart: Int

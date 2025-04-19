@@ -1,4 +1,5 @@
 import simd
+import Metal
 
 class TileActor {
     private(set) var color: vector_float4
@@ -20,16 +21,14 @@ class TileActor {
         }
     }
 
-    func toActorParams() -> TileActorParams {
+    func toActorParams(param: inout TileActorParams) {
         let translationMatrix = matrix4x4_translation(position)
         let scaleMatrix = matrix4x4_scale(scale)
         let rotationMatrixX = matrix4x4_rotation(radians_from_degrees(rotation.x), 1.0, 0.0, 0.0)
         let rotationMatrixZ = matrix4x4_rotation(radians_from_degrees(rotation.z), 0.0, 0.0, 1.0)
         let rotationMatrix = matrix_multiply(rotationMatrixX, rotationMatrixZ)
-
-        return TileActorParams(
-            modelMatrix: matrix_multiply(translationMatrix, matrix_multiply(rotationMatrix, scaleMatrix)),
-            color: color
-        )
+        
+        param.modelMatrix = matrix_multiply(translationMatrix, matrix_multiply(rotationMatrix, scaleMatrix))
+        param.color = color
     }
 }

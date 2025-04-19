@@ -27,10 +27,32 @@ class TileRenderer {
 
     func draw(
         _ renderCommandBuilder: RenderCommandBuilder,
-        opaqueActorParams: [TileActorParams],
-        transparentActorParams: [TileActorParams],
+        opaqueActors: [TileActor],
+        transparentActors: [TileActor],
         cameraParams: TileCameraParams
     ) {
+        let opaqueActorParams = renderCommandBuilder.allocFrameHeapBlock(
+            TileActorParams.self, 
+            length: opaqueActors.count
+        )
+        
+        opaqueActorParams.withBufferPointer(TileActorParams.self){ params in
+            for i in 0..<params.count {
+                opaqueActors[i].toActorParams(param: &params[i])
+            }
+        }
+        
+        let transparentActorParams = renderCommandBuilder.allocFrameHeapBlock(
+            TileActorParams.self, 
+            length: transparentActors.count
+        )
+        
+        transparentActorParams.withBufferPointer(TileActorParams.self){ params in
+            for i in 0..<params.count {
+                transparentActors[i].toActorParams(param: &params[i])
+            }
+        }
+        
         renderCommandBuilder.withStateScope { builder in
             // Configure the kernel tile shader to initialize the image block for each frame.
             builder.withDebugGroup("Init Image Block") {
@@ -71,9 +93,11 @@ class TileRenderer {
                 }
 
                 builder.setCullMode(.none)
-                for actor in opaqueActorParams {
-                    builder.setVertexBuffer(actor, index: 2)
-                    builder.setFragmentBuffer(actor, index: 2)
+                builder.bindVertexBuffer(opaqueActorParams, index: 2)
+                builder.bindFragmentBuffer(opaqueActorParams, index: 2)
+                for i in 0..<opaqueActors.count {
+                    builder.setVertexBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
+                    builder.setFragmentBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }
@@ -92,9 +116,11 @@ class TileRenderer {
                 }
 
                 builder.setCullMode(.none)
-                for actor in transparentActorParams {
-                    builder.setVertexBuffer(actor, index: 2)
-                    builder.setFragmentBuffer(actor, index: 2)
+                builder.bindVertexBuffer(transparentActorParams, index: 2)
+                builder.bindFragmentBuffer(transparentActorParams, index: 2)
+                for i in 0..<transparentActors.count {
+                    builder.setVertexBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
+                    builder.setFragmentBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }

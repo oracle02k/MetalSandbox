@@ -1,40 +1,47 @@
 import Metal
 
 /// メモリアロケーション情報
-struct GpuFrameAllocation {
+//struct GpuTransientHeapBlock {}
+class GpuFrameAllocation {
     let buffer: MTLBuffer
     let offset: Int
     let size: Int
-
+    
+    init(buffer: MTLBuffer, offset: Int, size:Int){
+        self.buffer = buffer
+        self.offset = offset
+        self.size = size
+    }
+    
     /// **単一の値を書き込む**
     func write<T>(value: T) {
         assert(MemoryLayout<T>.size <= size, "サイズオーバー")
         let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
         pointer.pointee = value
     }
-
+    
     /// **memcpyのように一括で配列を書き込む**
     func write<T>(from array: [T]) {
         let requiredSize = MemoryLayout<T>.stride * array.count
         assert(requiredSize <= size, "バッファサイズを超えています")
-
+        
         // `UnsafeMutableRawPointer` に `memcpy` を適用
         _ = array.withUnsafeBytes { srcPointer in
             memcpy(buffer.contents().advanced(by: offset), srcPointer.baseAddress!, requiredSize)
         }
     }
-
+    
     /// バッファのメモリをマッピングし、トレイリングクロージャを使って安全に操作する
     func withMappedPointer<T>(body: (UnsafeMutablePointer<T>) -> Void) {
         guard size >= MemoryLayout<T>.stride else {
             print("エラー: サイズが足りません")
             return
         }
-
+        
         let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
         body(pointer)
     }
-
+    
     /// 配列データを書き込むバージョン
     func withMappedPointer<T>(body: (UnsafeMutablePointer<T>, Int) -> Void) {
         let count = size / MemoryLayout<T>.stride
@@ -42,9 +49,18 @@ struct GpuFrameAllocation {
             print("エラー: サイズが無効")
             return
         }
-
+        
         let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
         body(pointer, count)
+    }
+    
+    // 型マッピング配列
+    func withBufferPointer<T>(_ type: T.Type, body: (UnsafeMutableBufferPointer<T>) -> Void) {
+        let count = size / MemoryLayout<T>.stride
+        guard count > 0 else { return }
+        let ptr = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
+        let buffer = UnsafeMutableBufferPointer(start: ptr, count: count)
+        body(buffer)
     }
 }
 
