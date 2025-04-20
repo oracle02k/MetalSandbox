@@ -77,14 +77,14 @@ final class Application {
         frameAllocator.build(size: 1024 * 1024)
 
         do {
-            let pixelFormats = AttachmentPixelFormts()
+            let pixelFormats = AttachmentPixelFormats()
             pixelFormats.colors[0] = .bgra8Unorm
             pixelFormats.depth = .depth32Float
             renderPass.build(pixelFormats: pixelFormats)
         }
 
         do {
-            let pixelFormats = AttachmentPixelFormts()
+            let pixelFormats = AttachmentPixelFormats()
             pixelFormats.colors[0] = .bgra8Unorm
             drawableRenderPass.build(pixelFormats: pixelFormats)
         }

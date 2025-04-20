@@ -25,7 +25,7 @@ class RenderPass {
     let functions: ShaderFunctions
     let tileShaderParams = TileShaderParams()
 
-    private(set) lazy var pixelFormats: AttachmentPixelFormts = uninitialized()
+    private(set) lazy var pixelFormats: AttachmentPixelFormats = uninitialized()
 
     init(
         frameAllocator: GpuTransientAllocator,
@@ -39,7 +39,7 @@ class RenderPass {
         self.functions = functions
     }
 
-    func build(pixelFormats: AttachmentPixelFormts) {
+    func build(pixelFormats: AttachmentPixelFormats) {
         self.pixelFormats = pixelFormats
     }
 

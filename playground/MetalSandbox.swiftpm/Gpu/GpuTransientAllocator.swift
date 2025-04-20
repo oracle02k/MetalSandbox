@@ -1,21 +1,38 @@
 import Metal
 
+struct GpuBufferView: Equatable {
+    let buffer: MTLBuffer
+    let offset: Int
+    
+    static func ==(lhs: GpuBufferView, rhs: GpuBufferView) -> Bool {
+        return lhs.buffer === rhs.buffer && lhs.offset == rhs.offset
+    }
+    
+    func isSameBuffer(as other: GpuBufferView) -> Bool {
+        return self.buffer === other.buffer
+    }
+}
+
 /// メモリアロケーション情報
 class GpuTransientHeapBlock {
     let buffer: MTLBuffer
-    let offset: Int
+    let position: Int
     let size: Int
     
-    init(buffer: MTLBuffer, offset: Int, size:Int){
+    init(buffer: MTLBuffer, offset: Int, size: Int) {
         self.buffer = buffer
-        self.offset = offset
+        self.position = offset
         self.size = size
+    }
+    
+    func makeView(offset: Int) -> GpuBufferView {
+        return GpuBufferView(buffer: buffer, offset: self.position + offset)
     }
     
     /// **単一の値を書き込む**
     func write<T>(value: T) {
         assert(MemoryLayout<T>.size <= size, "サイズオーバー")
-        let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
+        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
         pointer.pointee = value
     }
     
@@ -26,7 +43,7 @@ class GpuTransientHeapBlock {
         
         // `UnsafeMutableRawPointer` に `memcpy` を適用
         _ = array.withUnsafeBytes { srcPointer in
-            memcpy(buffer.contents().advanced(by: offset), srcPointer.baseAddress!, requiredSize)
+            memcpy(buffer.contents().advanced(by: position), srcPointer.baseAddress!, requiredSize)
         }
     }
     
@@ -37,7 +54,7 @@ class GpuTransientHeapBlock {
             return
         }
         
-        let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
+        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
         body(pointer)
     }
     
@@ -49,7 +66,7 @@ class GpuTransientHeapBlock {
             return
         }
         
-        let pointer = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
+        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
         body(pointer, count)
     }
     
@@ -57,7 +74,7 @@ class GpuTransientHeapBlock {
     func withBufferPointer<T>(_ type: T.Type, body: (UnsafeMutableBufferPointer<T>) -> Void) {
         let count = size / MemoryLayout<T>.stride
         guard count > 0 else { return }
-        let ptr = buffer.contents().advanced(by: offset).assumingMemoryBound(to: T.self)
+        let ptr = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
         let buffer = UnsafeMutableBufferPointer(start: ptr, count: count)
         body(buffer)
     }
