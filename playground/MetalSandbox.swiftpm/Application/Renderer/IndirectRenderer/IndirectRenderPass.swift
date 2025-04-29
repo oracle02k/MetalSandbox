@@ -237,7 +237,7 @@ class IndirectRenderPass {
     func indirectDraw(_ encoder: MTLRenderCommandEncoder) {
         // Make a useResource call for each buffer needed by the indirect command buffer.
         for i in 0..<NumObjects {
-            encoder.useResource(vertices[i].rawBuffer, usage: .read)
+            encoder.useResource(vertices[i].rawBuffer, usage: .read, stages: [.fragment, .vertex])
         }
         encoder.useResource(objectParameters.rawBuffer, usage: .read)
         encoder.useResource(indirectFrameStateBuffer, usage: .read)

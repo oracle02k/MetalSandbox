@@ -24,8 +24,8 @@ class RenderCommandBuilder {
     private var tilePipelineDescriptor = MTLTileRenderPipelineDescriptor()
     private let vertexHeapBlocks: FixedArray<GpuTransientHeapBlock?> = .init(repeating: nil, count: 8)
     private let fragmentHeapBlocks: FixedArray<GpuTransientHeapBlock?> = .init(repeating: nil, count: 8)
-    private let vertexBufferViews: FixedArray<GpuBufferView?> = .init(repeating: nil, count: 8)
-    private let fragmentBufferViews: FixedArray<GpuBufferView?> = .init(repeating: nil, count: 8)
+    private let vertexBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
+    private let fragmentBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
     private var renderPipelineState: MTLRenderPipelineState?
     private var tilePipelineState: MTLRenderPipelineState?
     private var depthStencilState: MTLDepthStencilState?
@@ -176,73 +176,47 @@ extension RenderCommandBuilder{
         }
     }
     
-    private func bindBuffer(type: BindType, heapBlock: GpuTransientHeapBlock, offset: Int, index: Int) {
-        let newView = heapBlock.makeView(offset: offset)
-        let (views, heaps) = switch type {
-            case .vertex: (vertexBufferViews, vertexHeapBlocks)
-            case .fragment: (fragmentBufferViews, fragmentHeapBlocks)
+    private func bindBuffer(type: BindType, newBinding:GpuBufferBinding, index: Int){
+        let bindings = switch type {
+            case .vertex: vertexBufferBindings
+            case .fragment: fragmentBufferBindings
         }
         
-        defer {
-            heaps[index] = heapBlock
-            views[index] = newView
-        }
-        
-        guard let currentView = views[index] else {
-            renderCommandRepository.append(type.setBufferCommand(newView.buffer, offset: newView.offset, index: index))
+        guard let currentBinding = bindings[index] else {
+            bindings[index] = newBinding
+            renderCommandRepository.append(
+                type.setBufferCommand(newBinding.buffer, offset: newBinding.offset, index: index)
+            )
             return
         }
         
-        if currentView == newView {
+        if currentBinding == newBinding {
             return
         }
         
-        if currentView.isSameBuffer(as: newView) {
-            renderCommandRepository.append(type.setOffsetCommand(newView.offset, index:index))
+        if currentBinding.buffer === newBinding.buffer {
+            bindings[index] = newBinding
+            renderCommandRepository.append(type.setOffsetCommand(newBinding.offset, index:index))
             return
         }
         
-        renderCommandRepository.append(type.setBufferCommand(newView.buffer, offset: newView.offset, index: index))
-    }
-    
-    func setBufferOffset(type: BindType, offset: Int, index: Int) {
-        let (views, heaps) = switch type {
-            case .vertex: (vertexBufferViews, vertexHeapBlocks)
-            case .fragment: (fragmentBufferViews, fragmentHeapBlocks)
-        }
-        
-        // Validation: buffer must be bound
-        guard 
-            let heapBlock = heaps[index],
-            let currentView = views[index]
-        else {
-            appFatalError("No buffer bound at index: \(index)")
-        }
-        
-        // Validation: offset must be within buffer size
-        guard offset < heapBlock.size else {
-            appFatalError("Invalid offset. Requested offset: \(offset) exceeds buffer size: \(heapBlock.size).")
-        }
-        
-        let newView = heapBlock.makeView(offset: offset)
-        guard newView.offset != currentView.offset else {
-            return // No update needed
-        }
-        
-        // Offset-only update
+        bindings[index] = newBinding
         renderCommandRepository.append(
-            type.setOffsetCommand(newView.offset, index: index)
+            type.setBufferCommand(newBinding.buffer, offset: newBinding.offset, index: index)
         )
-        
-        views[index] = newView
     }
     
-    func bindVertexBuffer(_ heapBlock: GpuTransientHeapBlock, offset: Int = 0, index: Int) {
-        bindBuffer(type: .vertex, heapBlock: heapBlock, offset:offset, index: index)
+    func bindVertexBuffer(_ binding: GpuBufferBinding, index: Int){
+        bindBuffer(type: .vertex, newBinding: binding, index: index)
     }
     
-    func bindVertexBuffer<U: RawRepresentable>(_ heapBlock:GpuTransientHeapBlock, index: U) where U.RawValue == Int {
-        bindVertexBuffer(heapBlock, index: index.rawValue)
+    func bindVertexBuffer(_ bufferRegion: GpuBufferRegion, offset: Int = 0, index: Int) {
+        let binding = bufferRegion.binding(at: offset)
+        bindBuffer(type: .vertex, newBinding: binding, index: index)
+    }
+    
+    func bindVertexBuffer<U: RawRepresentable>(_ bufferRegion: GpuBufferRegion, index: U) where U.RawValue == Int {
+        bindVertexBuffer(bufferRegion, index: index.rawValue)
     }
     
     func setVertexBuffer<T>(_ value: T, index: Int) {
@@ -267,20 +241,18 @@ extension RenderCommandBuilder{
         setVertexBuffer(value, index: index.rawValue)
     }
     
-    func setVertexBufferOffset(_ offset: Int, index: Int) {
-        setBufferOffset(type: .vertex, offset: offset, index: index)
+    // Fragment
+    func bindFragmentBuffer(_ binding: GpuBufferBinding, index: Int){
+        bindBuffer(type: .fragment, newBinding: binding, index: index)
     }
     
-    func setVertexBufferOffset<U: RawRepresentable>(_ offset:Int,  index: U) where U.RawValue == Int {
-        setVertexBufferOffset(offset, index: index.rawValue)
+    func bindFragmentBuffer(_ bufferRegion: GpuBufferRegion, offset: Int = 0, index: Int) {
+        let binding = bufferRegion.binding(at: offset)
+        bindBuffer(type: .fragment, newBinding: binding, index: index)
     }
     
-    func bindFragmentBuffer(_ heapBlock: GpuTransientHeapBlock, offset: Int = 0, index: Int) {
-        bindBuffer(type: .fragment, heapBlock: heapBlock, offset:offset, index: index)
-    }
-    
-    func bindFragmentBuffer<U: RawRepresentable>(_ heapBlock:GpuTransientHeapBlock, index: U) where U.RawValue == Int {
-        bindFragmentBuffer(heapBlock, index: index.rawValue)
+    func bindFragmentBuffer<U: RawRepresentable>(_ bufferRegion: GpuBufferRegion, index: U) where U.RawValue == Int {
+        bindFragmentBuffer(bufferRegion, index: index.rawValue)
     }
     
     func setFragmentBuffer<T>(_ value: T, index: Int) {
@@ -303,13 +275,5 @@ extension RenderCommandBuilder{
     
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
         setFragmentBuffer(value, index: index.rawValue)
-    }
-    
-    func setFragmentBufferOffset(_ offset: Int, index: Int) {
-        setBufferOffset(type: .fragment, offset: offset, index: index)
-    }
-    
-    func setFragmentBufferOffset<U: RawRepresentable>(_ offset:Int,  index: U) where U.RawValue == Int {
-        setFragmentBufferOffset(offset, index: index.rawValue)
     }
 }

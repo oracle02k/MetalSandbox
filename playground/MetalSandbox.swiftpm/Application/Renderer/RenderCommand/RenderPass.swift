@@ -14,7 +14,9 @@ enum ShaderFunctionTable: String, FunctionTableProvider {
     case TileProcessTransparentFS = "tile::process_transparent_fragment"
     case TileQuadPassVS = "tile::quad_pass_vertex"
     case TileBlendFS = "tile::blend_fragments"
-
+    case IndirectVSWithInstance = "indirect::vertex_shader_with_instance"
+    case IndirectVS = "indirect::vertex_shader"
+    case IndirectFS = "indirect::fragment_shader"
 }
 typealias ShaderFunctions = FunctionContainer<ShaderFunctionTable>
 

@@ -1,95 +1,15 @@
 import Metal
 
-struct GpuBufferView: Equatable {
-    let buffer: MTLBuffer
-    let offset: Int
-    
-    static func ==(lhs: GpuBufferView, rhs: GpuBufferView) -> Bool {
-        return lhs.buffer === rhs.buffer && lhs.offset == rhs.offset
-    }
-    
-    func isSameBuffer(as other: GpuBufferView) -> Bool {
-        return self.buffer === other.buffer
-    }
-}
-
-/// メモリアロケーション情報
-class GpuTransientHeapBlock {
-    let buffer: MTLBuffer
-    let position: Int
-    let size: Int
-    
-    init(buffer: MTLBuffer, offset: Int, size: Int) {
-        self.buffer = buffer
-        self.position = offset
-        self.size = size
-    }
-    
-    func makeView(offset: Int) -> GpuBufferView {
-        return GpuBufferView(buffer: buffer, offset: self.position + offset)
-    }
-    
-    /// **単一の値を書き込む**
-    func write<T>(value: T) {
-        assert(MemoryLayout<T>.size <= size, "サイズオーバー")
-        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
-        pointer.pointee = value
-    }
-    
-    /// **memcpyのように一括で配列を書き込む**
-    func write<T>(from array: [T]) {
-        let requiredSize = MemoryLayout<T>.stride * array.count
-        assert(requiredSize <= size, "バッファサイズを超えています")
-        
-        // `UnsafeMutableRawPointer` に `memcpy` を適用
-        _ = array.withUnsafeBytes { srcPointer in
-            memcpy(buffer.contents().advanced(by: position), srcPointer.baseAddress!, requiredSize)
-        }
-    }
-    
-    /// バッファのメモリをマッピングし、トレイリングクロージャを使って安全に操作する
-    func withMappedPointer<T>(body: (UnsafeMutablePointer<T>) -> Void) {
-        guard size >= MemoryLayout<T>.stride else {
-            print("エラー: サイズが足りません")
-            return
-        }
-        
-        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
-        body(pointer)
-    }
-    
-    /// 配列データを書き込むバージョン
-    func withMappedPointer<T>(body: (UnsafeMutablePointer<T>, Int) -> Void) {
-        let count = size / MemoryLayout<T>.stride
-        guard count > 0 else {
-            print("エラー: サイズが無効")
-            return
-        }
-        
-        let pointer = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
-        body(pointer, count)
-    }
-    
-    // 型マッピング配列
-    func withBufferPointer<T>(_ type: T.Type, body: (UnsafeMutableBufferPointer<T>) -> Void) {
-        let count = size / MemoryLayout<T>.stride
-        guard count > 0 else { return }
-        let ptr = buffer.contents().advanced(by: position).assumingMemoryBound(to: T.self)
-        let buffer = UnsafeMutableBufferPointer(start: ptr, count: count)
-        body(buffer)
-    }
-}
-
 /// フレームごとの一時的なデータを管理する Metal 向けアロケータ
 class GpuTransientAllocator {
+    static let defaultAlignment = 16
     private let gpu: GpuContext
     private let bufferCount: Int = 3  // トリプルバッファリング
     private var buffers = [MTLBuffer]()
     private var bufferSize: Int = 0
     private var currentBufferIndex: Int = 0
     private var currentOffset: Int = 0
-    private var allocatedCount = 0
-    private var allocated = [GpuTransientHeapBlock]()
+    private var debugAllocated = [GpuTransientHeapBlock]()
 
     init(gpu: GpuContext) {
         self.gpu = gpu
@@ -106,9 +26,41 @@ class GpuTransientAllocator {
     private var currentBuffer: MTLBuffer {
         return buffers[currentBufferIndex]
     }
-
+    
+    func allocateTypedPointer<T>(
+        of type: T.Type = T.self,
+        length: Int = 1,
+        alignment: Int = defaultAlignment,
+        body: (UnsafeMutablePointer<T>) -> Void
+    ) -> GpuTypedTransientHeapBlock<T> {
+        let heapBlock = allocate(of: T.self, length: length)
+        heapBlock.withTypedPointer(body)
+        
+        return heapBlock
+    }
+    
+    func allocateTypedBuffer<T>(
+        of type: T.Type = T.self,
+        length: Int = 1,
+        alignment: Int = defaultAlignment,
+        body: (UnsafeMutableBufferPointer<T>) -> Void
+    ) -> GpuTypedTransientHeapBlock<T> {
+        let heapBlock = allocate(of: T.self, length: length, alignment: alignment)
+        heapBlock.withTypedBuffer(body)
+        
+        return heapBlock
+    }
+    
+    func allocate<T>(
+        of type: T.Type = T.self,
+        length: Int = 1,
+        alignment: Int = defaultAlignment
+    ) -> GpuTypedTransientHeapBlock<T> {
+        return  GpuTypedTransientHeapBlock(raw: allocate(size: MemoryLayout<T>.stride * length)!)
+    }
+    
     /// `size` バイトのメモリを確保し、バッファとオフセットを返す
-    func allocate(size: Int, alignment: Int = 16/*MemoryLayout<Float>.alignment*/) -> GpuTransientHeapBlock? {
+    func allocate(size: Int, alignment: Int = defaultAlignment ) -> GpuTransientHeapBlock? {
         let alignedOffset = (currentOffset + alignment - 1) & ~(alignment - 1)
 
         // バッファサイズを超えたら確保できない
@@ -116,12 +68,12 @@ class GpuTransientAllocator {
             return nil
         }
 
-        let allocation = GpuTransientHeapBlock(buffer: currentBuffer, offset: alignedOffset, size: size)
+        let begin = alignedOffset
+        let end = alignedOffset + size
+        let allocation = GpuTransientHeapBlock(buffer: currentBuffer, begin: begin, end: end)
         currentOffset = alignedOffset + size
-        allocatedCount += 1
-
-        allocated.append(allocation)
-
+        debugAllocated.append(allocation)
+        
         return allocation
     }
 
@@ -129,7 +81,6 @@ class GpuTransientAllocator {
     func nextFrame() {
         currentBufferIndex = (currentBufferIndex + 1) % bufferCount
         currentOffset = 0
-        allocatedCount = 0
-        allocated.removeAll()
+        debugAllocated.removeAll()
     }
 }

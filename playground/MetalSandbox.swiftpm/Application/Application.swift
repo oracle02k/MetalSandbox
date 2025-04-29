@@ -12,6 +12,7 @@ final class Application {
     let drawableRenderPass: RenderPass
 
     let tileScene = TileScene()
+    lazy var indirectScene: IndirectScene = uninitialized()
 
     lazy var offscreen: MTLTexture = uninitialized()
     lazy var depthTexture: MTLTexture = uninitialized()
@@ -36,10 +37,13 @@ final class Application {
             renderStateResolver: renderStateResolver,
             functions: functions
         )
+        
+        indirectScene = IndirectScene(allocator: GpuTransientAllocator(gpu: gpu))
     }
 
     func changeViewportSize(_ size: CGSize) {
-        tileScene.changeSize(size: size)
+    //    tileScene.changeSize(size: size)
+        indirectScene.changeSize(size: size)
     }
 
     func build() {
@@ -89,12 +93,13 @@ final class Application {
             drawableRenderPass.build(pixelFormats: pixelFormats)
         }
 
-        tileScene.build()
+        //tileScene.build()
+        indirectScene.build()
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-
-        tileScene.update()
+        //tileScene.update()
+        indirectScene.update()
 
         frameAllocator.nextFrame()
         renderPass.clear()
@@ -115,7 +120,8 @@ final class Application {
              ])
              }
              */
-            tileScene.draw(builder)
+            //tileScene.draw(builder)
+            indirectScene.draw(builder)
         }
 
         drawableRenderPass.usingRenderCommandBuilder { builder in

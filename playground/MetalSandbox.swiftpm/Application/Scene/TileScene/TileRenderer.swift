@@ -24,7 +24,11 @@ class TileRenderer {
         .init(position: .init(-1, 0, 1, 0)),
         .init(position: .init(1, 0, 1, 0))
     ]
-
+    
+    func test(a: TileActorParams){
+        
+    }
+    
     func draw(
         _ renderCommandBuilder: RenderCommandBuilder,
         opaqueActors: [TileActor],
@@ -36,7 +40,7 @@ class TileRenderer {
             length: opaqueActors.count
         )
         
-        opaqueActorParams.withBufferPointer(TileActorParams.self){ params in
+        opaqueActorParams.withTypedBuffer(TileActorParams.self) { params in
             for i in 0..<params.count {
                 opaqueActors[i].toActorParams(param: &params[i])
             }
@@ -47,7 +51,7 @@ class TileRenderer {
             length: transparentActors.count
         )
         
-        transparentActorParams.withBufferPointer(TileActorParams.self){ params in
+        transparentActorParams.withTypedBuffer(TileActorParams.self){ params in
             for i in 0..<params.count {
                 transparentActors[i].toActorParams(param: &params[i])
             }
@@ -93,11 +97,10 @@ class TileRenderer {
                 }
 
                 builder.setCullMode(.none)
-                builder.bindVertexBuffer(opaqueActorParams, index: 2)
-                builder.bindFragmentBuffer(opaqueActorParams, index: 2)
                 for i in 0..<opaqueActors.count {
-                    builder.setVertexBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
-                    builder.setFragmentBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
+                    let offset = MemoryLayout<TileActorParams>.stride * i
+                    builder.bindVertexBuffer(opaqueActorParams, offset: offset, index: 2)
+                    builder.bindFragmentBuffer(opaqueActorParams, offset: offset, index: 2)
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }
@@ -116,11 +119,10 @@ class TileRenderer {
                 }
 
                 builder.setCullMode(.none)
-                builder.bindVertexBuffer(transparentActorParams, index: 2)
-                builder.bindFragmentBuffer(transparentActorParams, index: 2)
                 for i in 0..<transparentActors.count {
-                    builder.setVertexBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
-                    builder.setFragmentBufferOffset(MemoryLayout<TileActorParams>.stride * i, index: 2)
+                    let offset = MemoryLayout<TileActorParams>.stride * i
+                    builder.bindVertexBuffer(transparentActorParams, offset: offset, index: 2)
+                    builder.bindFragmentBuffer(transparentActorParams, offset: offset, index: 2)
                     builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
                 }
             }
