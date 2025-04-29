@@ -79,39 +79,39 @@ class RenderCommandBuilder {
 
         updateTilePipelineStateIfNeeded()
         updateDepthStencilStateIfNeeded()
-        
+
         renderCommandRepository.append(
             DispatchThreadsPerTile(threadsPerTile: tileShaderParams.tileSize)
         )
     }
-    
+
     private func updateRenderPipelineStateIfNeeded() {
         let newState = renderStateResolver.resolvePipelineState(descriptors.current.renderPipelineDescriptor)
-        guard newState !== renderPipelineState else { 
-            return 
+        guard newState !== renderPipelineState else {
+            return
         }
-        
+
         renderPipelineState = newState
         renderCommandRepository.append(SetRenderPipelineState(renderPipelineState: newState))
     }
-    
+
     private func updateTilePipelineStateIfNeeded() {
         let newState = renderStateResolver.resolveTilePipelineState(descriptors.current.tilePipelineDescriptor)
-        guard newState !== tilePipelineState else { 
-            return 
+        guard newState !== tilePipelineState else {
+            return
         }
-        
+
         tilePipelineState = newState
         renderCommandRepository.append(SetRenderPipelineState(renderPipelineState: newState))
         tileShaderParams.setMaxImageBlockSampleLength(tryValue: newState.imageblockSampleLength)
     }
-    
+
     private func updateDepthStencilStateIfNeeded() {
         let newState = renderStateResolver.resolveDepthStencilState(descriptors.current.depthStencilDescriptor)
-        guard newState !== depthStencilState else { 
-            return 
+        guard newState !== depthStencilState else {
+            return
         }
-        
+
         depthStencilState = newState
         renderCommandRepository.append(SetDepthStencilState(depthStencilState: newState))
     }
@@ -150,24 +150,24 @@ class RenderCommandBuilder {
     func setCullMode(_ mode: MTLCullMode) {
         renderCommandRepository.append(SetCullMode(mode: mode))
     }
-    
-    func allocFrameHeapBlock<T>(_ type:T.Type, length:Int = 1) -> GpuTransientHeapBlock {
+
+    func allocFrameHeapBlock<T>(_ type: T.Type, length: Int = 1) -> GpuTransientHeapBlock {
         return frameAllocator.allocate(size: MemoryLayout<T>.stride * length)!
     }
 }
 
-extension RenderCommandBuilder{
+extension RenderCommandBuilder {
     enum BindType {
         case vertex
         case fragment
-        
+
         func setBufferCommand(_ buffer: MTLBuffer, offset: Int, index: Int) -> RenderCommand {
             return switch self {
             case .vertex: SetVertexBuffer(buffer: buffer, offset: offset, index: index)
             case .fragment: SetFragmentBuffer(buffer: buffer, offset: offset, index: index)
             }
         }
-        
+
         func setOffsetCommand(_ offset: Int, index: Int) -> RenderCommand {
             return switch self {
             case .vertex: SetVertexBufferOffset(offset: offset, index: index)
@@ -175,13 +175,13 @@ extension RenderCommandBuilder{
             }
         }
     }
-    
-    private func bindBuffer(type: BindType, newBinding:GpuBufferBinding, index: Int){
+
+    private func bindBuffer(type: BindType, newBinding: GpuBufferBinding, index: Int) {
         let bindings = switch type {
-            case .vertex: vertexBufferBindings
-            case .fragment: fragmentBufferBindings
+        case .vertex: vertexBufferBindings
+        case .fragment: fragmentBufferBindings
         }
-        
+
         guard let currentBinding = bindings[index] else {
             bindings[index] = newBinding
             renderCommandRepository.append(
@@ -189,90 +189,90 @@ extension RenderCommandBuilder{
             )
             return
         }
-        
+
         if currentBinding == newBinding {
             return
         }
-        
+
         if currentBinding.buffer === newBinding.buffer {
             bindings[index] = newBinding
-            renderCommandRepository.append(type.setOffsetCommand(newBinding.offset, index:index))
+            renderCommandRepository.append(type.setOffsetCommand(newBinding.offset, index: index))
             return
         }
-        
+
         bindings[index] = newBinding
         renderCommandRepository.append(
             type.setBufferCommand(newBinding.buffer, offset: newBinding.offset, index: index)
         )
     }
-    
-    func bindVertexBuffer(_ binding: GpuBufferBinding, index: Int){
+
+    func bindVertexBuffer(_ binding: GpuBufferBinding, index: Int) {
         bindBuffer(type: .vertex, newBinding: binding, index: index)
     }
-    
+
     func bindVertexBuffer(_ bufferRegion: GpuBufferRegion, offset: Int = 0, index: Int) {
         let binding = bufferRegion.binding(at: offset)
         bindBuffer(type: .vertex, newBinding: binding, index: index)
     }
-    
+
     func bindVertexBuffer<U: RawRepresentable>(_ bufferRegion: GpuBufferRegion, index: U) where U.RawValue == Int {
         bindVertexBuffer(bufferRegion, index: index.rawValue)
     }
-    
+
     func setVertexBuffer<T>(_ value: T, index: Int) {
         let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
         allocation.write(value: value)
-        
+
         bindVertexBuffer(allocation, index: index)
     }
-    
+
     func setVertexBuffer<T, U: RawRepresentable>(_ value: T, index: U) where U.RawValue == Int {
         setVertexBuffer(value, index: index.rawValue)
     }
-    
+
     func setVertexBuffer<T>(_ value: [T], index: Int) {
         let allocation = frameAllocator.allocate(size: value.byteLength)!
         allocation.write(from: value)
-        
+
         bindVertexBuffer(allocation, index: index)
     }
-    
+
     func setVertexBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
         setVertexBuffer(value, index: index.rawValue)
     }
-    
+
     // Fragment
-    func bindFragmentBuffer(_ binding: GpuBufferBinding, index: Int){
+    func bindFragmentBuffer(_ binding: GpuBufferBinding, index: Int) {
         bindBuffer(type: .fragment, newBinding: binding, index: index)
     }
-    
+
     func bindFragmentBuffer(_ bufferRegion: GpuBufferRegion, offset: Int = 0, index: Int) {
         let binding = bufferRegion.binding(at: offset)
         bindBuffer(type: .fragment, newBinding: binding, index: index)
     }
-    
+
     func bindFragmentBuffer<U: RawRepresentable>(_ bufferRegion: GpuBufferRegion, index: U) where U.RawValue == Int {
         bindFragmentBuffer(bufferRegion, index: index.rawValue)
     }
-    
+
     func setFragmentBuffer<T>(_ value: T, index: Int) {
         let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
         allocation.write(value: value)
-        
+
         bindFragmentBuffer(allocation, index: index)
     }
-    
+
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: T, index: U) where U.RawValue == Int {
         setFragmentBuffer(value, index: index.rawValue)
     }
-    
+
     func setFragmentBuffer<T>(_ value: [T], index: Int) {
         let allocation = frameAllocator.allocate(size: value.byteLength)!
         allocation.write(from: value)
-        
+
         bindFragmentBuffer(allocation, index: index)
     }
-    
+
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
         setFragmentBuffer(value, index: index.rawValue)
     }

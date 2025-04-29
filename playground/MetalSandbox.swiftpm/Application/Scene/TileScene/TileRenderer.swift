@@ -24,11 +24,11 @@ class TileRenderer {
         .init(position: .init(-1, 0, 1, 0)),
         .init(position: .init(1, 0, 1, 0))
     ]
-    
-    func test(a: TileActorParams){
-        
+
+    func test(a: TileActorParams) {
+
     }
-    
+
     func draw(
         _ renderCommandBuilder: RenderCommandBuilder,
         opaqueActors: [TileActor],
@@ -36,27 +36,27 @@ class TileRenderer {
         cameraParams: TileCameraParams
     ) {
         let opaqueActorParams = renderCommandBuilder.allocFrameHeapBlock(
-            TileActorParams.self, 
+            TileActorParams.self,
             length: opaqueActors.count
         )
-        
+
         opaqueActorParams.withTypedBuffer(TileActorParams.self) { params in
             for i in 0..<params.count {
                 opaqueActors[i].toActorParams(param: &params[i])
             }
         }
-        
+
         let transparentActorParams = renderCommandBuilder.allocFrameHeapBlock(
-            TileActorParams.self, 
+            TileActorParams.self,
             length: transparentActors.count
         )
-        
-        transparentActorParams.withTypedBuffer(TileActorParams.self){ params in
+
+        transparentActorParams.withTypedBuffer(TileActorParams.self) { params in
             for i in 0..<params.count {
                 transparentActors[i].toActorParams(param: &params[i])
             }
         }
-        
+
         renderCommandBuilder.withStateScope { builder in
             // Configure the kernel tile shader to initialize the image block for each frame.
             builder.withDebugGroup("Init Image Block") {

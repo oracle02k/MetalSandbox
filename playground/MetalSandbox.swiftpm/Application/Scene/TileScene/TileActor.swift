@@ -27,7 +27,7 @@ class TileActor {
         let rotationMatrixX = matrix4x4_rotation(radians_from_degrees(rotation.x), 1.0, 0.0, 0.0)
         let rotationMatrixZ = matrix4x4_rotation(radians_from_degrees(rotation.z), 0.0, 0.0, 1.0)
         let rotationMatrix = matrix_multiply(rotationMatrixX, rotationMatrixZ)
-        
+
         param.modelMatrix = matrix_multiply(translationMatrix, matrix_multiply(rotationMatrix, scaleMatrix))
         param.color = color
     }

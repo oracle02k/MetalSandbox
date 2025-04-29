@@ -26,7 +26,7 @@ class GpuTransientAllocator {
     private var currentBuffer: MTLBuffer {
         return buffers[currentBufferIndex]
     }
-    
+
     func allocateTypedPointer<T>(
         of type: T.Type = T.self,
         length: Int = 1,
@@ -35,10 +35,10 @@ class GpuTransientAllocator {
     ) -> GpuTypedTransientHeapBlock<T> {
         let heapBlock = allocate(of: T.self, length: length)
         heapBlock.withTypedPointer(body)
-        
+
         return heapBlock
     }
-    
+
     func allocateTypedBuffer<T>(
         of type: T.Type = T.self,
         length: Int = 1,
@@ -47,10 +47,10 @@ class GpuTransientAllocator {
     ) -> GpuTypedTransientHeapBlock<T> {
         let heapBlock = allocate(of: T.self, length: length, alignment: alignment)
         heapBlock.withTypedBuffer(body)
-        
+
         return heapBlock
     }
-    
+
     func allocate<T>(
         of type: T.Type = T.self,
         length: Int = 1,
@@ -58,7 +58,7 @@ class GpuTransientAllocator {
     ) -> GpuTypedTransientHeapBlock<T> {
         return  GpuTypedTransientHeapBlock(raw: allocate(size: MemoryLayout<T>.stride * length)!)
     }
-    
+
     /// `size` バイトのメモリを確保し、バッファとオフセットを返す
     func allocate(size: Int, alignment: Int = defaultAlignment ) -> GpuTransientHeapBlock? {
         let alignedOffset = (currentOffset + alignment - 1) & ~(alignment - 1)
@@ -73,7 +73,7 @@ class GpuTransientAllocator {
         let allocation = GpuTransientHeapBlock(buffer: currentBuffer, begin: begin, end: end)
         currentOffset = alignedOffset + size
         debugAllocated.append(allocation)
-        
+
         return allocation
     }
 

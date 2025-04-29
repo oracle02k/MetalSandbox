@@ -37,12 +37,12 @@ final class Application {
             renderStateResolver: renderStateResolver,
             functions: functions
         )
-        
+
         indirectScene = IndirectScene(allocator: GpuTransientAllocator(gpu: gpu))
     }
 
     func changeViewportSize(_ size: CGSize) {
-    //    tileScene.changeSize(size: size)
+        //    tileScene.changeSize(size: size)
         indirectScene.changeSize(size: size)
     }
 
@@ -93,12 +93,12 @@ final class Application {
             drawableRenderPass.build(pixelFormats: pixelFormats)
         }
 
-        //tileScene.build()
+        // tileScene.build()
         indirectScene.build()
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-        //tileScene.update()
+        // tileScene.update()
         indirectScene.update()
 
         frameAllocator.nextFrame()
@@ -120,7 +120,7 @@ final class Application {
              ])
              }
              */
-            //tileScene.draw(builder)
+            // tileScene.draw(builder)
             indirectScene.draw(builder)
         }
 
