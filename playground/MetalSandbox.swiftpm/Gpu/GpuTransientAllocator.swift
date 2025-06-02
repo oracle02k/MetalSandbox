@@ -15,10 +15,10 @@ class GpuTransientAllocator {
         self.gpu = gpu
     }
 
-    func build(size: Int) {
+    func build(size: Int, options: MTLResourceOptions) {
         self.bufferSize = size
         self.buffers = (0..<bufferCount).map { _ in
-            gpu.makeBuffer(length: size, options: .storageModeShared)
+            gpu.makeBuffer(length: size, options: options)
         }
     }
 

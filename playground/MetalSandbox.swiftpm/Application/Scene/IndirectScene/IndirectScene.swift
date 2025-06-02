@@ -29,29 +29,37 @@ class IndirectScene {
     }
 
     var NumObjects: Int {Int(GridWidth * GridHeight)}
-    let GridWidth: Float = 20
-    let GridHeight: Float = 20
+    let GridWidth: Float = 2
+    let GridHeight: Float = 2
     let ObjecDistance: Float = 2.1 // Distance between each object
 
     private var vertices = [GpuTypedTransientHeapBlock<Vertex>]()
-    private var frameStateBuffer = [FrameState]()
+    private var frameStateBuffer = [GpuTypedTransientHeapBlock<FrameState>]()
     private lazy var objectParameters: GpuTypedTransientHeapBlock<ObjectPerameters> = uninitialized()
     // When using an indirect command buffer encoded by the CPU, buffer updated by the CPU must be
     // blit into a seperate buffer that is set in the indirect command buffer.
-    private lazy var indirectFrameStateBuffer: MTLBuffer = uninitialized()
+    private lazy var indirectFrameStateBuffer: GpuTypedTransientHeapBlock<FrameState> = uninitialized()
     // The indirect command buffer encoded and executed
     private lazy var indirectCommandBuffer: MTLIndirectCommandBuffer = uninitialized()
     // aspectScale
     private lazy var aspectScale = simd_float2(1, 1)
 
-    let allocator: GpuTransientAllocator
+    let sharedAllocator: GpuTransientAllocator
+    let privateAllocator: GpuTransientAllocator
+    let gpu: GpuContext
 
-    init(allocator: GpuTransientAllocator) {
-        self.allocator = allocator
+    init(gpu:GpuContext) {
+        self.gpu = gpu
+        sharedAllocator = .init(gpu: gpu)
+        privateAllocator = .init(gpu: gpu)
     }
 
-    func build() {
-        allocator.build(size: 1024)
+    func build(device: MTLDevice) {
+        sharedAllocator.build(size: 10240, options: [.storageModeShared])
+        privateAllocator.build(size: 10240, options: [.storageModePrivate])
+        
+        gearSetup()
+        indirectSetup(device: gpu.device)
     }
 
     func gearSetup() {
@@ -68,7 +76,7 @@ class IndirectScene {
         let offset = (ObjecDistance / 2.0) * (gridDimensions-1)
 
         /// Create and fill array containing parameters for each object
-        objectParameters = allocator.allocateTypedBuffer(
+        objectParameters = sharedAllocator.allocateTypedBuffer(
             of: ObjectPerameters.self,
             length: NumObjects
         ) {  parameters in
@@ -108,6 +116,12 @@ class IndirectScene {
             maxCommandCount: NumObjects
         )!
         indirectCommandBuffer.label = "Scene ICB"
+        
+        // When encoding commands with the CPU, the app sets this indirect frame state buffer
+        // dynamically in the indirect command buffer.   Each frame data will be blit from the
+        // _frameStateBuffer that has just been updated by the CPU to this buffer.  This allow
+        // a synchronous update of values set by the CPU.
+        indirectFrameStateBuffer = privateAllocator.allocate(of: FrameState.self)
 
         //  Encode a draw command for each object drawn in the indirect command buffer.
         for objIndex in 0..<NumObjects {
@@ -117,9 +131,10 @@ class IndirectScene {
             let verticesIndex = VertexBufferIndex.Vertices.rawValue
             let frameStateIndex = VertexBufferIndex.FrameState.rawValue
             let objectParamsIndex = VertexBufferIndex.ObjectParams.rawValue
+            let indirectFrameStateBinding = indirectFrameStateBuffer.binding()
 
             ICBCommand.setVertexBuffer(binding.buffer, offset: binding.offset, at: verticesIndex)
-            ICBCommand.setVertexBuffer(indirectFrameStateBuffer, offset: 0, at: frameStateIndex)
+            ICBCommand.setVertexBuffer(indirectFrameStateBinding.buffer, offset: indirectFrameStateBinding.offset, at: frameStateIndex)
             ICBCommand.setVertexBuffer(paramBinding.buffer, offset: paramBinding.offset, at: objectParamsIndex)
             ICBCommand.drawPrimitives(
                 MTLPrimitiveType.triangle,
@@ -132,14 +147,18 @@ class IndirectScene {
     }
 
     func update() {
-
+        sharedAllocator.nextFrame()
+        //privateAllocator.nextFrame()
     }
 
     func changeSize(size: CGSize) {
         // let aspect = Float(size.width / size.height)
         // projectionMatrix = matrix_perspective_left_hand(radians_from_degrees(65.0), aspect, 1.0, 150.0)
     }
-
+    
+    func render(_ commandBuffer: MTLCommandBuffer){
+    }
+    
     func draw(_ renderCommandBuilder: RenderCommandBuilder) {
         renderCommandBuilder.withStateScope { builder in
             builder.withRenderPipelineState { d in
@@ -157,21 +176,57 @@ class IndirectScene {
                 d.depthCompareFunction = .lessEqual
                 d.isDepthWriteEnabled = true
             }
-
+            
+            builder.setCullMode(.back)
+            normalDraw(builder)
+            //indirectDraw(builder)
+            
             /*
-             // When encoding commands with the CPU, the app sets this indirect frame state buffer
-             // dynamically in the indirect command buffer.   Each frame data will be blit from the
-             // _frameStateBuffer that has just been updated by the CPU to this buffer.  This allow
-             // a synchronous update of values set by the CPU.
-             indirectFrameStateBuffer = gpu.makeBuffer(
-             length: MemoryLayout<FrameState>.stride,
-             options: .storageModePrivate
-             )
-             indirectFrameStateBuffer.label = "Indirect Frame State Buffer"
+            if indirect {
+                indirectDraw(builder)
+            } else {
+                normalDraw(builder)
+            }
              */
-
         }
     }
+    
+    func preparaToDraw(using encoder: MTLBlitCommandEncoder) {
+        let frameState = sharedAllocator.allocateTypedPointer(of: FrameState.self) { p in
+            p.pointee.aspectScale = aspectScale
+        }
+        let src = frameState.binding()
+        let dest = indirectFrameStateBuffer.binding()
+        
+        encoder.copy(
+            from: src.buffer, sourceOffset: src.offset,
+            to: dest.buffer, destinationOffset: dest.offset,
+            size: frameState.size
+        )
+    }
+    
+    
+    func normalDraw(_ builder: RenderCommandBuilder) {
+        builder.bindVertexBuffer(indirectFrameStateBuffer, index: VertexBufferIndex.FrameState)
+        builder.bindVertexBuffer(objectParameters, index: VertexBufferIndex.ObjectParams)
+        
+        for i in 0..<NumObjects {
+            builder.bindVertexBuffer(vertices[i], index: VertexBufferIndex.Vertices)
+            builder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices[i].typedBufferCount(), instanceCount: 1, baseInstance: i)
+        }
+    }
+    
+    func indirectDraw(_ builder: RenderCommandBuilder) {
+        // Make a useResource call for each buffer needed by the indirect command buffer.
+        for i in 0..<NumObjects {
+            builder.useResource(vertices[i].buffer, usage: .read, stages: [.fragment, .vertex])
+        }
+        builder.useResource(objectParameters.buffer, usage: .read, stages: [.fragment, .vertex])
+        builder.useResource(indirectFrameStateBuffer.buffer, usage: .read, stages: [.fragment, .vertex])
+        // Draw everything in the indirect command buffer.
+        builder.executeCommandsInBuffer(indirectCommandBuffer, range: 0..<NumObjects)
+    }
+
 
     /// Create a Metal buffer containing a 2D "gear" mesh
     func newGearMeshWithNumTeeth(_ numTeeth: Int) -> GpuTypedTransientHeapBlock<Vertex> {
@@ -189,7 +244,7 @@ class IndirectScene {
         let origin = packed_float2(0.0, 0.0)
         var vtx = 0
 
-        return allocator.allocateTypedBuffer(length: numVertices) { meshVertices in
+        return sharedAllocator.allocateTypedBuffer(length: numVertices) { meshVertices in
             // Build triangles for teeth of gear
             for itooth in 0..<numTeeth {
                 let tooth: Float = Float(itooth)

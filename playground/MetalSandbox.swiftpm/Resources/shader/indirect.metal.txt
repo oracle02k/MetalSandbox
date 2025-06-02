@@ -48,7 +48,7 @@ vertex RasterizerData vertex_shader_with_instance(
    const device ObjectPerameters* object_params [[ buffer(VertexBufferIndexObjectParams) ]],
    constant FrameState *    frame_state   [[ buffer(VertexBufferIndexFrameState) ]]
 ) {
-    const float ViewScale = 0.05;    // Scale of each object when drawn
+    const float ViewScale = 0.2;    // Scale of each object when drawn
     RasterizerData out;
     
     float2 worldObjectPostion  = object_params[objectIndex].position;
@@ -68,7 +68,7 @@ vertex RasterizerData vertex_shader(
    const device ObjectPerameters* object_params [[ buffer(VertexBufferIndexObjectParams) ]],
    constant FrameState *    frame_state   [[ buffer(VertexBufferIndexFrameState) ]]
 ) {
-    const float ViewScale = 0.1;    // Scale of each object when drawn
+    const float ViewScale = 0.2;    // Scale of each object when drawn
     RasterizerData out;
     
     float2 worldObjectPostion  = object_params->position;

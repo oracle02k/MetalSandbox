@@ -22,8 +22,6 @@ class RenderCommandBuilder {
     private var renderPipelineDescriptor = MTLRenderPipelineDescriptor()
     private var depthStencilDescriptor = MTLDepthStencilDescriptor()
     private var tilePipelineDescriptor = MTLTileRenderPipelineDescriptor()
-    private let vertexHeapBlocks: FixedArray<GpuTransientHeapBlock?> = .init(repeating: nil, count: 8)
-    private let fragmentHeapBlocks: FixedArray<GpuTransientHeapBlock?> = .init(repeating: nil, count: 8)
     private let vertexBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
     private let fragmentBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
     private var renderPipelineState: MTLRenderPipelineState?
@@ -55,34 +53,44 @@ class RenderCommandBuilder {
         descriptors.pop()
     }
 
-    func drawPrimitives(type: MTLPrimitiveType, vertexStart: Int, vertexCount: Int) {
+    func drawPrimitives(
+        type: MTLPrimitiveType, 
+        vertexStart: Int, 
+        vertexCount: Int, 
+        instanceCount: Int = 1, 
+        baseInstance: Int = 0
+    ) {
+        updatePipelineStateIfNeeded()
+        
+        renderCommandRepository.append(
+            DrawPrimitives(
+                type: type,
+                vertexStart: vertexStart,
+                vertexCount: vertexCount,
+                instanceCount: instanceCount,
+                baseInstance: baseInstance
+            )
+        )
+    }
+    
+    func dispatchThreadsPerTile() {
+        updatePipelineStateIfNeeded()
+        
+        renderCommandRepository.append(
+            DispatchThreadsPerTile(threadsPerTile: tileShaderParams.tileSize)
+        )
+    }
+    
+    private func updatePipelineStateIfNeeded(){
         let current = descriptors.current
         for i in 0..<pixelFormats.colors.count {
             current.renderPipelineDescriptor.colorAttachments[i].pixelFormat = pixelFormats.colors[i]
         }
         current.renderPipelineDescriptor.depthAttachmentPixelFormat = pixelFormats.depth
         current.renderPipelineDescriptor.stencilAttachmentPixelFormat = pixelFormats.stencil
-
+        
         updateRenderPipelineStateIfNeeded()
         updateDepthStencilStateIfNeeded()
-
-        renderCommandRepository.append(
-            DrawPrimitives(type: type, vertexStart: vertexStart, vertexCount: vertexCount)
-        )
-    }
-
-    func dispatchThreadsPerTile() {
-        let current = descriptors.current
-        for i in 0..<pixelFormats.colors.count {
-            current.tilePipelineDescriptor.colorAttachments[i].pixelFormat = pixelFormats.colors[i]
-        }
-
-        updateTilePipelineStateIfNeeded()
-        updateDepthStencilStateIfNeeded()
-
-        renderCommandRepository.append(
-            DispatchThreadsPerTile(threadsPerTile: tileShaderParams.tileSize)
-        )
     }
 
     private func updateRenderPipelineStateIfNeeded() {
@@ -275,5 +283,17 @@ extension RenderCommandBuilder {
 
     func setFragmentBuffer<T, U: RawRepresentable>(_ value: [T], index: U) where U.RawValue == Int {
         setFragmentBuffer(value, index: index.rawValue)
+    }
+    
+    func useResource(_ resource: MTLResource, usage: MTLResourceUsage, stages: MTLRenderStages) {
+        renderCommandRepository.append(UseResource(resource: resource, usage: usage, stages: stages))
+    }
+    
+    func executeCommandsInBuffer(_ indirectCommandBuffer: any MTLIndirectCommandBuffer, range: Range<Int>){
+        updatePipelineStateIfNeeded()
+        
+        renderCommandRepository.append(
+            ExecuteCommandsInBuffer(indirectCommandBuffer: indirectCommandBuffer, range: range)
+        )
     }
 }

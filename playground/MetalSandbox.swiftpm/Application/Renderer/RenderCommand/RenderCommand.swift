@@ -62,9 +62,11 @@ struct DrawPrimitives: RenderCommand {
     let type: MTLPrimitiveType
     let vertexStart: Int
     let vertexCount: Int
+    let instanceCount: Int
+    let baseInstance: Int
 
     func execute(_ dispatcher: RenderCommandDispatcher) {
-        dispatcher.encoder.drawPrimitives(type: type, vertexStart: vertexStart, vertexCount: vertexCount)
+        dispatcher.encoder.drawPrimitives(type: type, vertexStart: vertexStart, vertexCount: vertexCount, instanceCount: instanceCount, baseInstance: baseInstance)
     }
 }
 
@@ -104,5 +106,24 @@ struct SetCullMode: RenderCommand {
 
     func execute(_ dispatcher: RenderCommandDispatcher) {
         dispatcher.encoder.setCullMode(mode)
+    }
+}
+
+struct UseResource: RenderCommand {
+    let resource: MTLResource
+    let usage: MTLResourceUsage
+    let stages: MTLRenderStages
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.useResource(resource, usage: usage, stages: stages)
+    }
+}
+
+struct ExecuteCommandsInBuffer: RenderCommand {
+    let indirectCommandBuffer: any MTLIndirectCommandBuffer
+    let range: Range<Int>
+    
+    func execute(_ dispatcher: RenderCommandDispatcher) {
+        dispatcher.encoder.executeCommandsInBuffer(indirectCommandBuffer, range: range)
     }
 }

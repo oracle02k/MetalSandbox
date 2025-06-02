@@ -38,7 +38,7 @@ final class Application {
             functions: functions
         )
 
-        indirectScene = IndirectScene(allocator: GpuTransientAllocator(gpu: gpu))
+        indirectScene = IndirectScene(gpu: gpu)
     }
 
     func changeViewportSize(_ size: CGSize) {
@@ -78,7 +78,7 @@ final class Application {
             return gpu.makeTexture(descriptor)
         }()
 
-        frameAllocator.build(size: 1024 * 1024)
+        frameAllocator.build(size: 1024 * 1024, options: .storageModeShared)
 
         do {
             let pixelFormats = AttachmentPixelFormats()
@@ -94,22 +94,22 @@ final class Application {
         }
 
         // tileScene.build()
-        indirectScene.build()
+        indirectScene.build(device: gpu.device)
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
         // tileScene.update()
         indirectScene.update()
-
+        
         frameAllocator.nextFrame()
         renderPass.clear()
         drawableRenderPass.clear()
-
+        
         renderPass.usingRenderCommandBuilder { builder in
             builder.withRenderPipelineState { d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
-
+            
             /*
              for _ in 0..<1000 {
              let meshRenderer = TriangleRenderer(renderCommandBuilder: builder)
@@ -123,40 +123,67 @@ final class Application {
             // tileScene.draw(builder)
             indirectScene.draw(builder)
         }
-
+        
         drawableRenderPass.usingRenderCommandBuilder { builder in
             builder.withRenderPipelineState { d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
-
+            
             let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
             passthroughtRenderer.draw(offscreen)
         }
-
+        
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
         }
-
-        let colorIndex = 0
-        let descriptor = MTLRenderPassDescriptor()
-        descriptor.colorAttachments[colorIndex].texture = offscreen// drawable.texture
-        descriptor.colorAttachments[colorIndex].loadAction = .clear
-        descriptor.colorAttachments[colorIndex].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
-        descriptor.colorAttachments[colorIndex].storeAction = .store
-        descriptor.depthAttachment.texture = depthTexture
-
-        /*
-         if supportsOrderIndependentTransparency {
-         // Set the tile size for the fragment shader.
-         forwardRenderPassDescriptor.tileWidth  = optimalTileSize.width
-         forwardRenderPassDescriptor.tileHeight = optimalTileSize.height
-
-         // Set the image block's memory size.
-         forwardRenderPassDescriptor.imageblockSampleLength = transparencyPipeline.imageblockSampleLength
-         }
-         */
-
+        
+        let pipeline = GpuPipeline()
+        
+        let prePassNode = GpuPassNode(GpuBlitPass{ [self] encoder in
+            indirectScene.preparaToDraw(using: encoder) 
+        })
+        
+        let mainPassNode = GpuPassNode(
+            GpuRenderPass2(
+                makeDescriptor: { d in
+                    d.colorAttachments[0].texture = offscreen
+                    d.colorAttachments[0].loadAction = .clear
+                    d.colorAttachments[0].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+                    d.colorAttachments[0].storeAction = .store
+                    d.depthAttachment.texture = depthTexture
+                    d.depthAttachment.loadAction = .clear
+                    d.depthAttachment.clearDepth = .zero
+                    d.depthAttachment.storeAction = .store
+                    
+                    gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "applicationRenderPass")
+                },
+                renderPass: renderPass
+            ),
+            dependencies: [prePassNode]
+        )
+        
+        let presentPassNode = GpuPassNode(
+            GpuRenderPass2(
+                makeDescriptor: { d in
+                    d.colorAttachments[0].texture = drawable.texture
+                    d.colorAttachments[0].loadAction = .clear
+                    d.colorAttachments[0].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+                    d.colorAttachments[0].storeAction = .store
+                    
+                    gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
+                },
+                renderPass: drawableRenderPass
+            ),
+            dependencies: [mainPassNode]
+        )
+        
+        pipeline.registerNode([
+            presentPassNode,
+            prePassNode,
+            mainPassNode,
+        ])
+            
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
@@ -166,19 +193,9 @@ final class Application {
                 )
                 gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
             }
-
-            do {
-                gpuCounterSampler?.attachToRenderPass(descriptor: descriptor, name: "applicationRenderPass")
-                renderPass.dispatch(to: commandBuffer, using: descriptor)
-            }
-
-            do {
-                descriptor.colorAttachments[colorIndex].texture = drawable.texture
-                descriptor.depthAttachment.texture = nil
-                gpuCounterSampler?.attachToRenderPass(descriptor: descriptor, name: "drawableRenderPass")
-                drawableRenderPass.dispatch(to: commandBuffer, using: descriptor)
-            }
-
+            
+            pipeline.dispatch(to: commandBuffer)
+            
             commandBuffer.present(drawable)
             commandBuffer.commit()
         }
