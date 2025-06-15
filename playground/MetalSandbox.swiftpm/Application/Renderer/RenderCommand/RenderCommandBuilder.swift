@@ -4,6 +4,15 @@ class AttachmentPixelFormats {
     let colors: FixedArray<MTLPixelFormat> = .init(repeating: .invalid, count: 8)
     var depth: MTLPixelFormat = .invalid
     var stencil: MTLPixelFormat = .invalid
+    
+    init(colors: [MTLPixelFormat], depth: MTLPixelFormat = .invalid, stencil: MTLPixelFormat = .invalid){
+        let length = min(colors.count, self.colors.count)
+        for i in (0..<length) {
+            self.colors[i] = colors[i]
+        }
+        self.depth = depth
+        self.stencil = stencil
+    }
 }
 
 class RenderDescriptors {
@@ -13,15 +22,12 @@ class RenderDescriptors {
 }
 
 class RenderCommandBuilder {
-    private let pixelFormats: AttachmentPixelFormats
+    var pixelFormats = AttachmentPixelFormats(colors: [.invalid])
     private let frameAllocator: GpuTransientAllocator
     private let renderCommandRepository: RenderCommandRepository
     private let functions: ShaderFunctions
     private let renderStateResolver: RenderStateResolver
-    private let tileShaderParams: TileShaderParams
-    private var renderPipelineDescriptor = MTLRenderPipelineDescriptor()
-    private var depthStencilDescriptor = MTLDepthStencilDescriptor()
-    private var tilePipelineDescriptor = MTLTileRenderPipelineDescriptor()
+    private let tileShaderParams = TileShaderParams()
     private let vertexBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
     private let fragmentBufferBindings: FixedArray<GpuBufferBinding?> = .init(repeating: nil, count: 8)
     private var renderPipelineState: MTLRenderPipelineState?
@@ -31,20 +37,37 @@ class RenderCommandBuilder {
     let descriptors = PropertyStack<RenderDescriptors>()
 
     init(
-        pixelFormats: AttachmentPixelFormats,
         frameAllocator: GpuTransientAllocator,
         renderCommandRepository: RenderCommandRepository,
         functions: ShaderFunctions,
-        renderStateResolver: RenderStateResolver,
-        tileShaderParams: TileShaderParams
+        renderStateResolver: RenderStateResolver
     ) {
-        self.pixelFormats = pixelFormats
         self.frameAllocator = frameAllocator
         self.renderCommandRepository = renderCommandRepository
         self.functions = functions
         self.renderStateResolver = renderStateResolver
-        self.tileShaderParams = tileShaderParams
         descriptors.push(RenderDescriptors())
+    }
+    
+    func clear() {
+        tileShaderParams.reset()
+        vertexBufferBindings.fill(repeating: nil, count: 8)
+        fragmentBufferBindings.fill(repeating: nil, count: 8)
+        renderPipelineState = nil
+        tilePipelineState = nil
+        depthStencilState = nil
+
+        descriptors.clear()
+        descriptors.push(RenderDescriptors())
+        
+        renderCommandRepository.clear()
+    }
+    
+    func makeDispatchParams() -> RenderCommandDispatchParams{
+        return RenderCommandDispatchParams(
+            commandBuffer: renderCommandRepository.currentBuffer(), 
+            tileShaderParams: tileShaderParams
+        )
     }
 
     func withStateScope(_ body: (RenderCommandBuilder) -> Void) {

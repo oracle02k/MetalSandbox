@@ -16,7 +16,7 @@ let package = Package(
         .iOSApplication(
             name: "MetalSandbox",
             targets: ["AppModule"],
-            bundleIdentifier: "akira.nakano.test.com",
+            bundleIdentifier: "akira.nakano.test2.com",
             teamIdentifier: "R3L78WSKYF",
             displayVersion: "1.0",
             bundleVersion: "1",

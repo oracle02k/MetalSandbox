@@ -8,9 +8,7 @@ final class Application {
     let functions: ShaderFunctions
     let renderStateResolver: RenderStateResolver
     let frameAllocator: GpuTransientAllocator
-    let renderPass: RenderPass
-    let drawableRenderPass: RenderPass
-
+    
     let tileScene = TileScene()
     lazy var indirectScene: IndirectScene = uninitialized()
 
@@ -23,20 +21,6 @@ final class Application {
         functions = .init(with: gpu)
         renderStateResolver = .init(gpu: gpu)
         frameAllocator = .init(gpu: gpu)
-
-        renderPass = .init(
-            frameAllocator: frameAllocator,
-            renderCommandRepository: RenderCommandRepository(),
-            renderStateResolver: renderStateResolver,
-            functions: functions
-        )
-
-        drawableRenderPass = .init(
-            frameAllocator: frameAllocator,
-            renderCommandRepository: RenderCommandRepository(),
-            renderStateResolver: renderStateResolver,
-            functions: functions
-        )
 
         indirectScene = IndirectScene(gpu: gpu)
     }
@@ -80,33 +64,31 @@ final class Application {
 
         frameAllocator.build(size: 1024 * 1024, options: .storageModeShared)
 
-        do {
-            let pixelFormats = AttachmentPixelFormats()
-            pixelFormats.colors[0] = .bgra8Unorm
-            pixelFormats.depth = .depth32Float
-            renderPass.build(pixelFormats: pixelFormats)
-        }
-
-        do {
-            let pixelFormats = AttachmentPixelFormats()
-            pixelFormats.colors[0] = .bgra8Unorm
-            drawableRenderPass.build(pixelFormats: pixelFormats)
-        }
-
         // tileScene.build()
         indirectScene.build(device: gpu.device)
+    }
+    
+    private func buildRenderCommand(
+        body: (RenderCommandBuilder)->Void
+    ) -> RenderCommandDispatchParams {
+        let builder = RenderCommandBuilder(
+            frameAllocator: frameAllocator,
+            renderCommandRepository: RenderCommandRepository(), 
+            functions: functions, 
+            renderStateResolver: renderStateResolver
+        )
+        body(builder)
+        return builder.makeDispatchParams()
     }
 
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
         // tileScene.update()
         indirectScene.update()
-        
         frameAllocator.nextFrame()
-        renderPass.clear()
-        drawableRenderPass.clear()
         
-        renderPass.usingRenderCommandBuilder { builder in
-            builder.withRenderPipelineState { d in
+        let appDispatchParams = buildRenderCommand{ builder in
+            builder.pixelFormats = .init(colors: [.bgra8Unorm], depth: .depth32Float)
+            builder .withRenderPipelineState{ d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
             
@@ -124,14 +106,15 @@ final class Application {
             indirectScene.draw(builder)
         }
         
-        drawableRenderPass.usingRenderCommandBuilder { builder in
+        let presentDispatchParams = buildRenderCommand { builder in
+            builder.pixelFormats = .init(colors: [.bgra8Unorm])
             builder.withRenderPipelineState { d in
                 d.colorAttachments[0].pixelFormat = .bgra8Unorm
             }
             
             let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
             passthroughtRenderer.draw(offscreen)
-        }
+       }
         
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
@@ -145,7 +128,7 @@ final class Application {
         })
         
         let mainPassNode = GpuPassNode(
-            GpuRenderPass2(
+            GpuRenderCommandDispatchPass(
                 makeDescriptor: { d in
                     d.colorAttachments[0].texture = offscreen
                     d.colorAttachments[0].loadAction = .clear
@@ -158,13 +141,13 @@ final class Application {
                     
                     gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "applicationRenderPass")
                 },
-                renderPass: renderPass
+                dispatchParams: appDispatchParams
             ),
             dependencies: [prePassNode]
         )
         
         let presentPassNode = GpuPassNode(
-            GpuRenderPass2(
+            GpuRenderCommandDispatchPass(
                 makeDescriptor: { d in
                     d.colorAttachments[0].texture = drawable.texture
                     d.colorAttachments[0].loadAction = .clear
@@ -173,7 +156,7 @@ final class Application {
                     
                     gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
                 },
-                renderPass: drawableRenderPass
+                dispatchParams: presentDispatchParams
             ),
             dependencies: [mainPassNode]
         )

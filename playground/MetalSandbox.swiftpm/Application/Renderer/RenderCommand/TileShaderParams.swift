@@ -9,4 +9,9 @@ class TileShaderParams {
             maxImageBlockSampleLength = tryValue
         }
     }
+    
+    func reset() {
+        maxImageBlockSampleLength = 0
+        tileSize = .init(width: 32, height: 16, depth: 1)
+    }
 }
