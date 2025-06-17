@@ -86,42 +86,10 @@ final class Application {
         indirectScene.update()
         frameAllocator.nextFrame()
         
-        let appDispatchParams = buildRenderCommand{ builder in
-            builder.pixelFormats = .init(colors: [.bgra8Unorm], depth: .depth32Float)
-            builder .withRenderPipelineState{ d in
-                d.colorAttachments[0].pixelFormat = .bgra8Unorm
-            }
-            
-            /*
-             for _ in 0..<1000 {
-             let meshRenderer = TriangleRenderer(renderCommandBuilder: builder)
-             meshRenderer.draw(vertices: [
-             .init(position: .init(160, 0, 0.0), color: .init(1, 0, 0, 1)),
-             .init(position: .init(0, 320, 0.0), color: .init(0, 1, 0, 1)),
-             .init(position: .init(320, 320, 0.0), color: .init(0, 0, 1, 1))
-             ])
-             }
-             */
-            // tileScene.draw(builder)
-            indirectScene.draw(builder)
-        }
-        
-        let presentDispatchParams = buildRenderCommand { builder in
-            builder.pixelFormats = .init(colors: [.bgra8Unorm])
-            builder.withRenderPipelineState { d in
-                d.colorAttachments[0].pixelFormat = .bgra8Unorm
-            }
-            
-            let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
-            passthroughtRenderer.draw(offscreen)
-       }
-        
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
         }
-        
-        let pipeline = GpuPipeline()
         
         let prePassNode = GpuPassNode(GpuBlitPass{ [self] encoder in
             indirectScene.preparaToDraw(using: encoder) 
@@ -141,7 +109,16 @@ final class Application {
                     
                     gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "applicationRenderPass")
                 },
-                dispatchParams: appDispatchParams
+                dispatchParams: buildRenderCommand{ builder in
+                    builder.pixelFormats.colors[0] = .bgra8Unorm
+                    builder.pixelFormats.depth = .depth32Float
+                    builder.withRenderPipelineState{ d in
+                        d.colorAttachments[0].pixelFormat = .bgra8Unorm
+                    }
+                    
+                    // tileScene.draw(builder)
+                    indirectScene.draw(builder, indirect:true)
+                }
             ),
             dependencies: [prePassNode]
         )
@@ -156,11 +133,20 @@ final class Application {
                     
                     gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
                 },
-                dispatchParams: presentDispatchParams
+                dispatchParams: buildRenderCommand { builder in
+                    builder.pixelFormats.colors[0] = .bgra8Unorm
+                    builder.withRenderPipelineState { d in
+                        d.colorAttachments[0].pixelFormat = .bgra8Unorm
+                    }
+                    
+                    let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
+                    passthroughtRenderer.draw(offscreen)
+                }
             ),
             dependencies: [mainPassNode]
         )
         
+        let pipeline = GpuPipeline()
         pipeline.registerNode([
             presentPassNode,
             prePassNode,

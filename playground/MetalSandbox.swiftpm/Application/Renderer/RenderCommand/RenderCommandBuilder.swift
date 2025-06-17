@@ -183,7 +183,7 @@ class RenderCommandBuilder {
     }
 
     func allocFrameHeapBlock<T>(_ type: T.Type, length: Int = 1) -> GpuTransientHeapBlock {
-        return frameAllocator.allocate(size: MemoryLayout<T>.stride * length)!
+        return frameAllocator.allocate(size: MemoryLayout<T>.stride * length)
     }
 }
 
@@ -251,7 +251,7 @@ extension RenderCommandBuilder {
     }
 
     func setVertexBuffer<T>(_ value: T, index: Int) {
-        let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
+        let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)
         allocation.write(value: value)
 
         bindVertexBuffer(allocation, index: index)
@@ -262,7 +262,7 @@ extension RenderCommandBuilder {
     }
 
     func setVertexBuffer<T>(_ value: [T], index: Int) {
-        let allocation = frameAllocator.allocate(size: value.byteLength)!
+        let allocation = frameAllocator.allocate(size: value.byteLength)
         allocation.write(from: value)
 
         bindVertexBuffer(allocation, index: index)
@@ -287,7 +287,7 @@ extension RenderCommandBuilder {
     }
 
     func setFragmentBuffer<T>(_ value: T, index: Int) {
-        let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)!
+        let allocation = frameAllocator.allocate(size: MemoryLayout<T>.stride)
         allocation.write(value: value)
 
         bindFragmentBuffer(allocation, index: index)
@@ -298,7 +298,7 @@ extension RenderCommandBuilder {
     }
 
     func setFragmentBuffer<T>(_ value: [T], index: Int) {
-        let allocation = frameAllocator.allocate(size: value.byteLength)!
+        let allocation = frameAllocator.allocate(size: value.byteLength)
         allocation.write(from: value)
 
         bindFragmentBuffer(allocation, index: index)

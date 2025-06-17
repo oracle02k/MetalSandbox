@@ -56,16 +56,16 @@ class GpuTransientAllocator {
         length: Int = 1,
         alignment: Int = defaultAlignment
     ) -> GpuTypedTransientHeapBlock<T> {
-        return  GpuTypedTransientHeapBlock(raw: allocate(size: MemoryLayout<T>.stride * length)!)
+        return  GpuTypedTransientHeapBlock(raw: allocate(size: MemoryLayout<T>.stride * length))
     }
 
     /// `size` バイトのメモリを確保し、バッファとオフセットを返す
-    func allocate(size: Int, alignment: Int = defaultAlignment ) -> GpuTransientHeapBlock? {
+    func allocate(size: Int, alignment: Int = defaultAlignment ) -> GpuTransientHeapBlock {
         let alignedOffset = (currentOffset + alignment - 1) & ~(alignment - 1)
 
         // バッファサイズを超えたら確保できない
         if alignedOffset + size > bufferSize {
-            return nil
+            appFatalError("[GpuTransientAllocator] Allocation failed: requested size = \(size), alignment = \(alignment), currentOffset = \(currentOffset), bufferSize = \(bufferSize)")
         }
 
         let begin = alignedOffset
@@ -84,3 +84,4 @@ class GpuTransientAllocator {
         debugAllocated.removeAll()
     }
 }
+

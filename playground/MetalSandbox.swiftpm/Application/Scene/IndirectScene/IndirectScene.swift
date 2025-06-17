@@ -29,8 +29,8 @@ class IndirectScene {
     }
 
     var NumObjects: Int {Int(GridWidth * GridHeight)}
-    let GridWidth: Float = 2
-    let GridHeight: Float = 2
+    let GridWidth: Float = 5
+    let GridHeight: Float = 5
     let ObjecDistance: Float = 2.1 // Distance between each object
 
     private var vertices = [GpuTypedTransientHeapBlock<Vertex>]()
@@ -55,7 +55,7 @@ class IndirectScene {
     }
 
     func build(device: MTLDevice) {
-        sharedAllocator.build(size: 10240, options: [.storageModeShared])
+        sharedAllocator.build(size: 1024 * 1024 * 10, options: [.storageModeShared])
         privateAllocator.build(size: 10240, options: [.storageModePrivate])
         
         gearSetup()
@@ -66,7 +66,8 @@ class IndirectScene {
         for objectIdx in 0..<NumObjects {
             // Choose parameters to generate a mesh for this object so that each mesh is unique
             // and looks diffent than the mesh it's next to in the grid drawn
-            let numTeeth = (objectIdx < 8) ? objectIdx + 3 : objectIdx * 3
+            //let numTeeth = (objectIdx < 8) ? objectIdx + 3 : objectIdx * 3
+            let numTeeth = objectIdx + 3
 
             // Create a vertex buffer, and initialize it with a unique 2D gear mesh
             vertices.append(newGearMeshWithNumTeeth(numTeeth))
@@ -159,7 +160,7 @@ class IndirectScene {
     func render(_ commandBuffer: MTLCommandBuffer){
     }
     
-    func draw(_ renderCommandBuilder: RenderCommandBuilder) {
+    func draw(_ renderCommandBuilder: RenderCommandBuilder, indirect:Bool) {
         renderCommandBuilder.withStateScope { builder in
             builder.withRenderPipelineState { d in
                 d.label = "Instance Render Pipeline"
@@ -178,16 +179,12 @@ class IndirectScene {
             }
             
             builder.setCullMode(.back)
-            normalDraw(builder)
-            //indirectDraw(builder)
             
-            /*
             if indirect {
                 indirectDraw(builder)
-            } else {
+            }else{
                 normalDraw(builder)
             }
-             */
         }
     }
     
