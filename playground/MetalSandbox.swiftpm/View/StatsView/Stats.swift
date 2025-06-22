@@ -3,9 +3,9 @@ import Foundation
 class CounterSampleReportGroup: Identifiable {
     let id = UUID()
     let name: String
-    let reports: [CounterSampleReport]
+    let reports: [GpuCounterSampleReport]
 
-    init(name: String, reports: [CounterSampleReport]) {
+    init(name: String, reports: [GpuCounterSampleReport]) {
         self.name = name
         self.reports = reports
     }

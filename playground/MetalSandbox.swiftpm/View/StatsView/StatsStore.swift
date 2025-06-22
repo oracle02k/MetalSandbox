@@ -8,15 +8,15 @@ class StatsStore {
     private let frameStatsRepository: FrameStatsReportRepository
 
     @ObservationIgnored
-    private let counterSampleSummaryRepository: CounterSampleSummaryRepository
+    private let counterSampleSummaryRepository: GpuCounterSampleSummaryRepository
 
     @ObservationIgnored
-    private let counterSampleReportRepository: CounterSampleReportRepository
+    private let counterSampleReportRepository: GpuCounterSampleReportRepository
 
     init(
         frameStatsRepository: FrameStatsReportRepository,
-        counterSampleSummaryRepository: CounterSampleSummaryRepository,
-        counterSampleReportRepository: CounterSampleReportRepository
+        counterSampleSummaryRepository: GpuCounterSampleSummaryRepository,
+        counterSampleReportRepository: GpuCounterSampleReportRepository
     ) {
         self.frameStatsRepository = frameStatsRepository
         self.counterSampleSummaryRepository = counterSampleSummaryRepository
@@ -38,7 +38,7 @@ class StatsStore {
             let reports = counterSampleReportRepository
                 .fetchByGroupedType(byFilterId: summary.id)
                 .map { (type, values) in
-                    CounterSampleReport(
+                    GpuCounterSampleReport(
                         counterSampleId: summary.id,
                         frame: 0,
                         type: type,

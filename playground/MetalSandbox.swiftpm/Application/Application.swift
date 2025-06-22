@@ -1,45 +1,36 @@
+import Foundation
 import MetalKit
+
+enum SceneType {
+    case tile
+    case indirect
+    
+    func makeScene(gpu: GpuContext) -> SandboxScene {
+        return switch self {
+        case .tile: TileScene(gpu: gpu)
+        case .indirect: IndirectScene(gpu: gpu)
+        }
+    }
+}
 
 final class Application {
     static let ColorPixelFormat: MTLPixelFormat = .bgra8Unorm
-    let gpu: GpuContext
-    let gpuCounterSampler: CounterSampler? = DIContainer.resolve(CounterSampler.self)
-    let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
-    let functions: ShaderFunctions
-    let renderStateResolver: RenderStateResolver
-    let frameAllocator: GpuTransientAllocator
     
-    let tileScene = TileScene()
-    lazy var indirectScene: IndirectScene = uninitialized()
-
+    let gpu: GpuContext
+    let scene: SandboxScene
+    let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
     lazy var offscreen: MTLTexture = uninitialized()
     lazy var depthTexture: MTLTexture = uninitialized()
-
-    init(gpu: GpuContext) {
+    
+    init(gpu: GpuContext){
         self.gpu = gpu
-
-        functions = .init(with: gpu)
-        renderStateResolver = .init(gpu: gpu)
-        frameAllocator = .init(gpu: gpu)
-
-        indirectScene = IndirectScene(gpu: gpu)
+        self.scene = SceneType.indirect.makeScene(gpu: self.gpu)
     }
-
-    func changeViewportSize(_ size: CGSize) {
-        //    tileScene.changeSize(size: size)
-        indirectScene.changeSize(size: size)
-    }
-
+    
     func build() {
-        gpu.build()
-        _ = gpu.checkCounterSample()
-
-        functions.buildShaderFolder()
-
-        if let gpuCounterSampler = gpuCounterSampler {
-            gpuCounterSampler.build(counterSampleBuffer: gpu.makeCounterSampleBuffer(.timestamp, 32)!)
-        }
-
+        gpu.build() 
+        scene.build()
+        
         offscreen = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -49,7 +40,7 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-
+        
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -61,68 +52,31 @@ final class Application {
             // descriptor.storageMode = .memoryless
             return gpu.makeTexture(descriptor)
         }()
-
-        frameAllocator.build(size: 1024 * 1024, options: .storageModeShared)
-
-        // tileScene.build()
-        indirectScene.build(device: gpu.device)
     }
     
-    private func buildRenderCommand(
-        body: (RenderCommandBuilder)->Void
-    ) -> RenderCommandDispatchParams {
-        let builder = RenderCommandBuilder(
-            frameAllocator: frameAllocator,
-            renderCommandRepository: RenderCommandRepository(), 
-            functions: functions, 
-            renderStateResolver: renderStateResolver
-        )
-        body(builder)
-        return builder.makeDispatchParams()
+    func changeViewportSize(_ size: CGSize) {
+        scene.changeSize(size: size)
     }
-
+    
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
-        // tileScene.update()
-        indirectScene.update()
-        frameAllocator.nextFrame()
+        scene.update()
+        
+        let descriptor = MTLRenderPassDescriptor()
+        descriptor.colorAttachments[0].texture = offscreen
+        descriptor.colorAttachments[0].loadAction = .clear
+        descriptor.colorAttachments[0].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
+        descriptor.colorAttachments[0].storeAction = .store
+        descriptor.depthAttachment.texture = depthTexture
+        descriptor.depthAttachment.loadAction = .clear
+        descriptor.depthAttachment.clearDepth = 1.0
+        descriptor.depthAttachment.storeAction = .dontCare
+        gpu.counterSampler?.attachToRenderPass(descriptor: descriptor, name: "applicationRenderPass")
+        let scenePassNodes = scene.makeFrameRenderPassNodes(descriptor: descriptor, pixelFormats: .init(colors: [Self.ColorPixelFormat], depth: .depth32Float))
         
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
         }
-        
-        let prePassNode = GpuPassNode(GpuBlitPass{ [self] encoder in
-            indirectScene.preparaToDraw(using: encoder) 
-        })
-        
-        let mainPassNode = GpuPassNode(
-            GpuRenderCommandDispatchPass(
-                makeDescriptor: { d in
-                    d.colorAttachments[0].texture = offscreen
-                    d.colorAttachments[0].loadAction = .clear
-                    d.colorAttachments[0].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
-                    d.colorAttachments[0].storeAction = .store
-                    d.depthAttachment.texture = depthTexture
-                    d.depthAttachment.loadAction = .clear
-                    d.depthAttachment.clearDepth = .zero
-                    d.depthAttachment.storeAction = .store
-                    
-                    gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "applicationRenderPass")
-                },
-                dispatchParams: buildRenderCommand{ builder in
-                    builder.pixelFormats.colors[0] = .bgra8Unorm
-                    builder.pixelFormats.depth = .depth32Float
-                    builder.withRenderPipelineState{ d in
-                        d.colorAttachments[0].pixelFormat = .bgra8Unorm
-                    }
-                    
-                    // tileScene.draw(builder)
-                    indirectScene.draw(builder, indirect:true)
-                }
-            ),
-            dependencies: [prePassNode]
-        )
-        
         let presentPassNode = GpuPassNode(
             GpuRenderCommandDispatchPass(
                 makeDescriptor: { d in
@@ -130,29 +84,19 @@ final class Application {
                     d.colorAttachments[0].loadAction = .clear
                     d.colorAttachments[0].clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
                     d.colorAttachments[0].storeAction = .store
-                    
-                    gpuCounterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
+                    gpu.counterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
                 },
-                dispatchParams: buildRenderCommand { builder in
-                    builder.pixelFormats.colors[0] = .bgra8Unorm
-                    builder.withRenderPipelineState { d in
-                        d.colorAttachments[0].pixelFormat = .bgra8Unorm
-                    }
-                    
-                    let passthroughtRenderer = PassthroughtRenderer(renderCommandBuilder: builder)
-                    passthroughtRenderer.draw(offscreen)
+                dispatch: gpu.frame.buildFrameRenderCommand{ builder in
+                    builder.pixelFormats.colors[0] = Self.ColorPixelFormat
+                    PassthroughtRenderer(renderCommandBuilder: builder).draw(offscreen)
                 }
             ),
-            dependencies: [mainPassNode]
+            dependencies: scenePassNodes.outputNodes
         )
         
         let pipeline = GpuPipeline()
-        pipeline.registerNode([
-            presentPassNode,
-            prePassNode,
-            mainPassNode,
-        ])
-            
+        pipeline.registerNode([presentPassNode] + scenePassNodes.nodes)
+        
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
@@ -160,7 +104,7 @@ final class Application {
                     device: gpu.device,
                     gpuTime: commandBuffer.gpuTime()
                 )
-                gpuCounterSampler?.resolve(frame: frameStatus.frameCount)
+                gpu.counterSampler?.resolve(frame: frameStatus.frameCount)
             }
             
             pipeline.dispatch(to: commandBuffer)
@@ -168,96 +112,7 @@ final class Application {
             commandBuffer.present(drawable)
             commandBuffer.commit()
         }
+        
+        gpu.frame.next()
     }
 }
-/*
- final class Application {
- enum Pipeline: String, CaseIterable {
- case TriangleRender
- case IndirectRender
- case TileRender
- case RogRender
- case LifegameCPU
- case LifegameGPU
- case Check
- }
-
- private let gpu: GpuContext
- private let frameStatsReporter: FrameStatsReporter
- private var viewportSize: CGSize
- private var activePipeline: FramePipeline?
-
- init(
- gpu: GpuContext,
- frameStatsReporter: FrameStatsReporter
- ) {
- self.gpu = gpu
- self.frameStatsReporter = frameStatsReporter
- self.activePipeline = nil
- viewportSize = .init(width: 320, height: 320)
- }
-
- func build() {
- gpu.build()
- _ = gpu.checkCounterSample()
- changePipeline(pipeline: .TriangleRender)
- }
-
- func changePipeline(pipeline: Pipeline) {
- synchronized(self) {
- activePipeline = switch pipeline {
- case .TriangleRender: {
- let option = TrianglePipeline.Option(
- frameStatsReporter: frameStatsReporter,
- gpuCounterSampler: DIContainer.resolve(CounterSampler.self)
- )
- let pipeline = DIContainer.resolve(TrianglePipeline.self)
- pipeline.build(with: option)
- return pipeline
- }()
- case .IndirectRender: {
- let pipeline = DIContainer.resolve(IndirectPipeline.self)
- pipeline.build(with: frameStatsReporter)
- return pipeline
- }()
- case .TileRender: {
- let pipeline = DIContainer.resolve(TilePipeline.self)
- pipeline.build(with: frameStatsReporter)
- return pipeline
- }()
- case .RogRender: {
- let pipeline = DIContainer.resolve(RasterOrderGroupPipeline.self)
- pipeline.build(with: frameStatsReporter)
- return pipeline
- }()
- case .LifegameCPU: {
- let pipeline = DIContainer.resolve(LifegamePipeline.self)
- pipeline.build(width: 200, height: 200, useCompute: false, with: frameStatsReporter)
- return pipeline
- }()
- case .LifegameGPU: {
- let pipeline = DIContainer.resolve(LifegamePipeline.self)
- pipeline.build(width: 1000, height: 1000, useCompute: true, with: frameStatsReporter)
- return pipeline
- }()
- case .Check: {
- let pipeline = DIContainer.resolve(CheckPipeline.self)
- pipeline.build(with: frameStatsReporter)
- return pipeline
- }()
- }
- }
- }
-
- func changeViewportSize(_ size: CGSize) {
- viewportSize = size
- activePipeline?.changeSize(viewportSize: size)
- }
-
- func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
- synchronized(self) {
- activePipeline?.update(frameStatus: frameStatus, drawTo: metalLayer)
- }
- }
- }
- */
