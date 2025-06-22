@@ -1,26 +1,26 @@
 import Metal
 
-class GpuRenderPass : GpuPass {
+class GpuRenderPass: GpuPass {
     var descriptor = MTLRenderPassDescriptor()
     let performEncoding: (MTLRenderCommandEncoder) -> Void
-    
-    init( 
-        makeDescriptor: (MTLRenderPassDescriptor)->Void,
-        performEncoding: @escaping (MTLRenderCommandEncoder)->Void
-    ){
+
+    init(
+        makeDescriptor: (MTLRenderPassDescriptor) -> Void,
+        performEncoding: @escaping (MTLRenderCommandEncoder) -> Void
+    ) {
         makeDescriptor(self.descriptor)
         self.performEncoding = performEncoding
     }
-    
-    init( 
+
+    init(
         _ descriptor: MTLRenderPassDescriptor,
-        performEncoding: @escaping (MTLRenderCommandEncoder)->Void
-    ){
+        performEncoding: @escaping (MTLRenderCommandEncoder) -> Void
+    ) {
         self.descriptor = descriptor
         self.performEncoding = performEncoding
     }
-    
-    func dispatch(_ commandBuffer: MTLCommandBuffer){
+
+    func dispatch(_ commandBuffer: MTLCommandBuffer) {
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)!
         performEncoding(encoder)
         encoder.endEncoding()

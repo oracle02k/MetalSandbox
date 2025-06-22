@@ -11,7 +11,7 @@ class GpuCounterSampleSummary {
     let type: GpuCounterSampleType
     let startIndex: Int
     let consumeBufferIndex: Int
-    
+
     init(id: Int, name: String, type: GpuCounterSampleType, startIndex: Int, consumeBufferIndex: Int) {
         self.id = id
         self.name = name

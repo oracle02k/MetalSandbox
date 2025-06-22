@@ -12,7 +12,7 @@ class GpuCounterSampleReport: Identifiable {
     let frame: UInt64
     let type: GpuCounterSampleReportType
     let interval: MilliSecond
-    
+
     init(counterSampleId: Int, frame: UInt64, type: GpuCounterSampleReportType, interval: MilliSecond) {
         self.counterSampleId = counterSampleId
         self.frame = frame

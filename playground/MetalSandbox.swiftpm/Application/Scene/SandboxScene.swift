@@ -1,7 +1,7 @@
 import Foundation
 import Metal
 
-protocol SandboxScene{
+protocol SandboxScene {
     func build()
     func update()
     func changeSize(size: CGSize)

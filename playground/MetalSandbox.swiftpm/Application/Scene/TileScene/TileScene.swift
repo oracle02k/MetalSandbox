@@ -2,20 +2,20 @@ import simd
 import Metal
 import Foundation
 
-class TileScene : SandboxScene {
+class TileScene: SandboxScene {
     let ActorCountPerColumn = 4
     let TransparentColumnCount = 4
     let renderer = TileRenderer()
     private var opaqueActors = [TileActor]()
     private var transparentActors = [TileActor]()
     private var projectionMatrix = matrix_float4x4()
-    
+
     let gpu: GpuContext
-    
-    init(gpu:GpuContext) {
+
+    init(gpu: GpuContext) {
         self.gpu = gpu
     }
-    
+
     func build() {
         var genericColors: [vector_float4] = [
             .init(0.3, 0.9, 0.1, 1.0),
@@ -23,11 +23,11 @@ class TileScene : SandboxScene {
             .init(0.5, 0.05, 0.9, 1.0),
             .init(0.9, 0.1, 0.1, 1.0)
         ]
-        
+
         var startPosition = vector_float3(7.0, 0.1, 12.0)
         let standardScale = vector_float3(1.5, 1.0, 1.5)
         let standardRotation = vector_float3(90.0, 0.0, 0.0)
-        
+
         // Create opaque rotating quad actors at the rear of each column.
         for _ in 0..<ActorCountPerColumn {
             let actor = TileActor(
@@ -36,11 +36,11 @@ class TileScene : SandboxScene {
                 rotation: standardRotation,
                 scale: standardScale
             )
-            
+
             opaqueActors.append(actor)
             startPosition[0] -= 4.5
         }
-        
+
         // Create an opaque floor actor.
         do {
             let color = vector_float4(0.7, 0.7, 0.7, 1.0)
@@ -51,10 +51,10 @@ class TileScene : SandboxScene {
             actor.enableRotation = false
             opaqueActors.append(actor)
         }
-        
+
         startPosition = .init(7.0, 0.1, 0.0)
         var curPosition = startPosition
-        
+
         // Create the transparent actors.
         for _ in 0..<TransparentColumnCount {
             for rowIndex in 0..<ActorCountPerColumn {
@@ -70,35 +70,34 @@ class TileScene : SandboxScene {
             curPosition = startPosition
         }
     }
-    
+
     func changeSize(size: CGSize) {
         let aspect = Float(size.width / size.height)
         projectionMatrix = matrix_perspective_left_hand(radians_from_degrees(65.0), aspect, 1.0, 150.0)
     }
-    
+
     func makeCameraParams() -> TileCameraParams {
         let eyePos = vector_float3(0.0, 2.0, -12.0)
         let eyeTarget = vector_float3(eyePos.x, eyePos.y - 0.25, eyePos.z + 1.0)
         let eyeUp = vector_float3(0.0, 1.0, 0.0)
         let viewMatrix = matrix_look_at_left_hand(eyePos, eyeTarget, eyeUp)
-        
+
         return TileCameraParams(
             cameraPos: eyePos,
             viewProjectionMatrix: matrix_multiply(projectionMatrix, viewMatrix)
         )
     }
-    
+
     func update() {
         for actor in opaqueActors {
             actor.update()
         }
-        
+
         for actor in transparentActors {
             actor.update()
         }
     }
-    
-    
+
     func makeFrameRenderPassNodes(
         descriptor: MTLRenderPassDescriptor,
         pixelFormats: AttachmentPixelFormats
@@ -117,7 +116,7 @@ class TileScene : SandboxScene {
                 }
             )
         )
-        
+
         return GpuPassNodeGroup(nodes: [passNode], outputNodes: [passNode])
     }
 }

@@ -4,7 +4,7 @@ import MetalKit
 enum SceneType {
     case tile
     case indirect
-    
+
     func makeScene(gpu: GpuContext) -> SandboxScene {
         return switch self {
         case .tile: TileScene(gpu: gpu)
@@ -15,22 +15,22 @@ enum SceneType {
 
 final class Application {
     static let ColorPixelFormat: MTLPixelFormat = .bgra8Unorm
-    
+
     let gpu: GpuContext
     let scene: SandboxScene
     let frameStatsReporter: FrameStatsReporter? = DIContainer.resolve(FrameStatsReporter.self)
     lazy var offscreen: MTLTexture = uninitialized()
     lazy var depthTexture: MTLTexture = uninitialized()
-    
-    init(gpu: GpuContext){
+
+    init(gpu: GpuContext) {
         self.gpu = gpu
         self.scene = SceneType.indirect.makeScene(gpu: self.gpu)
     }
-    
+
     func build() {
-        gpu.build() 
+        gpu.build()
         scene.build()
-        
+
         offscreen = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -40,7 +40,7 @@ final class Application {
             descriptor.usage = [.renderTarget, .shaderRead]
             return gpu.makeTexture(descriptor)
         }()
-        
+
         depthTexture = {
             let descriptor = MTLTextureDescriptor()
             descriptor.textureType = .type2D
@@ -53,14 +53,14 @@ final class Application {
             return gpu.makeTexture(descriptor)
         }()
     }
-    
+
     func changeViewportSize(_ size: CGSize) {
         scene.changeSize(size: size)
     }
-    
+
     func update(drawTo metalLayer: CAMetalLayer, frameStatus: FrameStatus) {
         scene.update()
-        
+
         let descriptor = MTLRenderPassDescriptor()
         descriptor.colorAttachments[0].texture = offscreen
         descriptor.colorAttachments[0].loadAction = .clear
@@ -72,7 +72,7 @@ final class Application {
         descriptor.depthAttachment.storeAction = .dontCare
         gpu.counterSampler?.attachToRenderPass(descriptor: descriptor, name: "applicationRenderPass")
         let scenePassNodes = scene.makeFrameRenderPassNodes(descriptor: descriptor, pixelFormats: .init(colors: [Self.ColorPixelFormat], depth: .depth32Float))
-        
+
         metalLayer.pixelFormat = Self.ColorPixelFormat
         guard let drawable = metalLayer.nextDrawable() else {
             appFatalError("drawable error.")
@@ -86,17 +86,17 @@ final class Application {
                     d.colorAttachments[0].storeAction = .store
                     gpu.counterSampler?.attachToRenderPass(descriptor: d, name: "presentRenderPass")
                 },
-                dispatch: gpu.frame.buildFrameRenderCommand{ builder in
+                dispatch: gpu.frame.buildFrameRenderCommand { builder in
                     builder.pixelFormats.colors[0] = Self.ColorPixelFormat
                     PassthroughtRenderer(renderCommandBuilder: builder).draw(offscreen)
                 }
             ),
             dependencies: scenePassNodes.outputNodes
         )
-        
+
         let pipeline = GpuPipeline()
         pipeline.registerNode([presentPassNode] + scenePassNodes.nodes)
-        
+
         gpu.doCommand { commandBuffer in
             commandBuffer.addCompletedHandler { [self] _ in
                 frameStatsReporter?.report(
@@ -106,13 +106,13 @@ final class Application {
                 )
                 gpu.counterSampler?.resolve(frame: frameStatus.frameCount)
             }
-            
+
             pipeline.dispatch(to: commandBuffer)
-            
+
             commandBuffer.present(drawable)
             commandBuffer.commit()
         }
-        
+
         gpu.frame.next()
     }
 }

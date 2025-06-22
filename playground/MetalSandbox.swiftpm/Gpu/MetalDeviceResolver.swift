@@ -5,10 +5,10 @@ final class MetalDeviceResolver {
         guard let device = MTLCreateSystemDefaultDevice() else {
             appFatalError("GPU not available ")
         }
-        
+
         return device
     }()
-    
+
     func resolve() -> MTLDevice {
         return device
     }

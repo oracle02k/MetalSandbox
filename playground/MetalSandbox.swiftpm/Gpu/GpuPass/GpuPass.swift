@@ -1,5 +1,5 @@
-import Metal;
+import Metal
 
-protocol GpuPass{
+protocol GpuPass {
     func dispatch(_ commandBuffer: MTLCommandBuffer)
 }

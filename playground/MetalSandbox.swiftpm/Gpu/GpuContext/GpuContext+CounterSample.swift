@@ -7,16 +7,16 @@ extension GpuContext {
                              "atBlitBoundary",
                              "atDispatchBoundary",
                              "atTileDispatchBoundary"]
-        
+
         let allBoundaries: [MTLCounterSamplingPoint] = [.atStageBoundary,
                                                         .atDrawBoundary,
                                                         .atBlitBoundary,
                                                         .atDispatchBoundary,
                                                         .atTileDispatchBoundary]
-        
+
         print("The GPU device supports the following sampling boundary/ies: [", terminator: "")
         var boundaries = [MTLCounterSamplingPoint]()
-        
+
         for index in 0..<boundaryNames.count {
             let boundary = allBoundaries[index]
             if device.supportsCounterSampling(boundary) {
@@ -33,24 +33,24 @@ extension GpuContext {
         // Finish printing the line that lists the boundaries the GPU device supports.
         // Example: "The GPU device supports the following sampling boundaries: [atStageBoundary]"
         print("]")
-        
+
         return boundaries
     }
-    
+
     func makeCounterSampleBuffer(_ sampleSet: MTLCommonCounterSet, _ size: Int = 6) -> MTLCounterSampleBuffer? {
         var counterSet: MTLCounterSet?
-        
+
         for set in device.counterSets! {
             if set.name.caseInsensitiveCompare(sampleSet.rawValue) == .orderedSame {
                 counterSet = set
                 break
             }
         }
-        
+
         guard let counterSet = counterSet else {
             return nil
         }
-        
+
         // Create and configure a descriptor for the counter sample buffer.
         let descriptor = MTLCounterSampleBufferDescriptor()
         // This counter set instance belongs to the `device` instance.
@@ -67,50 +67,50 @@ extension GpuContext {
         guard let buffer = try? device.makeCounterSampleBuffer(descriptor: descriptor) else {
             appFatalError("Device failed to create a counter sample buffer.")
         }
-        
+
         return buffer
     }
-    
+
     func attachCounterSample(to descriptor: MTLRenderPassDescriptor, index: Int) -> MTLCounterSampleBuffer? {
         guard let sampleAttachment = descriptor.sampleBufferAttachments[index] else {
             // appFatalError("sample buffer error.")
             return nil
         }
-        
+
         guard let counterSampleBuffer = makeCounterSampleBuffer(MTLCommonCounterSet.timestamp) else {
             // appFatalError("sample buffer error.")
             return nil
         }
-        
+
         sampleAttachment.sampleBuffer = counterSampleBuffer
         sampleAttachment.startOfVertexSampleIndex = 0
         sampleAttachment.endOfVertexSampleIndex = 1
         sampleAttachment.startOfFragmentSampleIndex = 2
         sampleAttachment.endOfFragmentSampleIndex = 3
-        
+
         return counterSampleBuffer
     }
-    
+
     func countreSample(from counterSampleBuffer: MTLCounterSampleBuffer?) -> (Float, Float)? {
         guard let counterSampleBuffer = counterSampleBuffer else {
             return nil
         }
-        
+
         let sampleCount = counterSampleBuffer.sampleCount
         guard let sampleData = try? counterSampleBuffer.resolveCounterRange(0..<sampleCount) else {
             // appFatalError("Device failed to create a counter sample buffer.")
             return nil
         }
-        
+
         return sampleData.withUnsafeBytes { body in
             let sample = body.bindMemory(to: MTLCounterResultTimestamp.self)
             let vertexInterval = Float(sample[1].timestamp - sample[0].timestamp) / Float(NSEC_PER_MSEC)
             let fragmentInterval = Float(sample[3].timestamp - sample[2].timestamp) / Float(NSEC_PER_MSEC)
-            
+
             return (vertexInterval, fragmentInterval)
         }
     }
-    
+
     func debugCountreSampleLog(label: String, from counterSampleBuffer: MTLCounterSampleBuffer?) -> String {
         var log = label
         if let times = countreSample(from: counterSampleBuffer) {

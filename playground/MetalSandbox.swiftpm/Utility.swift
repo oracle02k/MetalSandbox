@@ -81,8 +81,8 @@ class PropertyStack<T> {
             stack.removeLast()
         }
     }
-    
-    func clear(){
+
+    func clear() {
         stack = []
     }
 }
@@ -135,7 +135,7 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
 
 class FixedArray<T> {
     private var storage: [T]
-    
+
     var count: Int { storage.count }
 
     init(_ values: [T]) {
@@ -146,7 +146,7 @@ class FixedArray<T> {
         self.storage = Array(repeating: value, count: count)
     }
 
-    func fill(repeating value: T, count: Int){
+    func fill(repeating value: T, count: Int) {
         self.storage = Array(repeating: value, count: count)
     }
 

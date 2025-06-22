@@ -7,7 +7,7 @@ class FrameStatsReport {
     let memory: KByte
     let vram: KByte
     let gpuTime: MilliSecond
-    
+
     init(
         frameId: UInt64,
         frameStatus: FrameStatus,
@@ -27,11 +27,11 @@ class FrameStatsReport {
 
 class FrameStatsReporter {
     private let repository: FrameStatsReportRepository
-    
+
     init(repository: FrameStatsReportRepository) {
         self.repository = repository
     }
-    
+
     func report(
         frameStatus: FrameStatus,
         device: MTLDevice,
