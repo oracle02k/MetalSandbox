@@ -34,6 +34,7 @@ struct StatsView: View {
                         case .VertexTime: "vs"
                         case .FragmentTime: "fs"
                         case .ComputeTime: "cs"
+                        case .BlitTime: "blit"
                         }
                         StatsRow(name: name, value: String(format: "%.2fms", report.interval))
                     }

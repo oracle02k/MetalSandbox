@@ -3,6 +3,7 @@ import Foundation
 enum GpuCounterSampleType {
     case RenderPass
     case ComputePass
+    case BlitPass
 }
 
 class GpuCounterSampleSummary {

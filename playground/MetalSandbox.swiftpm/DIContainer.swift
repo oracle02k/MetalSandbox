@@ -12,7 +12,7 @@ class DIContainer {
         // Gpu Context
         container.register(GpuContext.self) { r in
             GpuContext(deviceResolver: r.resolve(MetalDeviceResolver.self)!)
-        }.inObjectScope(.transient)
+        }.inObjectScope(.container)
 
         // CounterSampler
         container.register(GpuCounterSampler.self) { r in
@@ -52,6 +52,6 @@ class DIContainer {
     }
 
     static func resolve<T>(_ type: T.Type = T.self) -> T {
-        return container.resolve(type.self)!
+        return container.synchronize().resolve(type.self)!
     }
 }

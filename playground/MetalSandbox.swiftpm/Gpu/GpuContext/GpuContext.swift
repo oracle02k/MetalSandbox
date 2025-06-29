@@ -53,10 +53,7 @@ class GpuContext {
         _ = checkCounterSample()
         let counterSampleBuffer = makeCounterSampleBuffer(.timestamp, 32)
         if let counterSampleBuffer = counterSampleBuffer {
-            counterSampler = GpuCounterSampler(
-                counterSampleSummaryRepository: GpuCounterSampleSummaryRepository(),
-                counterSampleReportRepository: GpuCounterSampleReportRepository()
-            )
+            counterSampler = DIContainer.resolve(GpuCounterSampler.self)
             counterSampler?.build(counterSampleBuffer: counterSampleBuffer)
         }
     }

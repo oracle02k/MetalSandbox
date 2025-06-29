@@ -4,6 +4,7 @@ enum GpuCounterSampleReportType: Comparable {
     case VertexTime
     case FragmentTime
     case ComputeTime
+    case BlitTime
 }
 
 class GpuCounterSampleReport: Identifiable {

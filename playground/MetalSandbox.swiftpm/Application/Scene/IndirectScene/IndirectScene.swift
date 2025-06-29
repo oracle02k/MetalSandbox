@@ -158,7 +158,9 @@ class IndirectScene: SandboxScene {
             let src = frameState.binding()
             let dest = indirectFrameStateBuffer.binding()
 
-            return GpuPassNode(GpuBlitPass { encoder in
+            return GpuPassNode( GpuBlitPass { d in
+                gpu.counterSampler?.attachToBlitPass(descriptor: d, name: "inirectPrePass")
+            } performEncoding: { encoder in
                 encoder.copy(
                     from: src.buffer, sourceOffset: src.offset,
                     to: dest.buffer, destinationOffset: dest.offset,

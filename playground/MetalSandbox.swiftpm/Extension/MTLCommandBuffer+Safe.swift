@@ -7,6 +7,13 @@ extension MTLCommandBuffer {
         }
         return encoder
     }
+    
+    func makeBlitCommandEncoderWithSafe(descriptor: MTLBlitPassDescriptor) -> MTLBlitCommandEncoder {
+        guard let encoder = makeBlitCommandEncoder(descriptor: descriptor) else {
+            appFatalError("failed to make blit command encoder.")
+        }
+        return encoder
+    }
 
     func makeComputeCommandEncoderWithSafe() -> MTLComputeCommandEncoder {
         guard let encoder = makeComputeCommandEncoder() else {

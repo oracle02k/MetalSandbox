@@ -34,6 +34,7 @@ class GpuCounterSampler {
                 switch summary.type {
                 case .RenderPass: resolveRenderPass(frame: frame, summary: summary, sample: sample)
                 case .ComputePass: resolveComputePass(frame: frame, summary: summary, sample: sample)
+                case .BlitPass: resolveBlitPass(frame: frame, summary: summary, sample: sample)
                 }
             }
         }
@@ -72,6 +73,21 @@ class GpuCounterSampler {
             GpuCounterSampleReport(counterSampleId: summary.id, frame: frame, type: .ComputeTime, interval: time)
         )
     }
+    
+    private func resolveBlitPass(
+        frame: UInt64,
+        summary: GpuCounterSampleSummary,
+        sample: UnsafeBufferPointer<MTLCounterResultTimestamp>
+    ) {
+        let startIndex = summary.startIndex
+        let start = sample[startIndex + 0].timestamp
+        let end = sample[startIndex + 1].timestamp
+        let time = Float(end - start)/Float(NSEC_PER_MSEC)
+
+        counterSampleReportRepository.persist(
+            GpuCounterSampleReport(counterSampleId: summary.id, frame: frame, type: .BlitTime, interval: time)
+        )
+    }
 
     func attachToRenderPass(
         descriptor: MTLRenderPassDescriptor,
@@ -99,6 +115,21 @@ class GpuCounterSampler {
         }
 
         let summary = fetchOrNewCounterSampleSummary(name: name, type: .ComputePass, consumeBufferIndex: 2)
+
+        attachment.sampleBuffer = counterSampleBuffer
+        attachment.startOfEncoderSampleIndex = summary.startIndex
+        attachment.endOfEncoderSampleIndex = summary.startIndex + 1
+    }
+    
+    func attachToBlitPass(
+        descriptor: MTLBlitPassDescriptor,
+        name: String
+    ) {
+        guard let attachment = descriptor.sampleBufferAttachments[0] else {
+            return
+        }
+
+        let summary = fetchOrNewCounterSampleSummary(name: name, type: .BlitPass, consumeBufferIndex: 2)
 
         attachment.sampleBuffer = counterSampleBuffer
         attachment.startOfEncoderSampleIndex = summary.startIndex
