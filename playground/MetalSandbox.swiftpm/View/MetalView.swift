@@ -6,153 +6,118 @@ protocol AAPLViewDelegate {
 }
 
 class MetalView: UIView {
+    private var displayLinkDriver: DisplayLinkDriver?
     private var paused: Bool = false
-    private var displayLink: CADisplayLink?
-    private var previousTimeStamp: CFTimeInterval = .zero
+    private var previousTimestamp: CFTimeInterval = CACurrentMediaTime()
     private let delegate = MetalViewDelegate()
     var colorPixelFormat: MTLPixelFormat = .bgra8Unorm
     var depthStencilPixelFormat: MTLPixelFormat = .depth32Float
     var sampleCount = 1
     var frameCount = 0
-
+    
     override class var layerClass: AnyClass {
         return CAMetalLayer.self
     }
-
+    
     override func didMoveToWindow() {
         Logger.log("MetalView.didMoveToWindow begin.")
         super.didMoveToWindow()
         stopRenderLoop()
-        if Config.mainThreadRender {
-            setupCADisplayLinkForScreen(screen: window!.screen)
-        } else {
-            Thread.detachNewThread { [self] in
-                setupCADisplayLinkForScreen(screen: window!.screen)
-                RunLoop.current.run()
-            }
+        
+        if let metalLayer = layer as? CAMetalLayer, metalLayer.device == nil {
+            metalLayer.device = DIContainer.resolve(MetalDeviceResolver.self).resolve()
         }
+        
+        displayLinkDriver = DisplayLinkDriver(useMainRunLoop: Config.mainThreadRender) { [weak self] in
+            self?.render()
+        }
+        displayLinkDriver?.start()
+        
         Logger.log("MetalView.didMoveToWindow done.")
     }
-
-    @objc func render(_ displayLink: CADisplayLink) {
-        guard let metalLayer = layer as? CAMetalLayer else {
-            appFatalError("metal layer error.")
-        }
-
-        let delta = displayLink.targetTimestamp - previousTimeStamp
-        let actualFramesPerSecond = 1 / delta
-
+    
+    private func render() {
+        guard let metalLayer = layer as? CAMetalLayer else { return }
+        
+        let timestamp = CACurrentMediaTime()
+        let delta = timestamp - previousTimestamp
+        let fps = delta > 0 ? 1.0 / delta : 0
+        
         let frameStatus = FrameStatus(
             delta: .init(deltaTime: delta),
             preferredFps: Config.preferredFps,
-            actualFps: Float(actualFramesPerSecond),
-            displayLinkDuration: displayLink.duration,
+            actualFps: Float(fps),
+            displayLinkDuration: 1.0 / Double(Config.preferredFps),
             frameCount: UInt64(frameCount)
         )
-
-        synchronized(metalLayer) {
-            metalLayer.device = DIContainer.resolve(MetalDeviceResolver.self).resolve()
-            delegate.renderToMetalLayer(metalLayer: metalLayer, view: self, frameStatus: frameStatus)
-        }
-
+        
+        delegate.renderToMetalLayer(metalLayer: metalLayer, view: self, frameStatus: frameStatus)
+        
         frameCount += 1
-        previousTimeStamp = displayLink.targetTimestamp
+        previousTimestamp = timestamp
     }
-
-    func setPaused(pause: Bool) {
-        paused = pause
-        displayLink?.isPaused = paused
+    
+    func stopRenderLoop() {
+        displayLinkDriver?.stop()
+        displayLinkDriver = nil
     }
-
-    func setupCADisplayLinkForScreen(screen: UIScreen) {
-        Logger.log("MetalView.setupCADisplayLinkForScreen begin.")
-        displayLink = screen.displayLink(withTarget: self, selector: #selector(Self.render(_:)))!
-        displayLink?.preferredFrameRateRange = .init(
-            minimum: Config.minFps,
-            maximum: Config.maxFps,
-            preferred: Config.preferredFps
-        )
-        displayLink?.isPaused = self.paused
-        displayLink?.add(to: .current, forMode: .default)
-        Logger.log("MetalView.setupCADisplayLinkForScreen done.")
+    
+    func setPaused(_ paused: Bool) {
+        self.paused = paused
+        displayLinkDriver?.setPaused(paused)
     }
-
+    
     func didEnterBackground(notification: NSNotification) {
         Logger.log("MetalView.didEnterBackground begin.")
-        paused = true
+        setPaused(true)
         Logger.log("MetalView.didEnterBackground end.")
     }
-
+    
     func willEnterForeground(notification: NSNotification) {
         Logger.log("MetalView.willEnterForeground begin.")
-        paused = false
+        setPaused(false)
         Logger.log("MetalView.willEnterForeground end.")
     }
-
-    func stopRenderLoop() {
-        displayLink?.invalidate()
-    }
-
+    
     func setContentScaleFactor(contentScaleFactor: CGFloat) {
         Logger.log("MetalView.setContentScaleFactor begin.")
         super.contentScaleFactor = contentScaleFactor
-        resizeDrawable(scaleFactor: window!.screen.nativeScale)
+        resizeDrawable(scaleFactor: window?.screen.nativeScale ?? 1.0)
         Logger.log("MetalView.setContentScaleFactor done.")
     }
-
+    
     override func layoutSubviews() {
-        Logger.log("MetalView.layoutSubviews begin.")
         super.layoutSubviews()
-        resizeDrawable(scaleFactor: window!.screen.nativeScale)
-        Logger.log("MetalView.layoutSubviews done.")
+        resizeDrawable(scaleFactor: window?.screen.nativeScale ?? 1.0)
     }
-
+    
     override var frame: CGRect {
-        get { super.frame}
-        set {
-            super.frame = newValue
-            guard let window = self.window else {
-                return
-            }
-            resizeDrawable(scaleFactor: window.screen.nativeScale)
-        }
+        didSet { resizeDrawable(scaleFactor: window?.screen.nativeScale ?? 1.0) }
     }
-
+    
     override var bounds: CGRect {
-        get { super.bounds}
-        set {
-            super.bounds = newValue
-            guard let window = self.window else {
-                return
-            }
-            resizeDrawable(scaleFactor: window.screen.nativeScale)
-        }
+        didSet { resizeDrawable(scaleFactor: window?.screen.nativeScale ?? 1.0) }
     }
-
+    
     func resizeDrawable(scaleFactor: CGFloat) {
-        Logger.log("MetalView.resizeDrawable begin.")
-        var newSize = self.bounds.size
+        var newSize = bounds.size
         newSize.width *= scaleFactor
         newSize.height *= scaleFactor
-
-        if newSize.width <= 0 || newSize.width <= 0 {
+        
+        if newSize.width <= 0 || newSize.height <= 0 {
             return
         }
-
+        
         guard let metalLayer = layer as? CAMetalLayer else {
             appFatalError("metal layer error.")
         }
-
-        if newSize.width == metalLayer.drawableSize.width &&
-            newSize.height == metalLayer.drawableSize.height {
+        
+        if newSize == metalLayer.drawableSize {
             return
         }
-
-        synchronized(metalLayer) {
-            metalLayer.drawableSize = newSize
-            delegate.drawableResize(size: newSize)
-        }
-        Logger.log("MetalView.resizeDrawable done.")
+        
+        metalLayer.drawableSize = newSize
+        delegate.drawableResize(size: newSize)
     }
 }
 
@@ -161,7 +126,7 @@ class MetalViewDelegate: AAPLViewDelegate {
         let app = DIContainer.resolve(Application.self)
         app.changeViewportSize(size)
     }
-
+    
     func renderToMetalLayer(metalLayer: CAMetalLayer, view: MetalView, frameStatus: FrameStatus) {
         let app = DIContainer.resolve(Application.self)
         app.update(drawTo: metalLayer, frameStatus: frameStatus)
