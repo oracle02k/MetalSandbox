@@ -17,6 +17,8 @@ class GpuContext {
     lazy var renderStateResolver: GpuRenderStateResolver = uninitialized()
     lazy var functions: GpuFunctions = uninitialized()
     lazy var frame: GpuFrameContext = uninitialized()
+    lazy var taskQueue: GpuTaskQueue = uninitialized()
+    lazy var renderQueue: GpuRenderQueue = uninitialized()
     var counterSampler: GpuCounterSampler?
 
     private lazy var commandQueue: MTLCommandQueue = uninitialized()
@@ -43,7 +45,11 @@ class GpuContext {
 
         frame = .init(gpu: self)
         frame.build(env: env.frame)
-
+        
+        taskQueue = .init(gpu: self)
+        renderQueue = .init(gpu: self)
+        renderQueue.build()
+        
         _ = checkCounterSample()
         let counterSampleBuffer = makeCounterSampleBuffer(.timestamp, 32)
         if let counterSampleBuffer = counterSampleBuffer {

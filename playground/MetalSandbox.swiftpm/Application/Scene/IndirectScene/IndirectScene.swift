@@ -29,8 +29,8 @@ class IndirectScene: SandboxScene {
     }
 
     var NumObjects: Int {Int(GridWidth * GridHeight)}
-    let GridWidth: Float = 5
-    let GridHeight: Float = 5
+    let GridWidth: Float = 10
+    let GridHeight: Float = 10
     let ObjecDistance: Float = 2.1 // Distance between each object
     let indirect = true
 

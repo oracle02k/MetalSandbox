@@ -96,23 +96,25 @@ final class Application {
 
         let pipeline = GpuPipeline()
         pipeline.registerNode([presentPassNode] + scenePassNodes.nodes)
-
-        gpu.doCommand { commandBuffer in
-            commandBuffer.addCompletedHandler { [self] _ in
-                frameStatsReporter?.report(
-                    frameStatus: frameStatus,
-                    device: gpu.device,
-                    gpuTime: commandBuffer.gpuTime()
-                )
-                gpu.counterSampler?.resolve(frame: frameStatus.frameCount)
-            }
-
-            pipeline.dispatch(to: commandBuffer)
-
-            commandBuffer.present(drawable)
-            commandBuffer.commit()
+        
+        gpu.renderQueue.addCompletedHandler { [self] commandBuffer in
+            frameStatsReporter?.report(
+                frameStatus: frameStatus,
+                device: gpu.device,
+                gpuTime: commandBuffer.gpuTime()
+            )
+            gpu.counterSampler?.resolve(frame: frameStatus.frameCount)
         }
 
+        gpu.renderQueue.enqueue{ commandBuffer in
+            pipeline.dispatch(to: commandBuffer)
+            commandBuffer.present(drawable)
+        }
+        
+        gpu.renderQueue.commitAndNext()
         gpu.frame.next()
     }
 }
+
+
+

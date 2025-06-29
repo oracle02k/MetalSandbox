@@ -120,7 +120,7 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
 
     let display: String
     if nano >= 1_000_000_000 {
-        display = String(format: "%.3f 秒", nano / 1_000_000_000)
+        display = String(format: "%.3f s", nano / 1_000_000_000)
     } else if nano >= 1_000_000 {
         display = String(format: "%.3f ms", nano / 1_000_000)
     } else if nano >= 1_000 {
@@ -129,7 +129,7 @@ func measure<T>(_ label: String = "", block: () -> T) -> T {
         display = String(format: "%.0f ns", nano)
     }
 
-    print("\(label)処理時間: \(display)")
+    print("\(label)elapsed time: \(display)")
     return result
 }
 
