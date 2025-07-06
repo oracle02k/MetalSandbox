@@ -3,25 +3,25 @@ import QuartzCore
 final class DisplayLinkDriver {
     private let target: () -> Void
     private var displayLink: CADisplayLink?
-    private let useMainRunLoop: Bool
+    private let useRunLoopThread: Bool
     private var thread: Thread?
     
-    init(useMainRunLoop: Bool = true, callback: @escaping () -> Void) {
-        self.useMainRunLoop = useMainRunLoop
+    init(useRunLoopThread: Bool = true, callback: @escaping () -> Void) {
+        self.useRunLoopThread = useRunLoopThread
         self.target = callback
     }
     
     func start() {
         guard displayLink == nil else { return }
         
-        if useMainRunLoop {
-            setupDisplayLink(on: .main)
-        } else {
+        if useRunLoopThread {
             thread = Thread {
                 self.setupDisplayLink(on: .current)
                 RunLoop.current.run()
             }
             thread?.start()
+        } else {
+            setupDisplayLink(on: .main)
         }
     }
     

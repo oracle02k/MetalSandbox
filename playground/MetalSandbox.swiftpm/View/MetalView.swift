@@ -28,7 +28,7 @@ class MetalView: UIView {
             metalLayer.device = DIContainer.resolve(MetalDeviceResolver.self).resolve()
         }
         
-        displayLinkDriver = DisplayLinkDriver(useMainRunLoop: Config.mainThreadRender) { [weak self] in
+        displayLinkDriver = DisplayLinkDriver(useRunLoopThread: Config.useRunLoopThread) { [weak self] in
             self?.render()
         }
         displayLinkDriver?.start()

@@ -5,10 +5,10 @@ final class GpuTaskQueue {
     private let dispatchQueue: DispatchQueue
     private let label: String
     
-    init(gpu: GpuContext, label: String = "com.MetalSandbox.GpuTaskQueue") {
+    init(gpu: GpuContext, name: String = "com.MetalSandbox.GpuTaskQueue") {
         self.gpu = gpu
-        self.dispatchQueue = DispatchQueue(label: label, qos: .userInitiated, attributes: .concurrent)
-        self.label = label
+        self.dispatchQueue = DispatchQueue(label: name, qos: .userInitiated, attributes: .concurrent)
+        self.label = name
     }
     
     /// 非同期にGPUコマンドバッファを作成・実行
